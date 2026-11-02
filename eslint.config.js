@@ -10,9 +10,26 @@ export default tseslint.config(
   {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
+      // TypeScript 编译器已经检查未定义变量，no-undef 对 TS 是噪音
+      'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    // Node 侧脚本（目前只有迁移包装器 .js）
+    files: ['**/*.js'],
+    rules: {
+      'no-undef': 'off',
+      'no-console': 'off',
+    },
+  },
+  {
+    // CLI 脚本与后端：允许 console 输出（种子要打印一次性初始密码）
+    files: ['db/**/*.ts', 'apps/api/**/*.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
   {

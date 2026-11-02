@@ -4,7 +4,7 @@ import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import { ZodError } from 'zod';
 import { ApiError } from './lib/errors.js';
-import { checkSameOrigin, sendApiError } from './auth/middleware.js';
+import { checkMustChange, checkSameOrigin, getSession, sendApiError } from './auth/middleware.js';
 import { registerAuthRoutes } from './auth/routes.js';
 import { getConfig } from './config.js';
 
@@ -35,9 +35,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
 
-  // Origin/Referer 同源校验放在最前（D-05）
+  // Origin/Referer 同源校验放在最前（D-05）；随后是 must_change 全局拦截
   app.addHook('onRequest', async (req) => {
     checkSameOrigin(req);
+    // 有会话且必须改密 → 非白名单接口一律 403（即使该接口尚未实现，也不会先落进 404）
+    const session = await getSession(req);
+    checkMustChange(req, session);
   });
 
   // 全局错误处理（D-06）

@@ -12,6 +12,23 @@ import { getConfig } from '../config.js';
 /** 必须改密时仍放行的接口（执行包 §3.3） */
 const MUST_CHANGE_ALLOWED = new Set(['/api/auth/me', '/api/auth/password', '/api/auth/logout']);
 
+/** 取请求路径（去掉 query 与尾斜杠），用于白名单判断 */
+function requestPath(req: FastifyRequest): string {
+  const raw = req.url.split('?')[0] ?? '';
+  return raw.length > 1 && raw.endsWith('/') ? raw.slice(0, -1) : raw;
+}
+
+/**
+ * must_change 拦截 —— 契约要求「除 /auth/me、改密、退出外，接口返回 403」。
+ * 放在 onRequest 层（全局），这样连尚未实现的业务路径也会被正确拦住，
+ * 而不是先落进 404。
+ */
+export function checkMustChange(req: FastifyRequest, session: SessionContext | null): void {
+  if (!session || !session.mustChangePassword) return;
+  if (MUST_CHANGE_ALLOWED.has(requestPath(req))) return;
+  throw forbidden('请先修改初始密码');
+}
+
 /** Origin / Referer 同源校验（所有非 GET） */
 export function checkSameOrigin(req: FastifyRequest): void {
   const method = req.method.toUpperCase();
@@ -59,10 +76,7 @@ export async function requireSession(req: FastifyRequest): Promise<SessionContex
 /** 要求已登录且已改密 */
 export async function requireActiveSession(req: FastifyRequest): Promise<SessionContext> {
   const session = await requireSession(req);
-  const path = req.routeOptions?.url ?? req.url;
-  if (session.mustChangePassword && !MUST_CHANGE_ALLOWED.has(path)) {
-    throw forbidden('请先修改初始密码');
-  }
+  checkMustChange(req, session);
   return session;
 }
 
