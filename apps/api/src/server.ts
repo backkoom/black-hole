@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { buildApp } from './app.js';
 import { getConfig } from './config.js';
 import { closePool } from './db.js';

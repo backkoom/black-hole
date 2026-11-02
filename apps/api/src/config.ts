@@ -1,9 +1,22 @@
 import { z } from 'zod';
+import { config as loadDotenv } from 'dotenv';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * 环境变量校验 —— 执行包 §4.3。
  * 缺关键变量直接退出，不用默认密码兜底。
+ *
+ * .env 的加载路径**相对本文件**而不是 cwd：
+ * npm workspace 脚本的 cwd 是 apps/api，`dotenv/config` 按 cwd 找会找不到仓库根的 .env。
+ * 生产/验收不读 .env（直接用进程环境变量）。
  */
+const here = dirname(fileURLToPath(import.meta.url));
+const ROOT_ENV = join(here, '..', '..', '..', '.env');
+
+if (process.env.NODE_ENV !== 'production') {
+  loadDotenv({ path: ROOT_ENV });
+}
 
 const boolish = (v: string | undefined) => v === 'true' || v === '1';
 

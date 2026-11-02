@@ -57,12 +57,13 @@ LEFT JOIN LATERAL (
 
 export function toUser(row: UserRow): User {
   return {
-    id: row.id,
+    // pg 默认把 bigint 返回成字符串，契约要求 id/orgId 是 number
+    id: Number(row.id),
     account: row.account,
     name: row.name,
     role: row.role,
     isSuper: row.is_super,
-    orgId: row.org_id,
+    orgId: Number(row.org_id),
     org: {
       company: row.company_name ?? '',
       dept: row.org_name,
