@@ -58,7 +58,12 @@ psql -h 127.0.0.1 -p 15432 -U postgres -d template1 -c "GRANT ALL ON SCHEMA publ
 > PostgreSQL 15+ 起 `public` schema 默认不给 PUBLIC `CREATE` 权限，必须显式 `GRANT`。
 > 授到 `template1` 是为了让以后新建的库都带上这条授权。
 
-用 docker 的话：`docker compose up -d db`（compose 里是 `postgres:18`，端口 5432）。
+用 docker 的话：`docker compose up -d db`（compose 里是 `postgres:18`，端口 5432，`docker compose config` 已校验通过）。
+
+> ⚠️ **本机 5432 / 5433 已被老6 自己装的 PostgreSQL 服务占用**，所以本项目开发实际用上面的 15432 原生实例。
+> compose 是给「没有冲突的机器」和 CI 用的（执行包 §4.4 规定的标准启动路径）。
+> Docker 29.9.2 + Compose v5.6.1 已装，PATH 里默认看不见，手动加一次即可：
+> `export PATH="/c/Program Files/Docker/Docker/resources/bin:$PATH"`
 
 ### 命令
 
