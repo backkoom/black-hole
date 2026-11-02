@@ -1,0 +1,16 @@
+# 本地开发用的 PostgreSQL（仅本地，不用于生产/验收）。
+# 版本与开发机保持一致：18。
+# 注意：开发与生产必须同大版本，否则 pg_dump 无法从高版本恢复到低版本。
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: workbench
+      POSTGRES_PASSWORD: workbench
+      POSTGRES_DB: workbench
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

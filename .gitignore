@@ -1,0 +1,37 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# 环境变量与密钥（.env.example 除外）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 日志与临时文件
+*.log
+npm-debug.log*
+tmp/
+.cache/
+
+# 数据库与备份
+*.sql.gz
+pgdata/
+backups/
+dump/
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# E2E 产物
+test-results/
+playwright-report/
+blob-report/
