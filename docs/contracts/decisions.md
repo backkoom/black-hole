@@ -313,6 +313,59 @@ v2 §0.1/§1.3 的前提是纯内网部署。代码泄露的组织架构与人�
 
 **分支名**：当前是 `master`（git 默认）。要改成 `main` 我在推之前 `git branch -m main`，一句话即可。
 
+**🔍 授权失败排查记录（2026-11-02 15:5x，连接器与 gh 都失败）**
+
+老6 反馈：WorkBuddy 的 GitHub 连接器点「启用」也授权失败。实测结论如下：
+
+| 出网通道 | 进程 | github.com | api.github.com | api.githubcopilot.com | POST /login/device/code |
+|---|---|---|---|---|---|
+| **127.0.0.1:47897** | `verge-mihomo.exe`（Clash Verge 内核，系统代理 `ProxyEnable=1`）—— **老6 的浏览器走这条** | 200 | 200 | 401（可达） | **成功返回 device_code** |
+| **127.0.0.1:65001** | `sandbox-cli.exe`（WorkBuddy 沙箱代理）—— **我的命令行工具走这条** | CONNECT 502 | 200 | 401（可达） | **CONNECT 502** |
+
+**根因**：不是账号问题，是**两条出网通道的能力不一致**。
+沙箱出口 65001 只放行 `api.*` 与 `*.git/*` 这类 API/协议路径，
+**`github.com` 主站（登录页、OAuth 授权页、设备流端点）一律 502**。
+
+**连接器的授权流程（从 WorkBuddy 日志 `main.log` 抓到的真实 URL）**：
+
+```
+https://github.com/login/oauth/authorize?client_id=Iv23liIip3I7DTZzqlzq
+  &redirect_uri=https://www.codebuddy.cn/console/as/p/connector/oauth/github/connect
+  &response_type=code&scope=repo+user&state=...
+```
+
+即 **OAuth 授权码流程**：浏览器开授权页 → 回调 WorkBuddy 云端 → 云端换 token。
+浏览器这一段走 47897 正常；**回调后云端要向 GitHub 换 token**，
+若 WorkBuddy daemon 进程的出口也是 65001，这一步会被 502 挡死 → 表现为「授权失败」。
+
+**已验证的解法（绕开主站主流程）**：**gh CLI 的设备流**。
+`gh auth login --web` 失败，也是因为它请求 `/login/device/code` 被挡；
+但**只要把 gh 的代理指向 47897，整条设备流立刻打通**：
+
+```bash
+export http_proxy=http://127.0.0.1:47897 https_proxy=http://127.0.0.1:47897
+gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key
+```
+
+实测：正常吐出一次性验证码（形如 `1C7F-346A`）+ `https://github.com/login/device`，
+老6 在浏览器（走 47897，正常）输入验证码授权即可。
+**设备流不需要 OAuth 回调、不需要 WorkBuddy 会话、不绑 WorkBuddy 账号**，
+绕开了连接器失败的那个环节。拿到 token 后 `gh auth login --with-token` 落盘，
+再 `gh repo create --private` + `git push`（push 同样要带 47897 代理）。
+
+**连接器本身能不能修**：属于 WorkBuddy 侧把 daemon 进程的出网指向系统代理（47897）的问题，
+**不在本项目范围内，也不该由本项目绕过**。本项目走 gh 通道即可。
+
+**给老6 的判断依据**（连接器那条路若还想修，需要这些现象）：
+
+1. 点启用后浏览器是否**真的打开了** `github.com/login/oauth/authorize` 授权页？
+2. 授权页上显示的是**报错**（如 "This application is not authorized" / 404 / 证书错误）还是正常登录页？
+3. 授权完跳回 `www.codebuddy.cn/console/as/p/connector/oauth/github/connect` 时显示什么？
+   （实测该回调接口在**两条代理下都活着**，会返回结构化错误码
+   `code=10001 / httpstatus=401 / msg=user identity cannot be verified`）
+4. GitHub 账号：邮箱是否已验证？是否开了 2FA？是否属于启用了 SAML SSO 的组织？
+
+
 ---
 
 ## 一之二、D-10 迁移执行器：SQL 是唯一基线，但 node-pg-migrate 只认 .js/.ts
