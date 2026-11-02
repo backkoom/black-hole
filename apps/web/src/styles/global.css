@@ -1,0 +1,220 @@
+/**
+ * 全局布局样式 —— 配合 styles/theme.ts 的设计变量。
+ * 只放 AntD token 覆盖不到的部分（字号、间距、渐变、滚动条）。
+ */
+
+/* 设计变量 —— visual-baseline.md §1.1 / 附 A，与 styles/theme.ts 的 designVars 一致 */
+:root {
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --border: #e6eaf2;
+  --text: #1f2937;
+  --text-2: #5b6577;
+  --muted: #98a1b3;
+  --primary: #2563eb;
+  --primary-soft: #eef3ff;
+  --green: #10b981;
+  --orange: #f59e0b;
+  --purple: #8b5cf6;
+  --red: #ef4444;
+  --radius: 12px;
+  --side: #1c2033;
+  --side-2: #252a40;
+}
+
+/* 全局骨架 —— visual-baseline.md §2.1 */
+.wb-layout {
+  height: 100vh;
+}
+
+.wb-main {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wb-content {
+  overflow-y: auto;
+  padding: 20px 22px 30px;
+}
+
+.wb-content-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* 左侧导航 */
+.wb-sider {
+  overflow-y: auto;
+}
+
+.wb-sider .ant-menu-item,
+.wb-sider .ant-menu-submenu-title {
+  font-size: 13px;
+}
+
+.wb-sider .ant-menu-item-selected {
+  font-weight: 600;
+}
+
+.wb-brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 10px 20px;
+}
+
+.wb-brand-mark {
+  display: flex;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wb-brand-name {
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+/* 顶部栏右侧：用户名 + 角色标签 + 退出 */
+.wb-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-header-right {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.wb-avatar {
+  background: linear-gradient(135deg, #34d399, #2563eb);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wb-user-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wb-role-tag {
+  margin-inline-end: 0;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+/* 页面骨架 */
+.wb-page {
+  max-width: 100%;
+}
+
+/* 页面标题 20px / 700（visual-baseline §1.5） */
+.wb-page-title {
+  margin: 0 0 4px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.wb-page-sub {
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* 内容卡片 */
+.wb-card {
+  max-width: 560px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+/* 表单顶部错误与操作区 */
+.wb-form-alert {
+  margin-bottom: 16px;
+}
+
+.wb-form-actions {
+  margin-bottom: 0;
+}
+
+/* 设置页左侧子导航 200px */
+.wb-settings {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.wb-settings-nav {
+  flex: 0 0 auto;
+}
+
+.wb-settings-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wb-settings-nav-label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.wb-settings-nav-tag {
+  margin-inline-end: 0;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+/* 占位页 */
+.wb-placeholder-body {
+  padding: 40px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+/* 错误页（403 / 404） */
+.wb-error-page {
+  padding: 40px 0;
+}
+
+/* 登录页居中卡片 360px */
+.wb-login {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.wb-login-card {
+  width: 360px;
+  max-width: 100%;
+}
+
+.wb-login-brand {
+  padding: 0 0 20px;
+}
+
+.wb-login-brand .wb-brand-name {
+  color: var(--text);
+}
+
+.wb-login-alert {
+  margin-bottom: 16px;
+}
