@@ -110,8 +110,8 @@ npm run verify       # lint + typecheck + test + build
 
 | Phase | 范围 | 状态 |
 |---|---|---|
-| **Phase 0** | 契约包（不写业务代码） | ✅ 已完成，待人类审 |
-| Phase 1 | 地基、认证、会话、应用壳 | ⏸ 待契约确认后开工 |
+| **Phase 0** | 契约包（不写业务代码） | ✅ 已完成，老6 已确认「契约通过」 |
+| **Phase 1** | 地基、认证、会话、应用壳 | 🟡 **进行中**：后端与前端已实现，认证链路实测通过；E2E 待补 |
 | Phase 2 | 组织、账号、导入 | ⏸ |
 | Phase 3 | 工作台壳、布局、版本、模板 | ⏸ |
 | Phase 4 | 任务、项目、进度 | ⏸ |
@@ -119,4 +119,16 @@ npm run verify       # lint + typecheck + test + build
 | Phase 6 | 统计与指标卡接线 | ⏸ |
 | Phase 7 | 部署与验收 | ⏸ |
 
-Phase 0 验收清单见 [docs/contracts/decisions.md](docs/contracts/decisions.md)。
+### Phase 1 已完成的部分（2026-11-02）
+
+- **后端**（`apps/api`）：配置校验、pg 连接池、统一响应与错误映射、requestId、pino 日志、
+  Cookie 会话（只存 token hash）、登录/退出/me/改密、5 次错误锁 10 分钟、
+  must_change 只放行 3 个接口、Origin 同源校验、会话清理任务
+- **前端**（`apps/web`）：登录页、改密页、App Shell、403/404 页、路由守卫、
+  普通用户隐藏管理导航、设计变量按 `visual-baseline.md` 注入 AntD token
+- **数据库**：`001_init.sql`（唯一 DDL 基线）+ `001_init.js` 包装器 + `seed.ts`（6 级组织链、幂等）
+- **测试**：36 条（登录 7 / 会话与改密 8 / Origin 5 / 模块 schema 16），全绿
+- **实测**：真实服务冒烟 4/4 通过；经 Vite 代理的真实登录链路通过（Cookie 正常下发）
+
+Phase 0 验收清单见 [docs/contracts/phase0-gate.md](docs/contracts/phase0-gate.md)，
+Phase 1 范围与实现点见 [docs/contracts/phase1-plan.md](docs/contracts/phase1-plan.md)。
