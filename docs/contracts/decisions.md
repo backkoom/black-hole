@@ -238,6 +238,27 @@ v2 §0.1/§1.3 的前提是纯内网部署。代码泄露的组织架构与人�
 
 ---
 
+## 一之二、D-10 迁移执行器：SQL 是唯一基线，但 node-pg-migrate 只认 .js/.ts
+
+**问题**
+执行包 §5 要求把 DDL 落成 `db/migrations/001_init.sql`，并明说「不要维护第二份 schema.sql，避免漂移」；
+§4.4 又要求 `npm run migrate` = `node-pg-migrate up`。
+但 **node-pg-migrate 只加载 `.js` / `.ts` 迁移文件，不执行 `.sql`**。两条要求直接对撞。
+
+**决策**：**保留 `db/migrations/001_init.sql` 作为 DDL 唯一基线**，
+另加一个极薄的 JS 迁移 `db/migrations/001_init.js`，作用只是**读取同目录的 `.sql` 并执行**。
+不复制第二份 schema，不引入 SQL→JS 的生成步骤。
+
+**为什么**
+1. 契约基线必须是人能读、能 diff、能直接用 psql 验证的纯 SQL（Phase 0 验收项「空库迁移成功」就是这么验的）；
+2. node-pg-migrate 提供迁移版本表、只向前、失败回滚事务，正是 §5.2 要的；
+3. SQL 换行必须是 **LF**——已用 `.gitattributes` 锁住，避免 Windows 下被改成 CRLF 导致执行出错。
+
+**影响面**：`db/migrations/001_init.js`（Phase 1 新增，约 20 行）。
+**推翻成本**：极低；换成别的迁移器也不影响 SQL 基线本身。
+
+---
+
 ## 二、未决项（等外部条件，不阻塞编码）
 
 | # | 未决项 | 卡在谁 | 什么时候要 | 默认怎么先跑 |
