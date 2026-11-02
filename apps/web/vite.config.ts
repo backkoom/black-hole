@@ -9,6 +9,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    // 绑 0.0.0.0：默认只监听 [::1]，浏览器走 IPv4 会连不上，
+    // 内网其他机器也没法访问调试端口
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
     proxy: {
