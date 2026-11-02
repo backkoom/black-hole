@@ -288,10 +288,12 @@ paths:
       operationId: createOrg
       summary: 新增组织节点
       description: |
-        level 由父节点推导（parent.level + 1），上限 4 层。
+        level 由父节点推导（parent.level + 1），**不设固定层级上限**
+        （业务上限由服务端 MAX_ORG_LEVEL 控制，默认 32；客户交付后可自行建到 6 级、10 级）。
         path = 父 path + id + /。同一 parent 下 name 唯一（重复 422）。
         sort 取同级 max+1（空同级为 0）。
         根节点只有一个，不能通过 API 新增第二个根。
+        新增子节点时，若父节点已挂人员，父节点必须先被清空人员——否则父节点不再是末级，422。
       tags: [组织]
       x-permission: 管理员
       x-errors: [400, 401, 403, 422]
@@ -338,7 +340,7 @@ paths:
         改名、移动、调整排序。
         移动：不能移动到自身或子孙下（422）；根节点不可移动；
         移动后在同一事务里更新整棵子树的 path 和 level；
-        移动/新增后整棵子树 level 不得超过 4（超过 422）；
+        移动/新增后整棵子树的 level 不得超过服务端 MAX_ORG_LEVEL（默认 32，超过 422）；
         **有人员的节点必须是末级（无子节点）**，移动后若不再是无子节点则 422，
         要求先把人员移到新的末级节点。
       tags: [组织]
@@ -1708,8 +1710,9 @@ components:
         parentId: { type: integer, nullable: true }
         level:
           type: integer
-          enum: [1, 2, 3, 4]
-          description: 1=集团 2=公司 3=部门 4=末级（科室/班组）。上限 4 层（D-07）。
+          minimum: 1
+          maximum: 32
+          description: '根为 1，每级 +1。**不设固定层级上限**：业务上限由服务端 MAX_ORG_LEVEL 控制（默认 32），客户可自行建到任意层级（D-07）'
         name: { type: string, maxLength: 64 }
         sort: { type: integer }
         userCount:

@@ -12,7 +12,10 @@
 CREATE TABLE org (
   id          bigserial PRIMARY KEY,
   parent_id   bigint REFERENCES org(id),
-  level       smallint NOT NULL CHECK (level BETWEEN 1 AND 4),
+  -- level 的硬边界只防脏数据（负数/异常深），不表达业务层级上限。
+  -- 业务上限由环境变量 MAX_ORG_LEVEL 控制（默认 32），客户交付后可自行建到任意层级，
+  -- 不需要改表、不需要数据迁移。见 docs/contracts/decisions.md D-07。
+  level       smallint NOT NULL CHECK (level BETWEEN 1 AND 32),
   name        varchar(64) NOT NULL,
   path        text NOT NULL,
   sort        int NOT NULL DEFAULT 0,

@@ -15,7 +15,12 @@ export type ProjectStatus = 'active' | 'done';
 export interface OrgNode {
   id: number;
   parentId: number | null;
-  level: 1 | 2 | 3 | 4;
+  /**
+   * 层级：根为 1，每级 +1。
+   * **不设固定上限**——业务上限由服务端环境变量 MAX_ORG_LEVEL 控制（默认 32），
+   * 客户交付后可自行建到任意层级，无需改表或数据迁移。见 decisions.md D-07。
+   */
+  level: number;
   name: string;
   sort: number;
   userCount: number;
