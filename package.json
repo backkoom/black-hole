@@ -16,13 +16,14 @@
     "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/web",
     "lint": "eslint .",
     "typecheck": "npm run typecheck -w packages/shared && npm run typecheck -w apps/api && npm run typecheck -w apps/web && tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && npm run db:clean-test",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "migrate": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js up -m \"db/migrations/*.js\" --use-glob",
     "migrate:down": "node --env-file-if-exists=.env node_modules/node-pg-migrate/bin/node-pg-migrate.js down -m \"db/migrations/*.js\" --use-glob -f",
     "seed": "tsx db/seed.ts",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:clean-test": "tsx scripts/clean-test-data.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
