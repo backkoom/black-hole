@@ -17,7 +17,8 @@ import { join } from 'node:path';
  *    2. 已登录状态访问 /login 会被直接弹到改密页，登录表单根本不渲染 → 先 clearCookies()
  */
 
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/(\w:)/,'$1/');
+import { fileURLToPath } from 'node:url';
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = join(ROOT, 'docs', 'screenshots');
 mkdirSync(OUT, { recursive: true });
 

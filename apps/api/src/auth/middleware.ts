@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ApiError, forbidden, unauthorized } from '../lib/errors.js';
+import { ERROR_MESSAGES } from '@workbench/shared/errors';
 import { parseCookieHeader, hashSessionToken } from '../lib/session.js';
 import { resolveSession, type SessionContext } from './service.js';
 import { getConfig } from '../config.js';
@@ -77,6 +78,15 @@ export async function requireSession(req: FastifyRequest): Promise<SessionContex
 export async function requireActiveSession(req: FastifyRequest): Promise<SessionContext> {
   const session = await requireSession(req);
   checkMustChange(req, session);
+  return session;
+}
+
+/** 要求管理员（role=admin，含超级管理员） */
+export async function requireAdmin(req: FastifyRequest): Promise<SessionContext> {
+  const session = await requireActiveSession(req);
+  if (session.user.role !== 'admin') {
+    throw forbidden(ERROR_MESSAGES.NO_PERMISSION);
+  }
   return session;
 }
 

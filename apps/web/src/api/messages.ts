@@ -1,4 +1,5 @@
 import { ERROR_MESSAGES } from '@workbench/shared/errors';
+import { ApiError } from './client';
 
 /**
  * 前端固定文案。
@@ -21,3 +22,16 @@ export const NETWORK_ERROR = '网络连接失败，请检查网络后重试';
 
 /** 兜底文案。 */
 export const REQUEST_FAILED = '请求失败，请稍后重试';
+
+/**
+ * 统一取错误文案：服务端返回的 message 原样透传，不改写；
+ * 非 ApiError（网络异常等）才用兜底文案。
+ */
+export function errorText(err: unknown): string {
+  return err instanceof ApiError ? err.message : REQUEST_FAILED;
+}
+
+/** 取 HTTP 状态码（非 ApiError 记为 0，便于按 403/404/409/413/422/500 分支处理）。 */
+export function errorStatus(err: unknown): number {
+  return err instanceof ApiError ? err.status : 0;
+}

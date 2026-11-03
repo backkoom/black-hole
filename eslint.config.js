@@ -18,8 +18,8 @@ export default tseslint.config(
     },
   },
   {
-    // Node 侧脚本（目前只有迁移包装器 .js）
-    files: ['**/*.js'],
+    // Node 侧脚本（目前只有迁移包装器 .js 与截图脚本 .mjs）
+    files: ['**/*.js', '**/*.mjs'],
     rules: {
       'no-undef': 'off',
       'no-console': 'off',

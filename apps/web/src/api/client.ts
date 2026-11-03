@@ -33,6 +33,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+/** FormData 不能手写 Content-Type —— 少了 multipart 的 boundary 会被服务端拒绝。 */
+function isFormData(body: BodyInit | null | undefined): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -40,7 +45,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       credentials: 'include',
       ...init,
       headers:
-        init?.body === undefined
+        init?.body === undefined || isFormData(init.body)
           ? init?.headers
           : { 'Content-Type': 'application/json', ...init?.headers },
     });
@@ -95,4 +100,43 @@ export function apiPut<T>(path: string, body?: unknown): Promise<T> {
     method: 'PUT',
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+export function apiDelete<T>(path: string): Promise<T> {
+  return request<T>(path, { method: 'DELETE' });
+}
+
+/** multipart 表单提交（导入 CSV 用）。不设 Content-Type，交给浏览器带 boundary。 */
+export function apiPostForm<T>(path: string, form: FormData): Promise<T> {
+  return request<T>(path, { method: 'POST', body: form });
+}
+
+/**
+ * 下载文件流 —— 响应不是统一 JSON 包装（如 GET /api/users/import/template 返回 text/csv）。
+ * 失败时服务端仍返回统一 JSON 错误体，message 原样透传。
+ */
+export async function apiBlob(path: string): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { credentials: 'include' });
+  } catch {
+    throw new ApiError(0, 0, '网络连接失败，请检查网络后重试');
+  }
+
+  if (!response.ok) {
+    let text = `请求失败（HTTP ${response.status}）`;
+    let code = response.status;
+    try {
+      const raw: unknown = await response.json();
+      if (isRecord(raw)) {
+        if (typeof raw.message === 'string' && raw.message) text = raw.message;
+        if (typeof raw.code === 'number') code = raw.code;
+      }
+    } catch {
+      // 错误体不是 JSON：保留状态码兜底文案
+    }
+    throw new ApiError(response.status, code, text);
+  }
+
+  return response.blob();
 }

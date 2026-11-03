@@ -218,3 +218,194 @@
 .wb-login-alert {
   margin-bottom: 16px;
 }
+
+/* ================= Phase 2：组织架构页 / 账号管理页 ================= */
+
+/* 页面头：标题 + 右侧主操作 */
+.wb-page-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.wb-page-head-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* 全宽内容卡片（区别于表单用的 .wb-card 窄版） */
+.wb-card-flat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.wb-card-flat .ant-card-body {
+  padding: 16px;
+}
+
+/* 弱化文字 */
+.wb-muted {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 组织架构页：左树 + 右详情 */
+.wb-org-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.wb-org-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.wb-crumb {
+  font-size: 12.5px;
+}
+
+.wb-stat-row {
+  display: flex;
+  gap: 26px;
+}
+
+/* 组织树 */
+.wb-tree {
+  font-size: 13px;
+}
+
+.wb-tree .ant-tree-node-content-wrapper {
+  padding: 2px 4px;
+}
+
+.wb-tree-title {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.wb-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-tree-count {
+  margin-inline-start: auto;
+}
+
+.wb-tree-actions {
+  display: inline-flex;
+  gap: 0;
+  align-items: center;
+}
+
+.wb-tree-actions .ant-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+}
+
+.wb-tree-actions .ant-btn:hover {
+  color: var(--primary);
+}
+
+/* 管理员视角提示条（虚线边） */
+.wb-hint {
+  margin-top: 14px;
+  border: 1px dashed #cdd8ea;
+  border-radius: 10px;
+  background: #fbfcff;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* 表格：表头底色与行 hover */
+.wb-table .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wb-table .ant-table-tbody > tr:hover > td {
+  background: #fafcff;
+}
+
+/* 筛选栏 */
+.wb-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.wb-filter-item {
+  width: 220px;
+}
+
+/* 表单补充说明 */
+.wb-form-hint {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* 一次性初始密码 */
+.wb-onetime-field {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.wb-onetime-label {
+  flex: 0 0 72px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* 导入弹窗 */
+.wb-import-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.wb-import-label {
+  flex: 0 0 56px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.wb-import-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wb-import-block {
+  margin-bottom: 16px;
+}
+
+.wb-import-block-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+

@@ -35,7 +35,8 @@ export async function leafOrgId(): Promise<number> {
     'SELECT id FROM org WHERE NOT EXISTS (SELECT 1 FROM org c WHERE c.parent_id = org.id) ORDER BY id LIMIT 1',
   );
   if (!row) throw new Error('组织树为空：先跑 npm run seed');
-  return row.id;
+  // pg 默认把 bigint 返回成字符串，必须转成 number 才能过 zod 的 z.number() 校验
+  return Number(row.id);
 }
 
 /** 确保测试账号存在，返回 account */
@@ -89,4 +90,58 @@ export async function failedAttempts(account: string): Promise<number> {
     [account],
   );
   return row?.failed_attempts ?? -1;
+}
+
+/** 删除一个账号及其全部关联数据（layout → workspace → session → app_user 顺序，外键要求） */
+export async function deleteUserCascade(account: string): Promise<void> {
+  await query(
+    `DELETE FROM workspace_layout
+      WHERE workspace_id IN (
+        SELECT id FROM workspace
+         WHERE user_id IN (SELECT id FROM app_user WHERE account = $1))`,
+    [account],
+  );
+  await query(
+    'DELETE FROM workspace WHERE user_id IN (SELECT id FROM app_user WHERE account = $1)',
+    [account],
+  );
+  await query('DELETE FROM session WHERE user_id IN (SELECT id FROM app_user WHERE account = $1)', [
+    account,
+  ]);
+  await query('DELETE FROM app_user WHERE account = $1', [account]);
+}
+
+/**
+ * 把数据库恢复到「只有种子数据」的状态。
+ *
+ * 测试之间共享同一个开发库，任何一个用例造的账号/组织节点都会漏到下一个用例，
+ * 导致 userCount、账号总数这类断言被污染 —— **每个测试文件都要在 beforeEach 调它**。
+ *
+ * 保留：admin + user01~user07 + 6 个种子组织节点 + 模板 workspace。
+ */
+export async function cleanTestData(): Promise<void> {
+  await query(
+    `DELETE FROM workspace_layout
+      WHERE workspace_id IN (
+        SELECT ws.id FROM workspace ws
+         WHERE ws.user_id IN (SELECT id FROM app_user
+                               WHERE account <> 'admin' AND account NOT LIKE 'user0%')
+           )`,
+  );
+  await query(
+    `DELETE FROM workspace
+      WHERE user_id IN (SELECT id FROM app_user
+                         WHERE account <> 'admin' AND account NOT LIKE 'user0%')`,
+  );
+  await query(
+    `DELETE FROM session
+      WHERE user_id IN (SELECT id FROM app_user
+                         WHERE account <> 'admin' AND account NOT LIKE 'user0%')`,
+  );
+  await query("DELETE FROM app_user WHERE account <> 'admin' AND account NOT LIKE 'user0%'");
+  // 非种子的组织节点（测试建的临时节点）。按名字保留种子的 6 个 —— 仅测试库用。
+  await query(
+    `DELETE FROM org
+      WHERE name NOT IN ('示例集团','示例研究院','示例事业部','示例中心','示例部门','示例小组')`,
+  );
 }

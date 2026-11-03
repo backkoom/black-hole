@@ -6,10 +6,13 @@ import { ChangePasswordPage } from './pages/ChangePassword';
 import { ForbiddenPage } from './pages/Forbidden';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
+import { OrgPage } from './pages/OrgPage';
 import { Placeholder } from './pages/Placeholder';
+import { UsersPage } from './pages/UsersPage';
 
 /**
  * 路由表 —— 页面清单固定 10 个路由（pages.md §页面清单），Phase 1 未实现的页面指向占位内容。
+ * Phase 2 起 /settings/org（组织架构）与 /settings/users（账号管理）是真实页面。
  * 另加 /403 与 /404 两个全局错误页。
  *
  * 守卫：
@@ -55,7 +58,7 @@ export const router = createBrowserRouter([
                 path: 'settings/users',
                 element: (
                   <RequireAdmin>
-                    <Placeholder title="账号管理" subtitle="账号、角色与批量导入正在迭代。" />
+                    <UsersPage />
                   </RequireAdmin>
                 ),
               },
@@ -63,7 +66,7 @@ export const router = createBrowserRouter([
                 path: 'settings/org',
                 element: (
                   <RequireAdmin>
-                    <Placeholder title="组织架构" subtitle="组织树与人员归属正在迭代。" />
+                    <OrgPage />
                   </RequireAdmin>
                 ),
               },

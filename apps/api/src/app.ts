@@ -6,6 +6,8 @@ import { ZodError } from 'zod';
 import { ApiError } from './lib/errors.js';
 import { checkMustChange, checkSameOrigin, getSession, sendApiError } from './auth/middleware.js';
 import { registerAuthRoutes } from './auth/routes.js';
+import { registerOrgRoutes } from './org/routes.js';
+import { registerUserRoutes } from './users/routes.js';
 import { getConfig } from './config.js';
 
 /**
@@ -33,6 +35,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       fileSize: 2 * 1024 * 1024, // 导入单文件 2MB —— 必须显式设置，不用默认值
       files: 1,
     },
+    // ⚠️ 不要开 attachFieldsToBody：它会先消费掉 multipart 流，
+    // 导致 req.file() 返回 null（导入接口取不到文件）。
+    // 导入路由改用 req.parts() 自己收字段与文件。
   });
 
   // Origin/Referer 同源校验放在最前（D-05）；随后是 must_change 全局拦截
@@ -92,6 +97,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await registerAuthRoutes(app);
+  await registerOrgRoutes(app);
+  await registerUserRoutes(app);
 
   return app;
 }
