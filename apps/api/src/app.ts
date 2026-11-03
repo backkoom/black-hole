@@ -12,6 +12,7 @@ import { registerWorkspaceRoutes } from './workspace/routes.js';
 import { registerTaskRoutes } from './tasks/routes.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { registerStatsRoutes } from './stats/routes.js';
+import { registerIdeaRoutes } from './ideas/routes.js';
 import { getConfig } from './config.js';
 
 /**
@@ -107,6 +108,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerTaskRoutes(app);
   await registerProjectRoutes(app);
   await registerStatsRoutes(app);
+  await registerIdeaRoutes(app);
 
   return app;
 }

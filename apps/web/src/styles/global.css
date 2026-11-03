@@ -409,7 +409,7 @@
   font-weight: 600;
 }
 
-/* ================= Phase 3：工作台 / 工作台模板 ================= */
+/* ================= Phase 5：工作台编辑器 / 12 个模块 / 配置面板 ================= */
 
 /* 页头标题行：标题 + 重命名按钮 */
 .wb-page-title-row {
@@ -428,6 +428,14 @@
 
 .wb-page-title-row .ant-btn:hover {
   color: var(--primary);
+}
+
+/* 页头右侧操作区（编辑/预览切换 + 保存） */
+.wb-page-head-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-left: auto;
 }
 
 /* 指标卡行（一行 4 个） */
@@ -463,6 +471,22 @@
   margin-top: 3px;
   color: var(--muted);
   font-size: 11.5px;
+}
+
+/* 指标卡整体失败（骨架屏超时 / 接口失败）：一张卡横跨整行 */
+.wb-metrics-failed {
+  display: block;
+}
+
+.wb-metric-error {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  font-size: 12.5px;
 }
 
 /* 编辑器：画布 + 右侧模块库；预览态只留画布 */
@@ -511,6 +535,7 @@
 
 /* 模块卡片：宽度与高度由 span 决定，高度由行高和 gap 自动算 */
 .wb-module {
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -524,6 +549,31 @@
   box-shadow: 0 4px 14px rgba(28, 40, 70, 0.07);
 }
 
+/* 拖拽中的原卡片：半透明，让拖影更清楚 */
+.wb-module.is-dragging {
+  opacity: 0.35;
+}
+
+/* 从模块库拖入时的插入位置提示 */
+.wb-module.is-drop-before::before,
+.wb-module.is-drop-after::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--primary);
+  content: '';
+}
+
+.wb-module.is-drop-before::before {
+  left: -10px;
+}
+
+.wb-module.is-drop-after::after {
+  right: -10px;
+}
+
 .wb-module-head {
   display: flex;
   gap: 8px;
@@ -531,14 +581,36 @@
   padding: 12px 16px 0;
 }
 
+/* 拖动手柄（22×22 / 圆角 6px / 白底半透明，visual-baseline §3.1） */
+.wb-module-grip {
+  display: inline-flex;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--muted);
+  cursor: move;
+  touch-action: none;
+}
+
+.wb-module-grip:hover {
+  color: var(--text-2);
+}
+
 .wb-module-title {
   display: flex;
   gap: 8px;
   align-items: center;
   min-width: 0;
+  overflow: hidden;
   color: var(--text);
   font-size: 13.5px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .wb-module-icon {
@@ -553,22 +625,22 @@
   font-size: 12px;
 }
 
-/* 尺寸徽标：让布局可见，Phase 5 才支持拖拽缩放 */
-.wb-module-size {
+/* 标题栏右侧的编辑 / 删除 / 尺寸徽标 */
+.wb-module-tools {
+  display: flex;
+  gap: 2px;
+  align-items: center;
   margin-left: auto;
+}
+
+/* 尺寸徽标：让布局可见（编辑态可见，预览态隐藏） */
+.wb-module-size {
+  margin-left: 4px;
   padding: 0 7px;
   border-radius: 8px;
   background: #f2f4f8;
   color: var(--muted);
   font-size: 10.5px;
-}
-
-.wb-module-tag {
-  padding: 0 6px;
-  border-radius: 7px;
-  background: #f2f4f8;
-  color: var(--muted);
-  font-size: 10px;
 }
 
 .wb-module-body {
@@ -578,26 +650,393 @@
   padding: 10px 16px 14px;
 }
 
-.wb-module-empty {
-  color: var(--muted);
-  font-size: 12.5px;
+/* 缩放手柄：右下角 16×16，内部 8×8 L 形边（visual-baseline §3.1） */
+.wb-module-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
 }
 
-.wb-module-entries {
+.wb-module-resize::after {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #c3cddd;
+  border-bottom: 2px solid #c3cddd;
+  content: '';
+}
+
+.wb-module-resize:hover::after {
+  border-color: var(--primary);
+}
+
+/* 拖拽跟手层 */
+.wb-drag-overlay {
+  padding: 6px 12px;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28);
+  pointer-events: none;
+}
+
+/* 模块通用三态 */
+.wb-module-loading {
+  padding-top: 2px;
+}
+
+.wb-module-failure {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+
+.wb-module-failure-title {
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wb-module-failure-text {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.wb-module-empty-box {
+  padding: 6px 0;
+}
+
+/* 今日待办 */
+.wb-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.wb-module-entries li {
-  padding: 4px 10px;
+.wb-todo-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.wb-todo-list li.is-done .wb-todo-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.wb-todo-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 项目进度 */
+.wb-project-scroll {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.wb-project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 38px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.wb-project-name {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-project-percent {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* 日历（只做周视图） */
+.wb-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-calendar-day {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.wb-calendar-date {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+
+.wb-calendar-date:hover {
+  border-color: var(--border);
+  background: #f7f9fc;
+}
+
+.wb-calendar-weekday {
+  font-weight: 600;
+}
+
+.wb-calendar-daynum {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-calendar-tasks {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-calendar-tasks.is-empty {
+  color: var(--muted);
+}
+
+/* 数据报表 */
+.wb-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wb-stats-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+/* 灵感记录 */
+.wb-idea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.wb-idea-input {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.wb-idea-input .ant-input-affix-wrapper,
+.wb-idea-input > .ant-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wb-idea-input .ant-btn {
+  flex: 0 0 auto;
+}
+
+.wb-idea-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.wb-idea-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f2f5f9;
+}
+
+.wb-idea-content {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-idea-time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* 快速入口 */
+.wb-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wb-quick-item {
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 4px;
   border-radius: 9px;
   background: var(--primary-soft);
   color: var(--primary);
   font-size: 12px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.wb-quick-item:hover {
+  background: #e2ebff;
+}
+
+/* 文本卡片 */
+.wb-text-module {
+  height: 100%;
+  overflow: auto;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wb-text-title {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* 公告通知 */
+.wb-notice {
+  height: 100%;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--primary-soft);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wb-notice.is-warning {
+  background: #fff5e6;
+  color: #a1620a;
+}
+
+.wb-notice-title {
+  margin-bottom: 3px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wb-notice.is-warning .wb-notice-title {
+  color: #b45309;
+}
+
+/* 链接列表 */
+.wb-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.wb-links-list a {
+  color: var(--primary);
+  font-size: 12.5px;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.wb-links-list a:hover {
+  text-decoration: underline;
+}
+
+/* 嵌入内容 */
+.wb-embed-frame {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+/* 图片墙 */
+.wb-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.wb-gallery-item {
+  margin: 0;
+}
+
+.wb-gallery-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f2f4f8;
+}
+
+.wb-gallery-item figcaption {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 模块库（右侧，5 分类；占位模块置灰带「迭代」角标） */
@@ -634,11 +1073,26 @@
   border: 1px solid transparent;
   border-radius: 9px;
   text-align: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.wb-library-item:hover {
+  border-color: var(--border);
+  background: #f7f9fc;
 }
 
 .wb-library-item.is-unavailable {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.wb-library-item.is-added {
+  opacity: 0.75;
+}
+
+.wb-library-item.is-dragging {
+  opacity: 0.4;
 }
 
 .wb-library-icon {
@@ -668,6 +1122,45 @@
   background: #f2f4f8;
   color: var(--muted);
   font-size: 10px;
+}
+
+/* 配置面板里的列表行 */
+.wb-config-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 0 8px;
+  align-items: end;
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+
+.wb-config-row .ant-form-item {
+  grid-column: 1;
+  margin-bottom: 8px;
+}
+
+.wb-config-row .ant-form-item:last-of-type {
+  margin-bottom: 0;
+}
+
+.wb-config-row .ant-btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+/* 配置面板的根级校验错误 */
+.wb-config-error {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid #fca5a5;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12.5px;
 }
 
 /* ================= Phase 4：任务管理 / 项目管理 ================= */
