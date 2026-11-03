@@ -92,6 +92,86 @@ export async function failedAttempts(account: string): Promise<number> {
   return row?.failed_attempts ?? -1;
 }
 
+/**
+ * 把「工作台模板」恢复成标准的 4 个模块。
+ *
+ * workspace.test.ts 里「管理员改模板」这类用例会改模板内容，
+ * 同一文件的后续用例（以及别的文件）依赖「模板 4 模块」这个前提，
+ * 所以每个测试前都要恢复 —— 否则会出现「expected 2 to be 4」这种看着莫名其妙的失败。
+ */
+export async function resetTemplateState(): Promise<void> {
+  await query("DELETE FROM workspace_layout WHERE workspace_id IN (SELECT id FROM workspace WHERE kind = 'template')");
+  await query(
+    `INSERT INTO workspace_layout (workspace_id, module_key, sort, w, h, config)
+     SELECT ws.id, t.module_key, t.sort, t.w, t.h, t.config::jsonb
+       FROM workspace ws
+       CROSS JOIN (VALUES
+         ('todo', 0, 6, 4, '{}'),
+         ('project-progress', 1, 6, 4, '{}'),
+         ('quick-entry', 2, 3, 4, $1),
+         ('idea', 3, 3, 4, '{}')
+       ) AS t(module_key, sort, w, h, config)
+      WHERE ws.kind = 'template'`,
+    [
+      JSON.stringify({
+        items: [
+          { label: '项目', url: '/projects' },
+          { label: '任务', url: '/tasks' },
+          { label: '灵感', url: '/workspace' },
+          { label: '设置', url: '/settings/profile' },
+        ],
+      }),
+    ],
+  );
+}
+
+/**
+ * 把 admin 的工作台恢复成模板副本（4 个模块）。
+ *
+ * workspace.test.ts 用 admin 登录保存布局，会把 admin 的工作台改成 1~2 个模块 ——
+ * 这**污染了种子状态**（截图里能看出画布只剩一个模块）。每个测试前恢复。
+ */
+export async function resetAdminWorkspace(): Promise<void> {
+  const admin = await queryOne<{ id: number }>('SELECT id FROM app_user WHERE account = $1', [
+    'admin',
+  ]);
+  if (!admin) return;
+  // 按 workspace 精确取；没有就跳过（不能无条件 INSERT，会撞 uq_layout_module）
+  const ws = await queryOne<{ id: number }>(
+    "SELECT id FROM workspace WHERE user_id = $1 AND kind = 'user'",
+    [Number(admin.id)],
+  );
+  if (!ws) return;
+  const workspaceId = Number(ws.id);
+
+  await query('DELETE FROM workspace_layout WHERE workspace_id = $1', [workspaceId]);
+  await query(
+    `INSERT INTO workspace_layout (workspace_id, module_key, sort, w, h, config)
+     SELECT $1, t.module_key, t.sort, t.w, t.h, t.config::jsonb
+       FROM (VALUES
+         ('todo', 0, 6, 4, '{}'),
+         ('project-progress', 1, 6, 4, '{}'),
+         ('quick-entry', 2, 3, 4, $2),
+         ('idea', 3, 3, 4, '{}')
+       ) AS t(module_key, sort, w, h, config)`,
+    [
+      workspaceId,
+      JSON.stringify({
+        items: [
+          { label: '项目', url: '/projects' },
+          { label: '任务', url: '/tasks' },
+          { label: '灵感', url: '/workspace' },
+          { label: '设置', url: '/settings/profile' },
+        ],
+      }),
+    ],
+  );
+  // 名称也恢复成种子值
+  await query("UPDATE workspace SET name = '我的工作台', subtitle = NULL WHERE user_id = $1", [
+    Number(admin.id),
+  ]);
+}
+
 /** 删除一个账号及其全部关联数据（layout → workspace → session → app_user 顺序，外键要求） */
 export async function deleteUserCascade(account: string): Promise<void> {
   await query(

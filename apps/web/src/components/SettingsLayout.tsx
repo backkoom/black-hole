@@ -14,7 +14,8 @@ interface SettingsNavItem {
 /**
  * 设置页左侧子导航 —— pages.md §App Shell：个人资料、修改密码；
  * 管理员追加账号管理、组织架构、工作台模板。
- * Phase 2 起「账号管理」「组织架构」是真实页面；「个人资料」「工作台模板」仍是迭代中。
+ * Phase 2 起「账号管理」「组织架构」是真实页面；Phase 3 起「工作台模板」也是真实页面；
+ * 「个人资料」仍是迭代中。
  */
 export function SettingsLayout() {
   const { isAdmin } = useAuth();
@@ -31,7 +32,7 @@ export function SettingsLayout() {
       list.push(
         { key: '/settings/users', label: '账号管理' },
         { key: '/settings/org', label: '组织架构' },
-        { key: '/settings/workspace-template', label: '工作台模板', disabled: true },
+        { key: '/settings/workspace-template', label: '工作台模板' },
       );
     }
     return list;

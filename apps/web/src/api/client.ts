@@ -18,12 +18,18 @@ export interface ApiEnvelope<T> {
 export class ApiError extends Error {
   readonly status: number;
   readonly code: number;
+  /**
+   * 失败响应体里的 data（如 409 冲突时带服务端当前 version 与 items）。
+   * 成功响应没有这个字段，只有失败时才可能存在。
+   */
+  readonly data?: unknown;
 
-  constructor(status: number, code: number, message: string) {
+  constructor(status: number, code: number, message: string, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -73,13 +79,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       response.status,
       envelope?.code ?? response.status,
       envelope?.message || `请求失败（HTTP ${response.status}）`,
+      envelope?.data,
     );
   }
   if (!envelope) {
     throw new ApiError(response.status, response.status, '服务返回了无法解析的响应');
   }
   if (envelope.code !== 0) {
-    throw new ApiError(response.status, envelope.code, envelope.message || '请求失败');
+    throw new ApiError(response.status, envelope.code, envelope.message || '请求失败', envelope.data);
   }
   return envelope.data;
 }

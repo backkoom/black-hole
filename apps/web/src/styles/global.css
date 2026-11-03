@@ -409,3 +409,264 @@
   font-weight: 600;
 }
 
+/* ================= Phase 3：工作台 / 工作台模板 ================= */
+
+/* 页头标题行：标题 + 重命名按钮 */
+.wb-page-title-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wb-page-title-row .wb-page-title {
+  margin-bottom: 0;
+}
+
+.wb-page-title-row .ant-btn {
+  color: var(--muted);
+}
+
+.wb-page-title-row .ant-btn:hover {
+  color: var(--primary);
+}
+
+/* 指标卡行（一行 4 个） */
+.wb-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.wb-metric {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.wb-metric-label {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.wb-metric-value {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+}
+
+.wb-metric-note {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 编辑器：画布 + 右侧模块库；预览态只留画布 */
+.wb-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 252px;
+  gap: 16px;
+  align-items: start;
+}
+
+.wb-editor.is-preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 画布外框：虚线边框 + 纵向留白 */
+.wb-canvas-box {
+  min-height: 480px;
+  padding: 16px 0;
+  border: 1px dashed #cdd7e8;
+  border-radius: var(--radius);
+  background: #fbfcfe;
+}
+
+/* 画布栅格：12 列 / 行高 72px / 列间距 16px / 左右内边距 24px（执行包 §7.6 固定值） */
+.wb-canvas {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  grid-auto-rows: 72px;
+  padding: 0 24px;
+  align-content: start;
+}
+
+.wb-canvas-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0 94px;
+}
+
+.wb-canvas-empty-text {
+  color: #aab5c9;
+  font-size: 13.5px;
+}
+
+/* 模块卡片：宽度与高度由 span 决定，高度由行高和 gap 自动算 */
+.wb-module {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--card);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.wb-module:hover {
+  box-shadow: 0 4px 14px rgba(28, 40, 70, 0.07);
+}
+
+.wb-module-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px 0;
+}
+
+.wb-module-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.wb-module-icon {
+  display: inline-flex;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+}
+
+/* 尺寸徽标：让布局可见，Phase 5 才支持拖拽缩放 */
+.wb-module-size {
+  margin-left: auto;
+  padding: 0 7px;
+  border-radius: 8px;
+  background: #f2f4f8;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.wb-module-tag {
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #f2f4f8;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.wb-module-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 16px 14px;
+}
+
+.wb-module-empty {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.wb-module-entries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-module-entries li {
+  padding: 4px 10px;
+  border-radius: 9px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+}
+
+/* 模块库（右侧，5 分类；占位模块置灰带「迭代」角标） */
+.wb-library {
+  position: sticky;
+  top: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.wb-library-head {
+  margin-bottom: 4px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wb-library-group-title {
+  margin: 10px 4px 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.wb-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.wb-library-item {
+  padding: 10px 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  text-align: center;
+}
+
+.wb-library-item.is-unavailable {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wb-library-icon {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 5px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.wb-library-name {
+  display: block;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.wb-library-tag {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #f2f4f8;
+  color: var(--muted);
+  font-size: 10px;
+}
+

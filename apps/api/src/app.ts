@@ -8,6 +8,7 @@ import { checkMustChange, checkSameOrigin, getSession, sendApiError } from './au
 import { registerAuthRoutes } from './auth/routes.js';
 import { registerOrgRoutes } from './org/routes.js';
 import { registerUserRoutes } from './users/routes.js';
+import { registerWorkspaceRoutes } from './workspace/routes.js';
 import { getConfig } from './config.js';
 
 /**
@@ -99,6 +100,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerAuthRoutes(app);
   await registerOrgRoutes(app);
   await registerUserRoutes(app);
+  await registerWorkspaceRoutes(app);
 
   return app;
 }

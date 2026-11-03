@@ -9,10 +9,13 @@ import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { Placeholder } from './pages/Placeholder';
 import { UsersPage } from './pages/UsersPage';
+import { WorkspacePage } from './pages/WorkspacePage';
+import { WorkspaceTemplatePage } from './pages/WorkspaceTemplatePage';
 
 /**
- * 路由表 —— 页面清单固定 10 个路由（pages.md §页面清单），Phase 1 未实现的页面指向占位内容。
- * Phase 2 起 /settings/org（组织架构）与 /settings/users（账号管理）是真实页面。
+ * 路由表 —— 页面清单固定 10 个路由（pages.md §页面清单）。
+ * Phase 2 起 /settings/org（组织架构）与 /settings/users（账号管理）是真实页面；
+ * Phase 3 起 /workspace（工作台）与 /settings/workspace-template（工作台模板）也是真实页面。
  * 另加 /403 与 /404 两个全局错误页。
  *
  * 守卫：
@@ -32,7 +35,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/workspace" replace /> },
           {
             path: 'workspace',
-            element: <Placeholder title="我的工作台" subtitle="指标卡、模块编辑器与预览正在迭代。" />,
+            element: <WorkspacePage />,
           },
           {
             path: 'tasks',
@@ -74,7 +77,7 @@ export const router = createBrowserRouter([
                 path: 'settings/workspace-template',
                 element: (
                   <RequireAdmin>
-                    <Placeholder title="工作台模板" subtitle="默认模板编辑正在迭代。" />
+                    <WorkspaceTemplatePage />
                   </RequireAdmin>
                 ),
               },
