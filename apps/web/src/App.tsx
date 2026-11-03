@@ -8,6 +8,9 @@ import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { Placeholder } from './pages/Placeholder';
+import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { TasksPage } from './pages/TasksPage';
 import { UsersPage } from './pages/UsersPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { WorkspaceTemplatePage } from './pages/WorkspaceTemplatePage';
@@ -15,7 +18,8 @@ import { WorkspaceTemplatePage } from './pages/WorkspaceTemplatePage';
 /**
  * 路由表 —— 页面清单固定 10 个路由（pages.md §页面清单）。
  * Phase 2 起 /settings/org（组织架构）与 /settings/users（账号管理）是真实页面；
- * Phase 3 起 /workspace（工作台）与 /settings/workspace-template（工作台模板）也是真实页面。
+ * Phase 3 起 /workspace（工作台）与 /settings/workspace-template（工作台模板）也是真实页面；
+ * Phase 4 起 /tasks、/projects、/projects/:id（任务与项目管理）也是真实页面。
  * 另加 /403 与 /404 两个全局错误页。
  *
  * 守卫：
@@ -39,15 +43,15 @@ export const router = createBrowserRouter([
           },
           {
             path: 'tasks',
-            element: <Placeholder title="任务管理" subtitle="任务列表、筛选与状态流转正在迭代。" />,
+            element: <TasksPage />,
           },
           {
             path: 'projects',
-            element: <Placeholder title="项目管理" subtitle="项目卡片、进度与详情页正在迭代。" />,
+            element: <ProjectsPage />,
           },
           {
             path: 'projects/:id',
-            element: <Placeholder title="项目详情" subtitle="项目详情与任务联动正在迭代。" />,
+            element: <ProjectDetailPage />,
           },
           {
             element: <SettingsLayout />,

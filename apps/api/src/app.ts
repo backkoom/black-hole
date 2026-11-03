@@ -9,6 +9,9 @@ import { registerAuthRoutes } from './auth/routes.js';
 import { registerOrgRoutes } from './org/routes.js';
 import { registerUserRoutes } from './users/routes.js';
 import { registerWorkspaceRoutes } from './workspace/routes.js';
+import { registerTaskRoutes } from './tasks/routes.js';
+import { registerProjectRoutes } from './projects/routes.js';
+import { registerStatsRoutes } from './stats/routes.js';
 import { getConfig } from './config.js';
 
 /**
@@ -101,6 +104,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerOrgRoutes(app);
   await registerUserRoutes(app);
   await registerWorkspaceRoutes(app);
+  await registerTaskRoutes(app);
+  await registerProjectRoutes(app);
+  await registerStatsRoutes(app);
 
   return app;
 }

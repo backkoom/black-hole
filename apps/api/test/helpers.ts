@@ -188,6 +188,13 @@ export async function deleteUserCascade(account: string): Promise<void> {
   await query('DELETE FROM session WHERE user_id IN (SELECT id FROM app_user WHERE account = $1)', [
     account,
   ]);
+  // ⚠️ task / project 也引用 app_user，必须先删
+  await query('DELETE FROM task WHERE user_id IN (SELECT id FROM app_user WHERE account = $1)', [
+    account,
+  ]);
+  await query('DELETE FROM project WHERE user_id IN (SELECT id FROM app_user WHERE account = $1)', [
+    account,
+  ]);
   await query('DELETE FROM app_user WHERE account = $1', [account]);
 }
 
@@ -218,6 +225,10 @@ export async function cleanTestData(): Promise<void> {
       WHERE user_id IN (SELECT id FROM app_user
                          WHERE account <> 'admin' AND account NOT LIKE 'user0%')`,
   );
+  // ⚠️ task 与 project 也引用 app_user，**必须先删它们**，
+  // 否则 DELETE app_user 会撞 project_user_id_fkey 外键，整个 beforeEach 失败。
+  await query('DELETE FROM task');
+  await query('DELETE FROM project');
   await query("DELETE FROM app_user WHERE account <> 'admin' AND account NOT LIKE 'user0%'");
   // 非种子的组织节点（测试建的临时节点）。按名字保留种子的 6 个 —— 仅测试库用。
   await query(

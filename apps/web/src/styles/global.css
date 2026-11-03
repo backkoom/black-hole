@@ -670,3 +670,148 @@
   font-size: 10px;
 }
 
+/* ================= Phase 4：任务管理 / 项目管理 ================= */
+
+/* 任务状态标签：行内可点开改状态 */
+.wb-status-tag {
+  margin-inline-end: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 时间范围快捷筛选（今日 / 逾期 / 本周） */
+.wb-filter-due {
+  flex: 0 0 auto;
+}
+
+.wb-task-status-cell {
+  display: flex;
+  gap: 2px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 区块小标题（项目详情页的「项目任务」） */
+.wb-section-title {
+  margin-bottom: 10px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* 返回按钮（项目详情页） */
+.wb-back-button {
+  margin-bottom: 2px;
+  padding-inline-start: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.wb-back-button:hover {
+  color: var(--primary);
+}
+
+/* 项目卡片网格 */
+.wb-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.wb-project-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.wb-project-card:hover {
+  border-color: #cdd8ea;
+  box-shadow: 0 4px 14px rgba(28, 40, 70, 0.07);
+}
+
+.wb-project-card-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.wb-project-card-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-project-card-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.wb-project-card-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.wb-project-card-link {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+/* 进度条 */
+.wb-progress {
+  margin-bottom: 4px;
+}
+
+.wb-progress .ant-progress-text {
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+
+.wb-progress-large .ant-progress-text {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.wb-progress-percent {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 项目列表分页 */
+.wb-project-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* 项目详情头部 */
+.wb-project-detail-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.wb-project-detail-count {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+/* 任务表卡片 */
+.wb-task-card {
+  margin-top: 14px;
+}
+
