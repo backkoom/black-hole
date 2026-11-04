@@ -17,9 +17,11 @@ APP_DIR="/data/workbench"
 ENV_DIR="/etc/workbench"
 ENV_FILE="$ENV_DIR/api.env"
 TARBALL="/tmp/workbench-release.tar.gz"
-PKG_URL="http://pkg-host.internal:8899/wb-pkg.tar.gz"
+# ⚠️ 默认用占位值 —— 公开仓库里不写死任何内网 IP
+PKG_URL="${PKG_URL:-http://pkg-host.internal:8899/wb-pkg.tar.gz}"
 SERVICE="workbench-api"
-ORIGIN="http://192.168.102.102"
+# ⚠️ 默认用占位值 —— 用 ORIGIN=... 覆盖
+ORIGIN="${ORIGIN:-http://workbench.example.internal}"
 DB_NAME="workbench"
 DB_USER="workbench"
 SVC_USER="workbench"
@@ -29,6 +31,10 @@ warn() { echo -e "\033[0;33m[注意]\033[0m $*"; }
 die()  { echo -e "\033[0;31m[失败]\033[0m $*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "请用 root 运行（sudo bash /tmp/one-shot.sh）"
+
+# 可用环境变量覆盖：ORIGIN（站点地址）、PKG_URL（发布包下载地址）
+echo "站点地址   ：$ORIGIN"
+echo "发布包来源 ：$PKG_URL"
 
 # ---------------------------------------------------------------------------
 # 0. 前置检查
@@ -48,7 +54,7 @@ log "1/9 下载发布包"
 if [ ! -f "$TARBALL" ] || [ "$(stat -c%s "$TARBALL")" -lt 100000 ]; then
   log "从 $PKG_URL 下载"
   curl -fL --retry 3 --connect-timeout 15 -o "$TARBALL" "$PKG_URL" \
-    || die "下载失败。检查：1) 本机 pkg-host.internal:8899 的 HTTP 服务是否还在跑 2) 防火墙是否放行 8899"
+    || die "下载失败。检查：1) 本机 PKG_HOST:8899 的 HTTP 服务是否还在跑 2) 防火墙是否放行 8899"
 fi
 ls -lh "$TARBALL"
 

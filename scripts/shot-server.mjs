@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +14,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = join(ROOT, 'docs', 'screenshots');
 mkdirSync(OUT, { recursive: true });
 
-const BASE = process.argv[2] ?? 'http://192.168.102.102';
+// ⚠️ 默认用占位地址 —— 公开仓库里不写死任何内网 IP
+const BASE = process.argv[2] ?? 'http://localhost:8080';
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({
