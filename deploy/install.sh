@@ -8,12 +8,12 @@
 #
 # 幂等：重复执行安全。升级流程 = 解包新包 → 跑迁移 → 重启 → 冒烟。
 #
-# 备份：每次安装前把当前版本存到 /opt/workbench/.releases/<时间戳>/，
+# 备份：每次安装前把当前版本存到 /data/workbench/.releases/<时间戳>/，
 #       出问题可按 deploy/README.md 的回滚步骤切回。
 # ==============================================================================
 set -euo pipefail
 
-APP_DIR="/opt/workbench"
+APP_DIR="/data/workbench"
 RELEASE_DIR="$APP_DIR/.releases"
 TARBALL=""
 SKIP_MIGRATE=0
@@ -67,7 +67,8 @@ tar -xzf "$TARBALL" -C "$WORK"
 SRC="$(find "$WORK" -maxdepth 1 -mindepth 1 -type d | head -1)"
 [ -n "$SRC" ] || die "发布包结构异常：找不到顶层目录"
 
-mkdir -p "$APP_DIR"
+# /data 是独立挂载盘，若不存在则创建（挂载点通常已存在，父目录需要建）
+mkdir -p "$(dirname "$APP_DIR")" "$APP_DIR"
 rm -rf "$APP_DIR/apps" "$APP_DIR/db"
 cp -r "$SRC/apps" "$APP_DIR/"
 cp -r "$SRC/db"    "$APP_DIR/"

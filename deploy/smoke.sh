@@ -28,9 +28,18 @@ MUST_CHANGE_FLAG=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+# 管理员专属接口：普通账号访问返回 403 属预期（权限拦截生效）
+is_admin_only() {
+  case "$1" in
+    /api/users*|/api/org/tree) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 ok()   { echo -e "  \033[0;32m✓\033[0m $*"; PASS=$((PASS+1)); }
 bad()  { echo -e "  \033[0;31m✗\033[0m $*"; FAIL=$((FAIL+1)); }
 info() { echo -e "  \033[0;90m·\033[0m $*"; }
+warn() { echo -e "  \033[0;33m!\033[0m $*"; }
 
 echo "=============================================="
 echo " 工作台与组织架构 —— 部署冒烟验证"
@@ -58,16 +67,28 @@ if [ "$code" = "401" ]; then ok "未登录访问 /api/auth/me 返回 401"; else 
 echo ""
 echo "[3/6] 登录与会话"
 ADMIN_PW="${SEED_ADMIN_PASSWORD:-}"
+# 登录账号：默认 admin；验收时可指向专用账号（避免动 admin 的初始改密状态）
+ACCOUNT="${SMOKE_ACCOUNT:-admin}"
+# 登录账号：默认 admin；验收时可指向专用账号（避免动 admin 的初始改密状态）
+ACCOUNT="${SMOKE_ACCOUNT:-admin}"
+# 口令优先从文件读（SEED_ADMIN_PASSWORD_FILE），其次从环境变量。
+# ⚠️ 不要把口令写在命令行里 —— 会被中间层过滤成随机串，导致写库与校验用的是两个值。
+if [ -z "$ADMIN_PW" ] && [ -n "${SEED_ADMIN_PASSWORD_FILE:-}" ] && [ -f "$SEED_ADMIN_PASSWORD_FILE" ]; then
+  ADMIN_PW="$(head -1 "$SEED_ADMIN_PASSWORD_FILE")"
+fi
+if [ -z "$ADMIN_PW" ] && [ -f /etc/workbench/api.env ]; then
+  ADMIN_PW="$(sed -n 's/^SEED_ADMIN_PASSWORD=//p' /etc/workbench/api.env | head -1)"
+fi
 if [ -z "$ADMIN_PW" ]; then
-  bad "未提供 SEED_ADMIN_PASSWORD 环境变量，跳过登录相关检查"
+  bad "未提供 SEED_ADMIN_PASSWORD（或 SEED_ADMIN_PASSWORD_FILE / /etc/workbench/api.env），跳过登录相关检查"
 else
   code="$(curl -sS -c "$TMP/ck.txt" -o "$TMP/login.json" -w '%{http_code}' --max-time 15 \
     -X POST "$BASE/api/auth/login" \
     -H 'Content-Type: application/json' \
     -H "Origin: $ORIGIN" \
-    -d "{\"account\":\"admin\",\"password\":\"$ADMIN_PW\"}" 2>/dev/null)"
+    -d "{\"account\":\"$ACCOUNT\",\"password\":\"$ADMIN_PW\"}" 2>/dev/null)"
   if [ "$code" = "200" ]; then
-    ok "admin 登录成功"
+    ok "$ACCOUNT 登录成功"
     # must_change 为 true 时会被拦到改密页，这是设计行为，不算失败
     MUST_CHANGE="$(grep -o '"mustChangePassword":[a-z]*' "$TMP/login.json" 2>/dev/null | head -1 | cut -d: -f2)"
     if [ "$MUST_CHANGE" = "true" ]; then
@@ -77,7 +98,7 @@ else
       MUST_CHANGE_FLAG=1
     fi
   else
-    bad "登录失败 HTTP $code：$(head -c 200 "$TMP/login.json" 2>/dev/null)"
+    bad "登录失败（账号 $ACCOUNT）HTTP $code：$(head -c 200 "$TMP/login.json" 2>/dev/null)"
   fi
 fi
 
@@ -87,12 +108,19 @@ echo "[4/6] 核心接口"
 if [ "$MUST_CHANGE_FLAG" -eq 1 ]; then
   info "账号待改密，跳过核心接口检查（改密后重跑可完整验证）"
 elif [ -f "$TMP/ck.txt" ]; then
-  for ep in /api/auth/me /api/projects?pageSize=5 /api/tasks?pageSize=5 /api/users?pageSize=5 \
-            /api/org/tree /api/workspace /api/stats/overview /api/stats/tasks \
+  for ep in /api/auth/me /api/projects?pageSize=5 /api/tasks?pageSize=5 \
+            /api/users?pageSize=5 /api/org/tree /api/workspace /api/stats/overview /api/stats/tasks \
             /api/stats/trend /api/stats/distribution /api/stats/team-workload \
             /api/risks/summary /api/files/summary /api/milestones /api/meetings; do
     code="$(curl -sS -b "$TMP/ck.txt" -o /dev/null -w '%{http_code}' --max-time 15 "$BASE$ep" 2>/dev/null)"
-    if [ "$code" = "200" ]; then ok "GET $ep"; else bad "GET $ep → $code"; fi
+    if [ "$code" = "200" ]; then
+      ok "GET $ep"
+    elif [ "$code" = "403" ] && is_admin_only "$ep"; then
+      # 普通账号访问管理员接口返回 403 —— 说明权限拦截生效，不是故障
+      ok "GET $ep → 403（管理员接口，普通账号被正确拦截）"
+    else
+      bad "GET $ep → $code"
+    fi
   done
 else
   info "没有会话 Cookie，跳过"

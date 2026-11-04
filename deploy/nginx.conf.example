@@ -61,12 +61,15 @@ server {
                application/x-javascript text/xml application/xml image/svg+xml;
 
     # --- 静态资源（带 hash，可以长缓存）---
-    root /opt/workbench/apps/web/dist;
+    root /data/workbench/apps/web/dist;
     index index.html;
 
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "same-origin" always;
         try_files $uri =404;
     }
 
@@ -86,6 +89,9 @@ server {
         try_files $uri $uri/ /index.html;
         # index.html 不缓存，否则前端发版后用户拿到旧壳
         add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "same-origin" always;
     }
 
     # --- 源码映射文件不对外（生产不该暴露）---

@@ -11,7 +11,7 @@
           │  https://<域名>
           ▼
     ┌───────────┐        静态文件 + SPA 回退
-    │   nginx   │◄────── /opt/workbench/apps/web/dist
+    │   nginx   │◄────── /data/workbench/apps/web/dist
     │  :443     │
     └─────┬─────┘
           │  /api/*  （同源反代）
@@ -40,8 +40,8 @@ nginx -v
 
 # 建服务账号与目录（不要用 root 跑服务）
 sudo useradd -r -s /usr/sbin/nologin workbench
-sudo mkdir -p /opt/workbench /etc/workbench
-sudo chown workbench:workbench /opt/workbench
+sudo mkdir -p /data/workbench /etc/workbench
+sudo chown workbench:workbench /data/workbench
 
 # 防火墙：只放行 80/443，不要把 3000 暴露到外网
 sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
@@ -109,7 +109,7 @@ sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz   # 重跑
 ## 3. 配置 nginx
 
 ```bash
-sudo cp /opt/workbench/deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
+sudo cp /data/workbench/deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
 sudo vi /etc/nginx/conf.d/workbench.conf      # 改 server_name / 证书路径
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -132,7 +132,7 @@ sudo nginx -t && sudo systemctl reload nginx
 ```bash
 sudo -u workbench bash -c '
   set -a; . /etc/workbench/api.env; set +a
-  cd /opt/workbench && npx tsx db/seed.ts
+  cd /data/workbench && npx tsx db/seed.ts
 '
 ```
 
@@ -145,7 +145,7 @@ sudo -u workbench bash -c '
 ## 5. 验收
 
 ```bash
-bash /opt/workbench/scripts/smoke.sh https://<你的域名>
+bash /data/workbench/scripts/smoke.sh https://<你的域名>
 ```
 
 脚本逐项检查并输出通过/失败：
@@ -164,7 +164,7 @@ bash /opt/workbench/scripts/smoke.sh https://<你的域名>
 
 ```bash
 # 直连 API 排查用（跳过前端与安全头检查）
-bash /opt/workbench/scripts/smoke.sh http://127.0.0.1:3000 --direct
+bash /data/workbench/scripts/smoke.sh http://127.0.0.1:3000 --direct
 ```
 
 ---
@@ -186,17 +186,17 @@ bash scripts/package-release.sh
 scp dist-release/workbench-release-*.tar.gz <user>@<host>:/tmp/
 # 服务器
 sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz
-bash /opt/workbench/scripts/smoke.sh https://<域名>
+bash /data/workbench/scripts/smoke.sh https://<域名>
 ```
 
-`install.sh` 幂等，重复跑安全。每次安装前自动备份到 `/opt/workbench/.releases/<时间戳>/`（保留最近 5 个）。
+`install.sh` 幂等，重复跑安全。每次安装前自动备份到 `/data/workbench/.releases/<时间戳>/`（保留最近 5 个）。
 
 ### 回滚
 
 ```bash
 sudo systemctl stop workbench-api
-sudo cp -r /opt/workbench/.releases/<时间戳>/apps /opt/workbench/
-sudo cp -r /opt/workbench/.releases/<时间戳>/db    /opt/workbench/
+sudo cp -r /data/workbench/.releases/<时间戳>/apps /data/workbench/
+sudo cp -r /data/workbench/.releases/<时间戳>/db    /data/workbench/
 sudo systemctl start workbench-api
 ```
 

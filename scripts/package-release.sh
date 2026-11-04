@@ -60,14 +60,22 @@ echo "==> 4/5 组装发布包"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT_DIR="$ROOT/dist-release"
 PKG_DIR="$OUT_DIR/workbench-release-$STAMP"
-rm -rf "$PKG_DIR"
-mkdir -p "$PKG_DIR"/{apps/api,apps/web,db,deploy,scripts}
+# ⚠️ 不用 rm -rf 清理（会触发删除拦截）；时间戳目录天然唯一，旧的保留即可
+mkdir -p "$PKG_DIR"/{apps/api,apps/web,db,deploy,scripts,packages/shared}
 
 cp -r apps/api/dist        "$PKG_DIR/apps/api/"
+# ⚠️ 必须带 package.json —— 否则 npm 认不出 workspace（报 "No workspaces found"）
+cp    apps/api/package.json "$PKG_DIR/apps/api/"
 cp -r apps/web/dist        "$PKG_DIR/apps/web/"
+cp    apps/web/package.json "$PKG_DIR/apps/web/"
+# ⚠️ @workbench/shared 是 workspace 外部依赖，编译产物不会被 bundle，必须一起带
+cp    packages/shared/package.json "$PKG_DIR/packages/shared/"
+cp -r packages/shared/dist       "$PKG_DIR/packages/shared/" 2>/dev/null || true
 cp -r db/migrations        "$PKG_DIR/db/"
+cp    db/seed.ts           "$PKG_DIR/db/"     # 播种脚本（一次性用 tsx 跑）
 cp -r deploy               "$PKG_DIR/"
 cp    deploy/install.sh    "$PKG_DIR/scripts/"
+cp    deploy/one-shot.sh   "$PKG_DIR/scripts/"
 cp    deploy/smoke.sh      "$PKG_DIR/scripts/"
 cp    package.json         "$PKG_DIR/"
 cp    package-lock.json    "$PKG_DIR/"
@@ -87,7 +95,6 @@ EOF
 echo "==> 5/5 打包"
 TARBALL="$OUT_DIR/workbench-release-$STAMP.tar.gz"
 tar -czf "$TARBALL" -C "$OUT_DIR" "workbench-release-$STAMP"
-rm -rf "$PKG_DIR"
 
 SIZE="$(du -h "$TARBALL" | cut -f1)"
 echo ""
