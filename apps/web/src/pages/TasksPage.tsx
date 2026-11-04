@@ -215,7 +215,7 @@ export function TasksPage() {
 
   const metricCards = [
     { label: '全部任务', value: taskCounts.total, color: designVars.primary, icon: <CheckSquareOutlined /> },
-    { label: '进行中', value: taskCounts.doing, color: designVars.green, icon: <ScheduleOutlined /> },
+    { label: '进行中', value: taskCounts.doing, color: designVars.statusDoing, icon: <ScheduleOutlined /> },
     { label: '待处理', value: taskCounts.todo, color: designVars.orange, icon: <ClockCircleOutlined /> },
     { label: '已完成', value: taskCounts.done, color: designVars.purple, icon: <CheckCircleOutlined /> },
   ];

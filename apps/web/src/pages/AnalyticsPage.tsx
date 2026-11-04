@@ -243,7 +243,7 @@ export function AnalyticsPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 18, marginTop: 6 }}>
                   <LegendItem color={designVars.primary} name="任务总数" />
-                  <LegendItem color={designVars.green} name="已完成" />
+                  <LegendItem color={designVars.statusDone} name="已完成" />
                   <LegendItem color={designVars.orange} name="待完成" />
                 </div>
               </StateBlock>
@@ -364,8 +364,8 @@ export function AnalyticsPage() {
                 <div className="wb-status-chart">
                   <DonutChart
                     segments={[
-                      { name: '已完成', value: taskCounts?.done ?? 0, color: designVars.green },
-                      { name: '进行中', value: taskCounts?.doing ?? 0, color: designVars.primary },
+                      { name: '已完成', value: taskCounts?.done ?? 0, color: designVars.statusDone },
+                      { name: '进行中', value: taskCounts?.doing ?? 0, color: designVars.statusDoing },
                       { name: '待处理', value: taskCounts?.todo ?? 0, color: designVars.orange },
                     ]}
                     centerValue={totalTasks}
@@ -374,8 +374,8 @@ export function AnalyticsPage() {
                     thickness={16}
                   />
                   <div className="wb-status-legend">
-                    <LegendItem color={designVars.green} name="已完成" value={taskCounts?.done ?? 0} />
-                    <LegendItem color={designVars.primary} name="进行中" value={taskCounts?.doing ?? 0} />
+                    <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts?.done ?? 0} />
+                    <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts?.doing ?? 0} />
                     <LegendItem color={designVars.orange} name="待处理" value={taskCounts?.todo ?? 0} />
                   </div>
                 </div>

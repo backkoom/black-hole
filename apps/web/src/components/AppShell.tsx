@@ -104,7 +104,7 @@ export function AppShell() {
 
   return (
     <Layout className="wb-layout">
-      <Sider width={designVars.siderWidth} className="wb-sider" theme="dark">
+      <Sider width={designVars.siderWidth} className="wb-sider" theme="light">
         <div className="wb-brand">
           <span className="wb-brand-mark" aria-hidden="true">
             项
@@ -112,7 +112,7 @@ export function AppShell() {
           <span className="wb-brand-name">项目管理</span>
         </div>
         <Menu
-          theme="dark"
+          theme="light"
           mode="inline"
           className="wb-sider-menu"
           selectedKeys={[selectedKey]}

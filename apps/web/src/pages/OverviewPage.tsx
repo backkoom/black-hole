@@ -333,8 +333,8 @@ export function OverviewPage() {
                   <DonutChart
                     segments={[
                       { name: '待处理', value: taskCounts.todo, color: designVars.orange },
-                      { name: '进行中', value: taskCounts.doing, color: designVars.primary },
-                      { name: '已完成', value: taskCounts.done, color: designVars.green },
+                      { name: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
+                      { name: '已完成', value: taskCounts.done, color: designVars.statusDone },
                     ]}
                     centerValue={taskTotal}
                     centerLabel="总任务"
@@ -343,8 +343,8 @@ export function OverviewPage() {
                   />
                   <div className="wb-status-legend">
                     <LegendItem color={designVars.orange} name="待处理" value={taskCounts.todo} />
-                    <LegendItem color={designVars.primary} name="进行中" value={taskCounts.doing} />
-                    <LegendItem color={designVars.green} name="已完成" value={taskCounts.done} />
+                    <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts.doing} />
+                    <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts.done} />
                   </div>
                 </div>
               </StateBlock>

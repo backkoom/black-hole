@@ -106,7 +106,7 @@ function meetingTone(meeting: Meeting): { tone: TagTone; color: string; label: s
     return { tone: 'gray', color: designVars.muted, label: '已结束' };
   }
   if (!Number.isNaN(start) && now >= start) {
-    return { tone: 'blue', color: designVars.primary, label: '进行中' };
+    return { tone: 'green', color: designVars.statusDoing, label: '进行中' };
   }
   return { tone: 'orange', color: designVars.orange, label: '未开始' };
 }

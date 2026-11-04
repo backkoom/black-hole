@@ -18,8 +18,30 @@
   --purple: #8b5cf6;
   --red: #ef4444;
   --radius: 12px;
-  --side: #1c2033;
-  --side-2: #252a40;
+
+  /* 状态语义色 —— 与 styles/theme.ts 的 designVars 保持一致 */
+  --status-todo: #98a1b3;
+  --status-doing: #10b981;
+  --status-review: #f59e0b;
+  --status-done: #8b5cf6;
+  --status-overdue: #ef4444;
+
+  /* 淡色底 */
+  --soft-blue: #eef3ff;
+  --soft-green: #e9f9f1;
+  --soft-orange: #fff4e5;
+  --soft-purple: #f3ecff;
+  --soft-red: #feecec;
+  --soft-gray: #f1f3f7;
+
+  /* 左侧导航 —— 浅色（2026-11-04 由深色改，对齐设计稿） */
+  --side: #ffffff;
+  --side-2: #f4f6fa;
+  --side-active: #e8f1ff;
+  --side-text: #374151;
+  --side-text-active: #2563eb;
+  --side-icon: #9ca3af;
+  --side-border: #e6eaf2;
 }
 
 /* 全局骨架 —— visual-baseline.md §2.1 */
@@ -42,18 +64,52 @@
   margin: 0 auto;
 }
 
-/* 左侧导航 */
+/* 左侧导航 —— 浅色主题 */
 .wb-sider {
   overflow-y: auto;
+  background: var(--side);
+  border-right: 1px solid var(--side-border);
 }
 
 .wb-sider .ant-menu-item,
 .wb-sider .ant-menu-submenu-title {
   font-size: 13px;
+  color: var(--side-text);
 }
 
+/* 未选中：图标灰、文字深灰 */
+.wb-sider .ant-menu-item .anticon {
+  color: var(--side-icon);
+  font-size: 15px;
+}
+
+.wb-sider .ant-menu-item:hover {
+  color: var(--primary);
+}
+
+.wb-sider .ant-menu-item:hover .anticon {
+  color: var(--primary);
+}
+
+/* 选中：淡蓝底 + 蓝字蓝图标 */
 .wb-sider .ant-menu-item-selected {
   font-weight: 600;
+  color: var(--side-text-active);
+  background: var(--side-active);
+}
+
+.wb-sider .ant-menu-item-selected .anticon {
+  color: var(--side-text-active);
+}
+
+/* AntD light 主题下 Menu 默认是白底，这里确保与侧栏同色 */
+.wb-sider .ant-menu {
+  background: transparent;
+  border-inline-end: none;
+}
+
+.wb-sider .ant-menu-item-group-title {
+  color: var(--muted);
 }
 
 .wb-brand {
@@ -71,14 +127,15 @@
   align-items: center;
   justify-content: center;
   border-radius: 9px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: var(--primary);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
 }
 
 .wb-brand-name {
-  color: #fff;
+  /* 侧栏改浅色后，白字会看不见 —— 用正文深色 */
+  color: var(--text);
   font-size: 14.5px;
   font-weight: 700;
   letter-spacing: 0.2px;

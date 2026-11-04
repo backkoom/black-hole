@@ -15,15 +15,47 @@ import { Sparkline } from './charts.js';
  *  - 头像组：圆形堆叠 + 「+N」灰底
  */
 
+export type TagTone = 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'gray';
+
+const TONE_STYLE: Record<TagTone, { bg: string; fg: string }> = {
+  blue: { bg: '#eef3ff', fg: '#2563eb' },
+  green: { bg: '#e9f9f1', fg: '#0f9d58' },
+  orange: { bg: '#fff4e5', fg: '#d97706' },
+  purple: { bg: '#f3ecff', fg: '#7c3aed' },
+  red: { bg: '#feecec', fg: '#e04141' },
+  gray: { bg: '#f1f3f7', fg: '#5b6577' },
+};
+
 const cardShadow = '0 1px 2px rgba(31, 41, 55, 0.04), 0 4px 16px rgba(31, 41, 55, 0.05)';
+
+/**
+ * 语义色 → 色调。
+ *
+ * 用途：指标卡图标默认走「淡底 + 鲜艳图标」（设计稿样式），
+ * 页面只要传 designVars.primary / green / orange / purple / red 这类语义色，
+ * 就能自动匹配到对应的淡色底，不必每个页面手写 iconTone。
+ */
+const ICON_TONE_BY_COLOR: Record<string, TagTone> = {
+  [designVars.primary]: 'blue',
+  [designVars.green]: 'green',
+  [designVars.orange]: 'orange',
+  [designVars.purple]: 'purple',
+  [designVars.red]: 'red',
+  [designVars.muted]: 'gray',
+};
 
 export interface MetricCardProps {
   label: string;
   value: string | number;
   /** 图标（ReactNode），显示在左上彩色方块里 */
   icon?: ReactNode;
-  /** 图标底色，默认主色 */
+  /** 图标底色，默认主色（不传 iconTone 时是纯色底 + 白图标） */
   iconColor?: string;
+  /**
+   * 淡底 + 彩色图标模式（设计稿的指标卡样式）。
+   * 传了就用该色调的淡底 + 前景色图标，忽略 iconColor 的底色。
+   */
+  iconTone?: TagTone;
   /** 涨跌值，正数向上、负数向下；0 不显示 */
   delta?: number;
   /** 迷你折线数据 */
@@ -38,12 +70,16 @@ export function MetricCard({
   value,
   icon,
   iconColor = designVars.primary,
+  iconTone,
   delta,
   trend,
   trendColor,
   hint,
 }: MetricCardProps): JSX.Element {
   const hasDelta = delta !== undefined && delta !== 0;
+  // 未显式指定色调时，按 iconColor 反查 —— 命中就自动用淡色底（设计稿样式）
+  const autoTone = iconTone ?? ICON_TONE_BY_COLOR[iconColor];
+  const toneStyle = autoTone ? TONE_STYLE[autoTone] : null;
   const up = hasDelta && (delta as number) > 0;
 
   return (
@@ -66,8 +102,8 @@ export function MetricCard({
               width: 34,
               height: 34,
               borderRadius: 10,
-              background: iconColor,
-              color: '#fff',
+              background: toneStyle ? toneStyle.bg : iconColor,
+              color: toneStyle ? iconColor : '#fff',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -181,17 +217,6 @@ export function Panel({
   );
 }
 
-export type TagTone = 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'gray';
-
-const TONE_STYLE: Record<TagTone, { bg: string; fg: string }> = {
-  blue: { bg: '#eef3ff', fg: '#2563eb' },
-  green: { bg: '#e9f9f1', fg: '#0f9d58' },
-  orange: { bg: '#fff4e5', fg: '#d97706' },
-  purple: { bg: '#f3ecff', fg: '#7c3aed' },
-  red: { bg: '#feecec', fg: '#e04141' },
-  gray: { bg: '#f1f3f7', fg: '#5b6577' },
-};
-
 /** 彩色小标签 —— 状态/优先级/分类都用它 */
 export function ToneTag({
   tone = 'gray',
@@ -225,17 +250,25 @@ export function ToneTag({
 }
 
 /** 状态 → 色调映射（任务状态、优先级通用） */
+/**
+ * 状态 → 色调映射（2026-11-04 对齐设计稿）。
+ *
+ * 设计稿约定：待开始=灰 / 进行中=绿 / 待审核=橙 / 已完成=紫 / 逾期=红。
+ * 注意「已完成用紫」而不是绿 —— 绿在设计稿里代表「进行中」，
+ * 两者语义相反，不能混。
+ */
 export const STATUS_TONE: Record<string, TagTone> = {
   todo: 'gray',
-  doing: 'blue',
-  done: 'green',
+  doing: 'green',
+  done: 'purple',
   pending: 'gray',
+  review: 'orange',
   handling: 'orange',
-  resolved: 'green',
+  resolved: 'purple',
   active: 'blue',
   high: 'red',
   medium: 'orange',
-  low: 'green',
+  low: 'gray',
   overdue: 'red',
 };
 

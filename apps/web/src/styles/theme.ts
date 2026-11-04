@@ -20,13 +20,34 @@ export const designVars = {
   purple: '#8b5cf6',
   red: '#ef4444',
   radius: 12,
-  /** 左侧导航 */
+
+  /* ── 状态语义色（2026-11-04 对齐设计稿）─────────────────────────
+   * 设计稿的约定：待开始=灰 / 进行中=绿 / 待审核=橙 / 已完成=紫 / 逾期=红。
+   * 语义色与 AntD token 解耦 —— AntD 的 success=green 是「成功」，
+   * 而这里的 green 是「进行中」，两者含义不同，不能混用同一个 token。 */
+  statusTodo: '#98a1b3',
+  statusDoing: '#10b981',
+  statusReview: '#f59e0b',
+  statusDone: '#8b5cf6',
+  statusOverdue: '#ef4444',
+
+  /* 淡色底 —— 指标卡图标底、图表浅色填充 */
+  softBlue: '#eef3ff',
+  softGreen: '#e9f9f1',
+  softOrange: '#fff4e5',
+  softPurple: '#f3ecff',
+  softRed: '#feecec',
+  softGray: '#f1f3f7',
+  /** 左侧导航 —— 2026-11-04 由深色改为浅色（对齐设计稿：白底 + 淡蓝选中） */
   siderWidth: 208,
-  siderBg: '#1c2033',
-  siderHoverBg: '#252a40',
-  siderActiveBg: '#2d3552',
-  siderText: '#9aa3bd',
-  siderTextActive: '#ffffff',
+  siderBg: '#ffffff',
+  siderHoverBg: '#f4f6fa',
+  siderActiveBg: '#e8f1ff',
+  siderText: '#374151',
+  siderTextActive: '#2563eb',
+  siderIcon: '#9ca3af',
+  siderIconActive: '#2563eb',
+  siderBorder: '#e6eaf2',
   /** 设置页左侧子导航 */
   settingsNavWidth: 200,
   /** 顶部栏 */
@@ -77,16 +98,21 @@ export const antdTheme: ThemeConfig = {
       siderBg: designVars.siderBg,
     },
     Menu: {
-      darkItemBg: designVars.siderBg,
-      darkSubMenuItemBg: designVars.siderBg,
-      darkItemColor: designVars.siderText,
-      darkItemHoverBg: designVars.siderHoverBg,
-      darkItemHoverColor: '#dfe4f2',
-      darkItemSelectedBg: designVars.siderActiveBg,
-      darkItemSelectedColor: designVars.siderTextActive,
+      // 浅色侧栏（2026-11-04 改）—— 设计稿是白底淡蓝选中，不是深色
+      itemBg: designVars.siderBg,
+      subMenuItemBg: designVars.siderBg,
+      itemColor: designVars.siderText,
+      itemHoverBg: designVars.siderHoverBg,
+      itemHoverColor: designVars.primary,
+      itemSelectedBg: designVars.siderActiveBg,
+      itemSelectedColor: designVars.siderTextActive,
       itemBorderRadius: 8,
       itemHeight: 38,
       iconSize: 16,
+      iconMarginInlineEnd: 10,
+      itemMarginInline: 8,
+      itemMarginBlock: 2,
+      collapsedWidth: 64,
     },
   },
 };

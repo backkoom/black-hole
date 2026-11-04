@@ -88,10 +88,11 @@ interface ColumnDef {
 }
 
 const COLUMN_DEFS: ColumnDef[] = [
-  { key: 'todo', title: '待开始', color: designVars.muted },
-  { key: 'doing', title: '进行中', color: designVars.primary },
-  { key: 'overdue', title: '已逾期', color: designVars.red },
-  { key: 'done', title: '已完成', color: designVars.green },
+  // 状态语义色（对齐设计稿）：待开始灰 / 进行中绿 / 已逾期红 / 已完成紫
+  { key: 'todo', title: '待开始', color: designVars.statusTodo },
+  { key: 'doing', title: '进行中', color: designVars.statusDoing },
+  { key: 'overdue', title: '已逾期', color: designVars.statusOverdue },
+  { key: 'done', title: '已完成', color: designVars.statusDone },
 ];
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -570,9 +571,9 @@ export function KanbanPage() {
                 <div className="wb-status-chart">
                   <DonutChart
                     segments={[
-                      { name: '待处理', value: stats?.todo ?? 0, color: designVars.orange },
-                      { name: '进行中', value: stats?.doing ?? 0, color: designVars.primary },
-                      { name: '已完成', value: stats?.done ?? 0, color: designVars.green },
+                      { name: '待处理', value: stats?.todo ?? 0, color: designVars.statusReview },
+                      { name: '进行中', value: stats?.doing ?? 0, color: designVars.statusDoing },
+                      { name: '已完成', value: stats?.done ?? 0, color: designVars.statusDone },
                     ]}
                     centerValue={totalTasks}
                     centerLabel="总任务"
@@ -581,8 +582,8 @@ export function KanbanPage() {
                   />
                   <div className="wb-status-legend">
                     <LegendItem color={designVars.orange} name="待处理" value={stats?.todo ?? 0} />
-                    <LegendItem color={designVars.primary} name="进行中" value={stats?.doing ?? 0} />
-                    <LegendItem color={designVars.green} name="已完成" value={stats?.done ?? 0} />
+                    <LegendItem color={designVars.statusDoing} name="进行中" value={stats?.doing ?? 0} />
+                    <LegendItem color={designVars.statusDone} name="已完成" value={stats?.done ?? 0} />
                   </div>
                 </div>
               </StateBlock>
