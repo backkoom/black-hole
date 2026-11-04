@@ -20,7 +20,11 @@ import { thisWeekRange, todayString } from '../lib/serialize.js';
  * D-13：管理员可带 userId 查全员（12 万行聚合，必须有 statement_timeout —— db.ts 已配）。
  */
 
-export async function getOverview(userId: number): Promise<Overview> {
+/**
+ * @param userId 指定看某个人的数据；**undefined 表示全员**
+ *   管理员不传 userId 时统计全员，与任务列表口径一致（否则卡片数字和表格对不上）。
+ */
+export async function getOverview(userId?: number): Promise<Overview> {
   const today = todayString();
   const { start, end } = thisWeekRange();
 
@@ -28,27 +32,29 @@ export async function getOverview(userId: number): Promise<Overview> {
     `SELECT count(*)::text AS total,
             count(*) FILTER (WHERE status = 'done')::text AS done
        FROM task
-      WHERE user_id = $1 AND deleted_at IS NULL AND due_date = $2`,
-    [userId, today],
+      WHERE deleted_at IS NULL AND due_date = $1
+        ${userId !== undefined ? 'AND user_id = $2' : ''}`,
+    userId !== undefined ? [today, userId] : [today],
   );
 
   const doingRow = await queryOne<{ total: string; today: string }>(
     `SELECT count(*)::text AS total,
-            count(*) FILTER (WHERE due_date = $2)::text AS today
+            count(*) FILTER (WHERE due_date = $1)::text AS today
        FROM task
-      WHERE user_id = $1 AND deleted_at IS NULL AND status = 'doing'`,
-    [userId, today],
+      WHERE deleted_at IS NULL AND status = 'doing'
+        ${userId !== undefined ? 'AND user_id = $2' : ''}`,
+    userId !== undefined ? [today, userId] : [today],
   );
 
   const weeklyRow = await queryOne<{ done: string; total: string }>(
     `SELECT count(*) FILTER (WHERE status = 'done')::text AS done,
             count(*)::text AS total
        FROM task
-      WHERE user_id = $1
-        AND deleted_at IS NULL
-        AND due_date <= $2
-        AND (status <> 'done' OR done_at >= $3)`,
-    [userId, end, start],
+      WHERE deleted_at IS NULL
+        AND due_date <= $1
+        AND (status <> 'done' OR done_at >= $2)
+        ${userId !== undefined ? 'AND user_id = $3' : ''}`,
+    userId !== undefined ? [end, start, userId] : [end, start],
   );
 
   const projectRow = await queryOne<{ n: string }>(
@@ -59,11 +65,12 @@ export async function getOverview(userId: number): Promise<Overview> {
                 count(t.id) FILTER (WHERE t.deleted_at IS NULL AND t.status = 'done') AS done
            FROM project p
            LEFT JOIN task t ON t.project_id = p.id
-          WHERE p.user_id = $1 AND p.deleted_at IS NULL
+          WHERE p.deleted_at IS NULL
+            ${userId !== undefined ? 'AND p.user_id = $1' : ''}
           GROUP BY p.id
        ) x
       WHERE x.total = 0 OR x.done < x.total`,
-    [userId],
+    userId !== undefined ? [userId] : [],
   );
 
   const weeklyDone = Number(weeklyRow?.done ?? 0);
@@ -81,14 +88,15 @@ export async function getOverview(userId: number): Promise<Overview> {
   };
 }
 
-export async function getTaskStats(userId: number): Promise<TaskStats> {
+export async function getTaskStats(userId?: number): Promise<TaskStats> {
   const row = await queryOne<{ todo: string; doing: string; done: string }>(
     `SELECT count(*) FILTER (WHERE status = 'todo')::text AS todo,
             count(*) FILTER (WHERE status = 'doing')::text AS doing,
             count(*) FILTER (WHERE status = 'done')::text AS done
        FROM task
-      WHERE user_id = $1 AND deleted_at IS NULL`,
-    [userId],
+      WHERE deleted_at IS NULL
+        ${userId !== undefined ? 'AND user_id = $1' : ''}`,
+    userId !== undefined ? [userId] : [],
   );
   return {
     todo: Number(row?.todo ?? 0),

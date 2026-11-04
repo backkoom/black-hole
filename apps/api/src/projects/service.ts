@@ -28,6 +28,10 @@ interface ProjectRow {
   updated_at: Date;
   total_items: string;
   done_items: string;
+  icon: string | null;
+  color: string | null;
+  phase: string | null;
+  members: string[];
 }
 
 /**
@@ -38,7 +42,14 @@ interface ProjectRow {
 const PROJECT_SELECT = `
 SELECT p.id, p.user_id, p.name, p.owner, p.due_date, p.created_at, p.updated_at,
        COALESCE(agg.total_items, 0) AS total_items,
-       COALESCE(agg.done_items, 0) AS done_items
+       COALESCE(agg.done_items, 0) AS done_items,
+       p.icon, p.color, p.phase,
+       COALESCE((
+         SELECT array_agg(u2.name ORDER BY u2.name)
+           FROM project_member pm
+           JOIN app_user u2 ON u2.id = pm.user_id
+          WHERE pm.project_id = p.id
+       ), '{}') AS members
   FROM project p
   LEFT JOIN (
     SELECT t.project_id,
@@ -65,6 +76,11 @@ function toProject(r: ProjectRow): Project {
     status: totalItems >= 1 && doneItems === totalItems ? 'done' : 'active',
     createdAt: formatTimestamp(r.created_at) as string,
     updatedAt: formatTimestamp(r.updated_at) as string,
+    icon: r.icon,
+    color: r.color,
+    phase: r.phase,
+    members: Array.isArray(r.members) ? r.members : [],
+    memberCount: Array.isArray(r.members) ? r.members.length : 0,
   };
 }
 
@@ -132,7 +148,7 @@ export async function getProjectDetail(projectId: number): Promise<ProjectDetail
       status: t.status,
       priority: t.priority,
       projectName: t.project_name,
-      dueDate: t.due_date,
+      dueDate: formatDate(t.due_date),
       doneAt: formatTimestamp(t.done_at),
       createdAt: formatTimestamp(t.created_at) as string,
       updatedAt: formatTimestamp(t.updated_at) as string,
@@ -144,6 +160,9 @@ export interface CreateProjectInput {
   name: string;
   owner?: string | null;
   dueDate?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  phase?: string | null;
 }
 
 export async function createProject(
@@ -156,8 +175,17 @@ export async function createProject(
     throw unprocessable('负责人不能超过 64 个字符');
   }
   const ins = await queryOne<{ id: number }>(
-    `INSERT INTO project (user_id, name, owner, due_date) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [userId, name, input.owner ?? null, input.dueDate ?? null],
+    `INSERT INTO project (user_id, name, owner, due_date, icon, color, phase)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [
+      userId,
+      name,
+      input.owner ?? null,
+      input.dueDate ?? null,
+      input.icon ?? null,
+      input.color ?? null,
+      input.phase ?? null,
+    ],
   );
   if (!ins) throw notFound('创建失败');
   const row = await queryOne<ProjectRow>(
@@ -172,6 +200,9 @@ export interface UpdateProjectInput {
   name?: string;
   owner?: string | null;
   dueDate?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  phase?: string | null;
 }
 
 /** 归属校验：管理员可改全员；普通用户仅自己 */
@@ -202,6 +233,9 @@ export async function updateProject(
         SET name = COALESCE($2, name),
             owner = CASE WHEN $3::boolean THEN $4 ELSE owner END,
             due_date = CASE WHEN $5::boolean THEN $6 ELSE due_date END,
+            icon = CASE WHEN $7::boolean THEN $8 ELSE icon END,
+            color = CASE WHEN $9::boolean THEN $10 ELSE color END,
+            phase = CASE WHEN $11::boolean THEN $12 ELSE phase END,
             updated_at = now()
       WHERE id = $1`,
     [
@@ -211,6 +245,12 @@ export async function updateProject(
       input.owner ?? null,
       input.dueDate !== undefined,
       input.dueDate ?? null,
+      input.icon !== undefined,
+      input.icon ?? null,
+      input.color !== undefined,
+      input.color ?? null,
+      input.phase !== undefined,
+      input.phase ?? null,
     ],
   );
 

@@ -19,7 +19,8 @@ export async function registerStatsRoutes(app: FastifyInstance): Promise<void> {
     const actor = await requireActiveSession(req);
     const q = querySchema.safeParse(req.query);
     if (!q.success) throw badRequest('查询参数不合法');
-    const userId = actor.user.role === 'admin' ? (q.data.userId ?? actor.user.id) : actor.user.id;
+    // 管理员不传 userId → 统计全员（与任务列表同口径）；普通用户强制只看自己
+    const userId = actor.user.role === 'admin' ? q.data.userId : actor.user.id;
     return ok(reply, await getOverview(userId));
   });
 
@@ -28,7 +29,7 @@ export async function registerStatsRoutes(app: FastifyInstance): Promise<void> {
     const actor = await requireActiveSession(req);
     const q = querySchema.safeParse(req.query);
     if (!q.success) throw badRequest('查询参数不合法');
-    const userId = actor.user.role === 'admin' ? (q.data.userId ?? actor.user.id) : actor.user.id;
+    const userId = actor.user.role === 'admin' ? q.data.userId : actor.user.id;
     return ok(reply, await getTaskStats(userId));
   });
 }

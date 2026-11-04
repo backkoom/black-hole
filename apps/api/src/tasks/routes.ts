@@ -22,6 +22,11 @@ const listQuerySchema = z.object({
   due: z.enum(['today', 'overdue', 'week']).optional(),
   projectId: z.coerce.number().int().positive().optional(),
   status: z.enum(['todo', 'doing', 'done']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  assigneeId: z.coerce.number().int().positive().optional(),
+  category: z.string().min(1).max(32).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   userId: z.coerce.number().int().positive().optional(),
 });
 
@@ -30,6 +35,10 @@ const createSchema = z.object({
   projectId: z.number().int().positive().nullable().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须是 YYYY-MM-DD').nullable().optional(),
+  assigneeId: z.number().int().positive().nullable().optional(),
+  category: z.string().min(1).max(32).nullable().optional(),
+  reminderAt: z.string().datetime().nullable().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
 });
 
 const updateSchema = z.object({
@@ -37,6 +46,10 @@ const updateSchema = z.object({
   projectId: z.number().int().positive().nullable().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须是 YYYY-MM-DD').nullable().optional(),
+  assigneeId: z.number().int().positive().nullable().optional(),
+  category: z.string().min(1).max(32).nullable().optional(),
+  reminderAt: z.string().datetime().nullable().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
 });
 
 const statusSchema = z.object({

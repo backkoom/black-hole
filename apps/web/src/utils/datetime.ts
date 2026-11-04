@@ -81,3 +81,43 @@ export function weekdayLabel(date: string): string {
   const parsed = dayjs(date);
   return parsed.isValid() ? (labels[parsed.day()] ?? '') : '';
 }
+
+/**
+ * 今天的日历日（Asia/Shanghai）—— 统一走东八区，不用浏览器本地时区。
+ */
+export function todayShanghaiDate(): string {
+  return dayjs().tz('Asia/Shanghai').format('YYYY-MM-DD');
+}
+
+/**
+ * 最近 n 天的日历日（升序，最后一个是今天）—— 指标卡的迷你折线图用它取横轴。
+ */
+export function recentShanghaiDates(count: number): string[] {
+  const today = dayjs().tz('Asia/Shanghai').startOf('day');
+  return Array.from({ length: count }, (_, index) =>
+    today.subtract(count - 1 - index, 'day').format('YYYY-MM-DD'),
+  );
+}
+
+/**
+ * 中文长日期 —— 2026年10月20日。
+ * 入参可以是日历日（YYYY-MM-DD）或带时区的时间戳，都会先归一化成东八区日历日。
+ */
+export function formatChineseDate(value: string | null | undefined): string {
+  const calendarDate = toCalendarDate(value);
+  if (!calendarDate) return '—';
+  const parsed = dayjs(calendarDate);
+  return parsed.isValid() ? parsed.format('YYYY年M月D日') : '—';
+}
+
+/**
+ * 中文长日期 + 星期 —— 2026年10月20日 星期一。
+ * 页面顶部的日期用它（东八区）。
+ */
+export function formatChineseDateWithWeekday(value: string | null | undefined): string {
+  const calendarDate = toCalendarDate(value);
+  if (!calendarDate) return '—';
+  const parsed = dayjs(calendarDate);
+  if (!parsed.isValid()) return '—';
+  return `${parsed.format('YYYY年M月D日')} ${weekdayLabel(calendarDate)}`;
+}

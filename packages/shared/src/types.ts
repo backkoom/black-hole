@@ -70,6 +70,17 @@ export interface Task {
   doneAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** 负责人（用户端任务清单列） */
+  assigneeId: number | null;
+  assigneeName: string | null;
+  /** 分类（产品需求/会议/开发…） */
+  category: string | null;
+  /** 提醒时间 */
+  reminderAt: string | null;
+  /** 父任务 id（子任务计数用） */
+  parentId: number | null;
+  /** 子任务数 */
+  subtaskCount: number;
 }
 
 export interface Project {
@@ -84,6 +95,15 @@ export interface Project {
   status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
+  /** 图标标识（模块卡片配色用） */
+  icon: string | null;
+  /** 主题色 */
+  color: string | null;
+  /** 当前阶段 */
+  phase: string | null;
+  /** 成员姓名 */
+  members: string[];
+  memberCount: number;
 }
 
 export interface ProjectDetail {

@@ -24,6 +24,16 @@ export interface TaskListQuery {
   due?: TaskDueFilter;
   projectId?: number;
   status?: TaskStatus;
+  /** 优先级 */
+  priority?: Priority;
+  /** 负责人 */
+  assigneeId?: number;
+  /** 分类 */
+  category?: string;
+  /** 截止日期起（含），YYYY-MM-DD */
+  from?: string;
+  /** 截止日期止（含），YYYY-MM-DD */
+  to?: string;
 }
 
 export interface CreateTaskInput {
@@ -56,6 +66,11 @@ export async function listTasks(query: TaskListQuery): Promise<Paged<Task>> {
   if (query.due) params.set('due', query.due);
   if (query.projectId !== undefined) params.set('projectId', String(query.projectId));
   if (query.status) params.set('status', query.status);
+  if (query.priority) params.set('priority', query.priority);
+  if (query.assigneeId !== undefined) params.set('assigneeId', String(query.assigneeId));
+  if (query.category) params.set('category', query.category);
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
   return apiGet<Paged<Task>>(`/tasks?${params.toString()}`);
 }
 

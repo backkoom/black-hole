@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { SettingsLayout } from './components/SettingsLayout';
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth';
@@ -7,6 +7,7 @@ import { ForbiddenPage } from './pages/Forbidden';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
+import { OverviewPage } from './pages/OverviewPage';
 import { Placeholder } from './pages/Placeholder';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -16,11 +17,24 @@ import { WorkspacePage } from './pages/WorkspacePage';
 import { WorkspaceTemplatePage } from './pages/WorkspaceTemplatePage';
 
 /**
- * 路由表 —— 页面清单固定 10 个路由（pages.md §页面清单）。
- * Phase 2 起 /settings/org（组织架构）与 /settings/users（账号管理）是真实页面；
- * Phase 3 起 /workspace（工作台）与 /settings/workspace-template（工作台模板）也是真实页面；
- * Phase 4 起 /tasks、/projects、/projects/:id（任务与项目管理）也是真实页面。
- * 另加 /403 与 /404 两个全局错误页。
+ * 路由表 —— 用户端 10 个页面 + 管理员功能页。
+ *
+ * 用户端（左侧导航 10 项）：
+ *   /            项目总览
+ *   /kanban      项目看板
+ *   /tasks       任务清单
+ *   /calendar    日程安排
+ *   /progress    进度追踪
+ *   /team        团队协作
+ *   /files       文件资料
+ *   /risks       风险问题
+ *   /analytics   数据统计
+ *   /settings/*  设置（个人资料 / 修改密码 / 账号管理 / 组织架构 / 工作台模板）
+ *
+ * 管理员与高级功能（保留原有实现）：
+ *   /workspace        工作台
+ *   /projects         项目管理
+ *   /projects/:id     项目详情
  *
  * 守卫：
  * - RequireAuth：未登录跳 /login（记住原路由），mustChangePassword 时强制跳 /settings/password；
@@ -36,14 +50,81 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <Navigate to="/workspace" replace /> },
+          { index: true, element: <OverviewPage /> },
+          {
+            path: 'kanban',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="项目看板"
+                subtitle="按看板视图推进任务，拖拽调整状态。"
+              />
+            ),
+          },
+          { path: 'tasks', element: <TasksPage /> },
+          {
+            path: 'calendar',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="日程安排"
+                subtitle="按日期查看任务与提醒分布。"
+              />
+            ),
+          },
+          {
+            path: 'progress',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="进度追踪"
+                subtitle="跟踪项目与任务的完成趋势。"
+              />
+            ),
+          },
+          {
+            path: 'team',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="团队协作"
+                subtitle="查看成员分工与协作动态。"
+              />
+            ),
+          },
+          {
+            path: 'files',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="文件资料"
+                subtitle="集中管理项目相关资料。"
+              />
+            ),
+          },
+          {
+            path: 'risks',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="风险问题"
+                subtitle="登记并跟踪项目风险与问题。"
+              />
+            ),
+          },
+          {
+            path: 'analytics',
+            element: (
+              <Placeholder
+                headerStyle="user"
+                title="数据统计"
+                subtitle="汇总项目与任务的统计视图。"
+              />
+            ),
+          },
           {
             path: 'workspace',
             element: <WorkspacePage />,
-          },
-          {
-            path: 'tasks',
-            element: <TasksPage />,
           },
           {
             path: 'projects',

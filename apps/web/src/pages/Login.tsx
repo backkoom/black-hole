@@ -49,7 +49,7 @@ export function LoginPage() {
         void navigate('/settings/password', { replace: true, state: { from } });
         return;
       }
-      void navigate(from ?? '/workspace', { replace: true });
+      void navigate(from ?? '/', { replace: true });
     },
     onError: (err) => {
       attemptedRef.current = false;
@@ -61,10 +61,10 @@ export function LoginPage() {
     },
   });
 
-  // 已登录访问 /login → 跳 /workspace（登录成功的跳转由上面的 onSuccess 负责）
+  // 已登录访问 /login → 跳项目总览（登录成功的跳转由上面的 onSuccess 负责）
   useEffect(() => {
     if (isLoading || !user || attemptedRef.current) return;
-    void navigate('/workspace', { replace: true });
+    void navigate('/', { replace: true });
   }, [isLoading, user, navigate]);
 
   return (
