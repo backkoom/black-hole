@@ -3,7 +3,14 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/test-results/**'],
+    // ⚠️ dist-release/ 是发布包产物目录（内含旧版源码快照）—— 不该被 lint 扫到
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/coverage/**',
+      '**/test-results/**',
+      '**/dist-release/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
