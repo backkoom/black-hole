@@ -1,0 +1,290 @@
+/**
+ * 项目看板页（用户端 · 稿子图2）—— 只服务 pages/KanbanPage.tsx。
+ *
+ * 布局要点：
+ * - 4 列用 CSS grid `repeat(4, minmax(0, 1fr))`，列宽自适应，
+ *   1440px 下 4 列并排放得下，页面不出现横向滚动条；
+ * - 卡片标题两行截断（-webkit-line-clamp: 2），长标题不会撑宽列；
+ * - 工具条左侧项目 Tabs 可横向滚动，右侧搜索/筛选/按钮固定不换行。
+ */
+
+/* 工具条：Tabs 在左，操作区在右 */
+.wb-kanban-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-kanban-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wb-kanban-tabs .ant-tabs-nav {
+  margin: 0;
+}
+
+.wb-kanban-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.wb-kanban-search {
+  width: 230px;
+  max-width: 100%;
+}
+
+/* Tab 里的项目色点 */
+.wb-kanban-tab {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.wb-kanban-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* 看板主体 */
+.wb-kanban-body {
+  padding: 14px 18px 18px;
+}
+
+/* 4 列并排 */
+.wb-kanban-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* 单列 */
+.wb-kanban-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafd;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wb-kanban-col.is-over {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* 列头：彩色圆点 + 名称 + 数量 */
+.wb-kanban-col-head {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.wb-kanban-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.wb-kanban-col-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wb-kanban-col-count {
+  min-width: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: #e8edf6;
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* 卡片列表 */
+.wb-kanban-cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wb-kanban-col-empty {
+  padding: 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 任务卡片 */
+.wb-kanban-card {
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
+  cursor: grab;
+  touch-action: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wb-kanban-card:hover {
+  border-color: #cdd8ea;
+  box-shadow: 0 4px 14px rgba(28, 40, 70, 0.08);
+}
+
+.wb-kanban-card:active {
+  cursor: grabbing;
+}
+
+.wb-kanban-card-overlay {
+  width: 260px;
+  box-shadow: 0 10px 28px rgba(28, 40, 70, 0.18);
+  cursor: grabbing;
+}
+
+/* 标题两行截断 */
+.wb-kanban-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 项目名 + 分类小标签 */
+.wb-kanban-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+/* 底部：优先级 + 头像 + 截止日 */
+.wb-kanban-card-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wb-kanban-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.wb-kanban-due {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wb-kanban-due.is-overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* 列底「+ 添加任务」 */
+.wb-kanban-add {
+  width: 100%;
+  margin-top: 10px;
+  padding: 7px 0;
+  border: 1px dashed #d3dbe8;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.wb-kanban-add:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.wb-kanban-add:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 行内快速新建 */
+.wb-kanban-quickadd {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* 近期动态 */
+.wb-kanban-activity {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 8px 0;
+}
+
+.wb-kanban-activity + .wb-kanban-activity {
+  border-top: 1px solid #f2f5f9;
+}
+
+.wb-kanban-activity-text {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-kanban-activity-time {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 窄屏收敛：4 列 → 2 列 → 1 列，避免横向滚动条 */
+@media (max-width: 1200px) {
+  .wb-kanban-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .wb-kanban-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wb-kanban-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .wb-kanban-actions {
+    flex-wrap: wrap;
+  }
+}

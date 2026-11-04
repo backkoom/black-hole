@@ -9,6 +9,9 @@ import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { Placeholder } from './pages/Placeholder';
+import { KanbanPage } from './pages/KanbanPage';
+import { ProgressPage } from './pages/ProgressPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -54,11 +57,7 @@ export const router = createBrowserRouter([
           {
             path: 'kanban',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="项目看板"
-                subtitle="按看板视图推进任务，拖拽调整状态。"
-              />
+              <KanbanPage />
             ),
           },
           { path: 'tasks', element: <TasksPage /> },
@@ -75,11 +74,7 @@ export const router = createBrowserRouter([
           {
             path: 'progress',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="进度追踪"
-                subtitle="跟踪项目与任务的完成趋势。"
-              />
+              <ProgressPage />
             ),
           },
           {
@@ -115,11 +110,7 @@ export const router = createBrowserRouter([
           {
             path: 'analytics',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="数据统计"
-                subtitle="汇总项目与任务的统计视图。"
-              />
+              <AnalyticsPage />
             ),
           },
           {

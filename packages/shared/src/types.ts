@@ -161,3 +161,45 @@ export type FieldRuleNote = {
   /** Task.doneAt 与 status 必须一致；done 必有，非 done 必空 */
   doneAtFollowsStatus: true;
 };
+
+/** 用户端「数据统计」页的聚合类型（2026-11-04 批次 2） */
+
+export interface TrendPoint {
+  date: string;
+  label: string;
+  total: number;
+  done: number;
+  pending: number;
+}
+
+export interface TrendResult {
+  days: TrendPoint[];
+}
+
+export interface ProgressBucket {
+  label: string;
+  count: number;
+}
+
+export interface CategoryStat {
+  name: string;
+  count: number;
+  done: number;
+}
+
+export interface TeamMemberWorkload {
+  userId: number;
+  name: string;
+  taskCount: number;
+  doneCount: number;
+  rate: number;
+}
+
+export interface DistributionResult {
+  buckets: ProgressBucket[];
+  categories: CategoryStat[];
+}
+
+export interface TeamWorkloadResult {
+  members: TeamMemberWorkload[];
+}

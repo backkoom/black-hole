@@ -25,7 +25,12 @@ if (!container) throw new Error('缺少 #root 挂载点');
 
 createRoot(container).render(
   <StrictMode>
-    <ConfigProvider locale={zhCN} theme={antdTheme}>
+    {/*
+     * autoInsertSpaceInButton={false} —— AntD 5 默认会在**两个汉字**之间插空格
+     * （按钮「重试」会渲染成「重 试」）。用户端是中文界面，这种空格是显示缺陷，
+     * 这里统一关掉（全局一处设置，所有页面生效）。
+     */}
+    <ConfigProvider locale={zhCN} theme={antdTheme} autoInsertSpaceInButton={false}>
       <AntdApp>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

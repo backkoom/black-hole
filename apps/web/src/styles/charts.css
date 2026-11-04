@@ -1,0 +1,15 @@
+/**
+ * 图表通用修正（用户端「进度追踪」「数据统计」两页共用）。
+ *
+ * 为什么需要：共享的 `components/ui/charts.tsx` 是**只读资产**，不能改。
+ * 它的 LineChart 把最后一个 X 轴标签画在绘图区右边界**正中**（text-anchor=middle），
+ * 而 SVG 根元素默认 `overflow: hidden` —— 于是末尾标签会被裁掉右半截
+ * （例："11/04" 只剩 "11/0"）。
+ *
+ * 修法：让图表 SVG 允许溢出。溢出的部分落在面板自身的 18px 内边距里，
+ * 而 Panel 外层是 `overflow: hidden`，所以既不会撑出横向滚动条，也不会溢出卡片。
+ */
+
+.wb-chart svg {
+  overflow: visible;
+}
