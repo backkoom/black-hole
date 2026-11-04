@@ -31,7 +31,10 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
-  await app.listen({ port: cfg.PORT, host: '0.0.0.0' });
+  // ⚠️ 生产只绑 127.0.0.1（nginx 同源反代）；开发默认 0.0.0.0 方便局域网调试
+  const host = cfg.HOST || (cfg.NODE_ENV === 'development' || cfg.NODE_ENV === 'test' ? '0.0.0.0' : '127.0.0.1');
+  await app.listen({ port: cfg.PORT, host });
+  app.log.info({ port: cfg.PORT, host }, 'listening');
 
   // 会话清理：立即跑一次，之后每 24 小时一次
   const runCleanup = async (): Promise<void> => {

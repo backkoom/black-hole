@@ -28,6 +28,15 @@ const schema = z.object({
    */
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  /**
+   * 监听地址。
+   *
+   * ⚠️ **非开发环境默认只监听 127.0.0.1** —— 由 nginx 做同源反代。
+   * 绑 0.0.0.0 会把 API 端口暴露给整个局域网：绕过 nginx 的所有安全头、
+   * 绕过 IP 白名单，且会话 Cookie 的来源校验也失去意义。
+   * 需要局域网直连调试时，显式设 HOST=0.0.0.0。
+   */
+  HOST: z.string().default(''),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
 
@@ -82,6 +91,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       throw new Error('生产环境 APP_ORIGIN 必须是 https:// 开头');
     }
   }
+  if (cfg.NODE_ENV !== 'development' && cfg.NODE_ENV !== 'test' && !cfg.HOST) {
+    // 走默认：非开发环境绑定回环地址
+    cfg.HOST = '127.0.0.1';
+  }
+
   if (cfg.NODE_ENV === 'staging') {
     // 内网验收：允许 http，但明确告知风险
     if (!cfg.COOKIE_SECURE) {
