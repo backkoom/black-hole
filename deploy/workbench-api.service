@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# workbench-api —— systemd unit 模板
+#
+# 安装：
+#   sudo cp deploy/workbench-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now workbench-api
+#
+# ⚠️ 改完 EnvironmentFile 的路径要同步改这里。
+# ⚠️ 不要把 DATABASE_URL / 口令直接写进本文件 —— 全部走 /etc/workbench/api.env，
+#    权限设 600，属主 root。
+# ==============================================================================
+
+[Unit]
+Description=工作台与组织架构 API (Fastify)
+Documentation=file:///opt/workbench/docs/deployment.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=workbench
+Group=workbench
+
+# 环境变量集中放这一个文件（不进仓库）
+EnvironmentFile=/etc/workbench/api.env
+
+WorkingDirectory=/opt/workbench/apps/api
+ExecStart=/usr/bin/node /opt/workbench/apps/api/dist/server.js
+
+# 重启策略：崩了自动拉起，但 5 分钟内最多 3 次（避免疯狂重启刷日志）
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+# 日志走 journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=workbench-api
+
+# ---- 安全加固 ----
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# 需要写的位置：node_modules 缓存目录（若用 npm ci 一般不需要写）留给 /tmp
+ReadWritePaths=/opt/workbench/logs
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

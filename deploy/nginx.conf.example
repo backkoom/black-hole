@@ -1,0 +1,95 @@
+# ==============================================================================
+# 工作台与组织架构 —— nginx 配置模板
+#
+# 用法：
+#   sudo cp deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# ⚠️ 下文的域名、端口、证书路径要按实际环境改。
+# ==============================================================================
+
+# ---------------------------------------------------------------------------
+# HTTP → HTTPS 跳转
+# ---------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name workbench.example.internal;
+
+    # certbot 续期用；没有证书就把下面两行留空
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 主站
+# ---------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name workbench.example.internal;
+
+    # --- 证书 ---
+    ssl_certificate     /etc/nginx/ssl/workbench.crt;
+    ssl_certificate_key /etc/nginx/ssl/workbench.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # --- 安全响应头 ---
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options    "nosniff" always;
+    add_header X-Frame-Options           "SAMEORIGIN" always;
+    add_header Referrer-Policy           "same-origin" always;
+
+    # 上传限制（账号批量导入单文件 2MB，这里留宽一点）
+    client_max_body_size 4m;
+
+    # --- 压缩 ---
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript
+               application/x-javascript text/xml application/xml image/svg+xml;
+
+    # --- 静态资源（带 hash，可以长缓存）---
+    root /opt/workbench/apps/web/dist;
+    index index.html;
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # --- API 反代到本机 Fastify（保持同源，前端不需要 CORS）---
+    location /api/ {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # --- SPA 回退：前端是 history 路由，任何未命中静态文件的路径都交给 index.html ---
+    location / {
+        try_files $uri $uri/ /index.html;
+        # index.html 不缓存，否则前端发版后用户拿到旧壳
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
+    # --- 源码映射文件不对外（生产不该暴露）---
+    location ~* \.map$ {
+        deny all;
+    }
+}

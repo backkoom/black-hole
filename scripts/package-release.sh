@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# 发布包打包 —— 在**开发机**跑，产出可直接上传到服务器的 tar.gz
+#
+# 用法：
+#   bash scripts/package-release.sh            # 打包到 dist-release/
+#   bash scripts/package-release.sh --skip-test # 跳过测试（不建议）
+#
+# 产出：
+#   dist-release/workbench-release-<时间戳>.tar.gz
+#     ├── apps/api/dist/        后端编译产物
+#     ├── apps/web/dist/        前端静态产物
+#     ├── db/migrations/         数据库迁移
+#     ├── deploy/               systemd / nginx / env 模板
+#     ├── scripts/install.sh    服务器端安装脚本
+#     └── RELEASE.txt           版本信息
+#
+# ⚠️ 不依赖 GitHub —— 服务器上不需要有仓库，这是「上传包」方式。
+# ==============================================================================
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+SKIP_TEST=0
+ASSUME_YES=0
+for arg in "$@"; do
+  case "$arg" in
+    --skip-test) SKIP_TEST=1 ;;
+    --yes|-y) ASSUME_YES=1 ;;
+    *) echo "未知参数：$arg"; exit 1 ;;
+  esac
+done
+
+echo "==> 1/5 校验工作区状态"
+if [ -n "$(git status --porcelain)" ]; then
+  echo "⚠️  工作区有未提交改动："
+  git status --short
+  # 非交互环境（CI / 无人值守）不能等输入，会卡死
+  if [ "$ASSUME_YES" -eq 1 ] || [ ! -t 0 ]; then
+    echo "   非交互模式或已指定 --yes：继续打包（改动会包含进发布包）"
+  else
+    echo "   继续打包会包含这些改动。继续？[y/N]"
+    read -r ans
+    [ "$ans" = "y" ] || { echo "已取消"; exit 1; }
+  fi
+fi
+
+echo "==> 2/5 质量门"
+if [ "$SKIP_TEST" -eq 1 ]; then
+  echo "   ⚠️ 跳过测试（--skip-test）"
+else
+  npm run verify
+fi
+
+echo "==> 3/5 构建"
+npm run build
+
+echo "==> 4/5 组装发布包"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+OUT_DIR="$ROOT/dist-release"
+PKG_DIR="$OUT_DIR/workbench-release-$STAMP"
+rm -rf "$PKG_DIR"
+mkdir -p "$PKG_DIR"/{apps/api,apps/web,db,deploy,scripts}
+
+cp -r apps/api/dist        "$PKG_DIR/apps/api/"
+cp -r apps/web/dist        "$PKG_DIR/apps/web/"
+cp -r db/migrations        "$PKG_DIR/db/"
+cp -r deploy               "$PKG_DIR/"
+cp    deploy/install.sh    "$PKG_DIR/scripts/"
+cp    deploy/smoke.sh      "$PKG_DIR/scripts/"
+cp    package.json         "$PKG_DIR/"
+cp    package-lock.json    "$PKG_DIR/"
+
+cat > "$PKG_DIR/RELEASE.txt" <<EOF
+构建时间：$(date '+%Y-%m-%d %H:%M:%S')
+Git 提交：$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')
+分支：$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')
+Node：$(node -v)
+平台：$(uname -srm)
+EOF
+
+cat > "$PKG_DIR/scripts/package.json" <<'EOF'
+{ "name": "workbench-release", "private": true, "type": "module" }
+EOF
+
+echo "==> 5/5 打包"
+TARBALL="$OUT_DIR/workbench-release-$STAMP.tar.gz"
+tar -czf "$TARBALL" -C "$OUT_DIR" "workbench-release-$STAMP"
+rm -rf "$PKG_DIR"
+
+SIZE="$(du -h "$TARBALL" | cut -f1)"
+echo ""
+echo "✅ 发布包已生成：$TARBALL （$SIZE）"
+echo ""
+echo "下一步："
+echo "  1) scp 到服务器：  scp $TARBALL <user>@<host>:/tmp/"
+echo "  2) 服务器上解包：  sudo bash /tmp/install.sh --tarball /tmp/$(basename "$TARBALL")"
+echo "  3) 冒烟验证：      bash scripts/smoke.sh https://<你的域名>"

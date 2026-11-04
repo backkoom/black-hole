@@ -21,7 +21,12 @@ if (process.env.NODE_ENV !== 'production') {
 const boolish = (v: string | undefined) => v === 'true' || v === '1';
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  /**
+   * staging = 内网验收环境：允许 http、允许 COOKIE_SECURE=false。
+   * ⚠️ 内网服务器常常没有 HTTPS 证书，硬要求 https 会直接挡住部署。
+   * 但 staging **绝不能**用来承载真实业务数据。
+   */
+  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL 必填'),
@@ -75,6 +80,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     if (!cfg.COOKIE_SECURE) throw new Error('生产环境 COOKIE_SECURE 必须为 true');
     if (!cfg.APP_ORIGIN.startsWith('https://')) {
       throw new Error('生产环境 APP_ORIGIN 必须是 https:// 开头');
+    }
+  }
+  if (cfg.NODE_ENV === 'staging') {
+    // 内网验收：允许 http，但明确告知风险
+    if (!cfg.COOKIE_SECURE) {
+      console.warn('[配置警告] staging + COOKIE_SECURE=false：会话 Cookie 会以明文传输，仅限内网验收使用');
     }
   }
   return cfg;
