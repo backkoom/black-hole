@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clearMustChange } from './helpers.js';
+import { clearMustChange, resetAdmin } from './helpers.js';
 
 /**
  * 工作台编辑器 E2E —— 执行包 §9.7「Gate：B1–B10 全部可执行；12 个 active 模块无白屏」。
@@ -55,6 +55,18 @@ function libraryItem(page: Page, name: string) {
 }
 
 test.describe('工作台编辑器', () => {
+  // ⚠️ 跑完必须把 admin 恢复成「必须改密」—— 否则种子状态被留在 false，
+  // 下一个跑这套 E2E 的人会以为强制改密拦截坏了。
+  test.afterAll(async () => {
+    await resetAdmin();
+  });
+
+  // ⚠️ 跑完必须把 admin 恢复成「必须改密」—— 否则种子状态被留在 false，
+  // 下一个跑这套 E2E 的人会以为强制改密拦截坏了。
+  test.afterAll(async () => {
+    await resetAdmin();
+  });
+
   test('B1 新用户首次进入看到模板的 4 个模块', async ({ page }) => {
     await gotoWorkspace(page);
     for (const name of ['今日待办', '项目进度', '快速入口', '灵感记录']) {

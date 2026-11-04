@@ -13,6 +13,9 @@ import { KanbanPage } from './pages/KanbanPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
+import { RisksPage } from './pages/RisksPage';
+import { FilesPage } from './pages/FilesPage';
+import { TeamPage } from './pages/TeamPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -77,31 +80,19 @@ export const router = createBrowserRouter([
           {
             path: 'team',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="团队协作"
-                subtitle="查看成员分工与协作动态。"
-              />
+              <TeamPage />
             ),
           },
           {
             path: 'files',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="文件资料"
-                subtitle="集中管理项目相关资料。"
-              />
+              <FilesPage />
             ),
           },
           {
             path: 'risks',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="风险问题"
-                subtitle="登记并跟踪项目风险与问题。"
-              />
+              <RisksPage />
             ),
           },
           {
