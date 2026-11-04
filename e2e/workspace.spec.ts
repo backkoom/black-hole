@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { clearMustChange } from './helpers.js';
 
 /**
  * 工作台编辑器 E2E —— 执行包 §9.7「Gate：B1–B10 全部可执行；12 个 active 模块无白屏」。
@@ -29,6 +30,8 @@ function adminPassword(): string {
 
 /** 登录并进工作台页 */
 async function gotoWorkspace(page: Page): Promise<void> {
+  // 种子 admin 带「必须改密」标记，登录后会被弹到改密页 —— 进页面的测试要先清掉
+  await clearMustChange();
   await page.request.post('http://localhost:5173/api/auth/login', {
     data: { account: 'admin', password: adminPassword() },
   });
@@ -41,9 +44,14 @@ function card(page: Page, name: string) {
   return page.getByLabel(`${name} 模块`).first();
 }
 
-/** 模块库里的某一项 */
+/**
+ * 模块库里的某一项。
+ * ⚠️ 不能用 getByTitle(name)：库项的 title 属性存的是**状态提示**
+ * （「功能迭代中，暂不可用」/「已在布局中」），不是模块名。
+ * 真实结构：`.wb-library-item` > `.wb-library-name`（模块名）+ `.wb-library-tag`（迭代/已添加）
+ */
 function libraryItem(page: Page, name: string) {
-  return page.locator('.wb-library').getByTitle(name, { exact: true }).first();
+  return page.locator('.wb-library-item').filter({ hasText: name }).first();
 }
 
 test.describe('工作台编辑器', () => {
@@ -60,11 +68,12 @@ test.describe('工作台编辑器', () => {
     for (const cat of ['任务与日程', '快捷入口', '项目与数据', '知识与资料', '个性模块']) {
       await expect(page.locator('.wb-library').getByText(cat, { exact: true })).toBeVisible();
     }
-    // 3 个占位模块带「迭代」角标
+    // 3 个占位模块带「迭代」角标且不可用
     for (const name of ['文件资料', '内容列表', 'AI 助手']) {
       const item = libraryItem(page, name);
       await expect(item).toBeVisible();
       await expect(item.locator('.wb-library-tag')).toHaveText('迭代');
+      await expect(item).toHaveAttribute('aria-disabled', 'true');
     }
   });
 
@@ -164,7 +173,8 @@ test.describe('工作台编辑器', () => {
 
   test('预览态只读：保存按钮禁用、删除按钮消失', async ({ page }) => {
     await gotoWorkspace(page);
-    await page.getByRole('button', { name: /预\s*览/ }).first().click();
+    // 「预览」不是 button，是 AntD Segmented（内部是 radio 角色）
+    await page.locator('.ant-segmented-item').filter({ hasText: '预览' }).click();
     await page.waitForTimeout(500);
 
     await expect(page.getByRole('button', { name: /保\s*存/ }).first()).toBeDisabled();

@@ -51,6 +51,10 @@ async function withPool(fn: (pool: Pool) => Promise<void>): Promise<void> {
  *
  * 必须在**每个测试前后**调用：改密测试会把 admin 的密码真的改掉，
  * 不重置的话后续测试用种子口令登录会 401。
+ *
+ * ⚠️ 这里必须保持 must_change_password = **true** ——
+ * auth.spec.ts 就是靠它验「首次登录强制改密」的拦截。
+ * 需要正常进入页面的测试（如 workspace.spec.ts）要另外调 clearMustChange()。
  */
 export async function resetAdmin(): Promise<void> {
   const env = readEnv();
@@ -67,5 +71,21 @@ export async function resetAdmin(): Promise<void> {
     );
     // 清掉历史会话，保证从干净状态开始
     await pool.query('DELETE FROM session');
+  });
+}
+
+/**
+ * 清掉 admin 的「必须改密」标记。
+ *
+ * ⚠️ 为什么需要它：种子 admin 的 must_change_password=true 是**有意**的，
+ * 登录后会被 onRequest 层强制弹到改密页 —— 那样任何要进页面的 E2E
+ * 都只会看到改密表单（这就是 workspace.spec.ts 之前 7 条全挂的原因）。
+ * 改密流程本身由 auth.spec.ts 验，两者互不影响。
+ */
+export async function clearMustChange(): Promise<void> {
+  await withPool(async (pool) => {
+    await pool.query(
+      "UPDATE app_user SET must_change_password = false WHERE account = 'admin'",
+    );
   });
 }
