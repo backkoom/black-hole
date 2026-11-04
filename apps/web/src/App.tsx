@@ -12,6 +12,7 @@ import { Placeholder } from './pages/Placeholder';
 import { KanbanPage } from './pages/KanbanPage';
 import { ProgressPage } from './pages/ProgressPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { CalendarPage } from './pages/CalendarPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -64,11 +65,7 @@ export const router = createBrowserRouter([
           {
             path: 'calendar',
             element: (
-              <Placeholder
-                headerStyle="user"
-                title="日程安排"
-                subtitle="按日期查看任务与提醒分布。"
-              />
+              <CalendarPage />
             ),
           },
           {

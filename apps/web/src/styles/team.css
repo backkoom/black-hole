@@ -1,0 +1,197 @@
+/**
+ * 团队协作页（老六最终用户端界面 · 图6）的专属样式。
+ *
+ * 单独成文件而不是塞进 global.css：
+ * - global.css 是全局基线，页面私有样式不该污染它；
+ * - 本页的栅格是 12 列里的 8/4/12 混排。
+ */
+
+/* 12 列栅格：间距 18px（与设计稿一致） */
+.wb-team-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+/* 左侧宽（团队成员） */
+.wb-team-8 {
+  grid-column: span 8;
+  min-width: 0;
+}
+
+/* 右侧窄（角色分工） */
+.wb-team-4 {
+  grid-column: span 4;
+  min-width: 0;
+}
+
+/* 通栏（会议纪要） */
+.wb-team-12 {
+  grid-column: span 12;
+  min-width: 0;
+}
+
+/* ================= 团队成员 ================= */
+
+/* 一行成员：头像（含状态点）+ 姓名 + 角色标签 + 所属组织 */
+.wb-team-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 88px minmax(0, 160px);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+}
+
+.wb-team-row + .wb-team-row {
+  border-top: 1px solid #f2f5f9;
+}
+
+/* 头像 + 状态点的容器 */
+.wb-team-avatar {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  justify-content: center;
+}
+
+/* 状态点：取账号状态（接口没有实时在线状态字段） */
+.wb-team-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.wb-team-dot.is-off {
+  background: var(--muted);
+}
+
+.wb-team-dot.is-unknown {
+  background: #cdd5e1;
+}
+
+.wb-team-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-team-role {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.wb-team-org {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================= 降级提示 ================= */
+
+/* 需要管理员权限时的说明块（代替假面板） */
+.wb-team-notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #f2e3b0;
+  border-radius: 9px;
+  background: #fffbe6;
+}
+
+.wb-team-notice-title {
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wb-team-notice-text {
+  margin-top: 4px;
+  color: #8a6d1f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ================= 会议纪要 ================= */
+
+/* 一条纪要：时间 + 标题 / 地点 · 项目 / 备注 */
+.wb-team-minute {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f2f5f9;
+}
+
+.wb-team-minute:last-child {
+  border-bottom: none;
+}
+
+.wb-team-minute-time {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+  white-space: nowrap;
+}
+
+.wb-team-minute-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wb-team-minute-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 地点与项目 */
+.wb-team-minute-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 纪要正文 */
+.wb-team-minute-note {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+/* 窄屏收敛：12 列改成单列，避免出现横向滚动条 */
+@media (max-width: 1200px) {
+  .wb-team-8,
+  .wb-team-4,
+  .wb-team-12 {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 900px) {
+  .wb-team-row {
+    grid-template-columns: 40px minmax(0, 1fr) 88px;
+  }
+
+  .wb-team-org {
+    display: none;
+  }
+}

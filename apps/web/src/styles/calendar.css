@@ -1,0 +1,300 @@
+/**
+ * 日程安排页（用户端 · 稿子图4「日程安排」）—— 只服务 pages/CalendarPage.tsx。
+ *
+ * 布局要点：
+ * - 月历用 CSS grid `repeat(7, minmax(0, 1fr))`，列宽自适应；
+ *   1440px 下 7 列并排放得下，页面不出现横向滚动条；
+ * - 圆点是纯 CSS 小圆点（不引图表库）；
+ * - 时间轴条目用 grid 分配「时间 / 正文 / 状态」三段，长标题两行截断不撑宽列。
+ */
+
+/* ---------- 月历面板 ---------- */
+
+/* 面板头右侧的月切换 */
+.wb-cal-nav {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.wb-cal-month {
+  min-width: 76px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 面板内容区 */
+.wb-cal-body {
+  padding: 12px 18px 16px;
+}
+
+/* 星期表头：周一起始 */
+.wb-cal-weekhead {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.wb-cal-weekhead span {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 月历格子 */
+.wb-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.wb-cal-cell {
+  display: flex;
+  min-width: 0;
+  height: 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 6px 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #f8fafd;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wb-cal-cell:hover {
+  border-color: #cdd8ea;
+  background: var(--primary-soft);
+}
+
+/* 补位格（上月/下月） */
+.wb-cal-cell.is-outside {
+  background: transparent;
+  opacity: 0.45;
+}
+
+/* 今天 */
+.wb-cal-cell.is-today {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.wb-cal-cell.is-today .wb-cal-day {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 当前选中的日子 */
+.wb-cal-cell.is-selected {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.wb-cal-cell.is-selected .wb-cal-day {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 日期数字 */
+.wb-cal-day {
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+/* 圆点行 */
+.wb-cal-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  min-height: 6px;
+}
+
+/* 圆点本体 */
+.wb-cal-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+/* 图例 */
+.wb-cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f2f5f9;
+}
+
+.wb-cal-legend-item {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+/* ---------- 今日时间轴 ---------- */
+
+/* 日期切换 */
+.wb-cal-timeline-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.wb-cal-timeline-date {
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 一条日程 */
+.wb-cal-timeline-item {
+  display: grid;
+  grid-template-columns: 76px 8px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: start;
+  padding: 9px 0;
+}
+
+.wb-cal-timeline-item + .wb-cal-timeline-item {
+  border-top: 1px solid #f2f5f9;
+}
+
+/* 左侧时间区间 */
+.wb-cal-timeline-time {
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+  white-space: nowrap;
+}
+
+/* 中间正文：标题 / 副标题 / 头像组 */
+.wb-cal-timeline-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wb-cal-timeline-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.wb-cal-timeline-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 右侧：彩色圆点 + 状态标签 */
+.wb-cal-timeline-side {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 1px;
+}
+
+/* 折叠提示（还有 N 条 / 还有 N 场） */
+.wb-cal-more-hint {
+  display: block;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+/* ---------- 列表行（今日会议 / 里程碑 / 任务提醒 / 近期日程）---------- */
+
+.wb-cal-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+}
+
+.wb-cal-row + .wb-cal-row {
+  border-top: 1px solid #f2f5f9;
+}
+
+/* 行首的时间 / 日期 */
+.wb-cal-row-time {
+  flex: 0 0 74px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 行内正文 */
+.wb-cal-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wb-cal-row-title {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-cal-row-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 窄屏收敛 ---------- */
+
+@media (max-width: 1200px) {
+  .wb-cal-cell {
+    height: 50px;
+  }
+}
+
+@media (max-width: 900px) {
+  .wb-cal-row {
+    flex-wrap: wrap;
+  }
+
+  .wb-cal-row-time {
+    flex: 0 0 100%;
+    text-align: left;
+  }
+}

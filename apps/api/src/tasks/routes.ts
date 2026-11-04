@@ -37,8 +37,9 @@ const createSchema = z.object({
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须是 YYYY-MM-DD').nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
   category: z.string().min(1).max(32).nullable().optional(),
-  reminderAt: z.string().datetime().nullable().optional(),
+  reminderAt: z.string().datetime({ offset: true }).nullable().optional(),
   parentId: z.number().int().positive().nullable().optional(),
+  startAt: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 const updateSchema = z.object({
@@ -48,8 +49,9 @@ const updateSchema = z.object({
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须是 YYYY-MM-DD').nullable().optional(),
   assigneeId: z.number().int().positive().nullable().optional(),
   category: z.string().min(1).max(32).nullable().optional(),
-  reminderAt: z.string().datetime().nullable().optional(),
+  reminderAt: z.string().datetime({ offset: true }).nullable().optional(),
   parentId: z.number().int().positive().nullable().optional(),
+  startAt: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 const statusSchema = z.object({

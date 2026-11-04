@@ -13,12 +13,41 @@ import { registerTaskRoutes } from './tasks/routes.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { registerStatsRoutes } from './stats/routes.js';
 import { registerIdeaRoutes } from './ideas/routes.js';
+import { registerScheduleRoutes } from './schedule/routes.js';
+import { registerRiskRoutes } from './risks/routes.js';
+import { registerFileRoutes } from './files/routes.js';
 import { getConfig } from './config.js';
 
 /**
  * Fastify 实例 —— 执行包 §4.1 / §6.1 / §6.3 / D-06。
  * 统一响应 `{code,message,data}`；所有框架异常映射成同一格式，不返回堆栈。
  */
+
+/**
+ * 容错解析 `Content-Type: application/json` 但**body 为空**的请求。
+ *
+ * ⚠️ Fastify 默认行为：JSON content-type + 空 body → 解析报错 → 500。
+ * 而 DELETE /api/tasks/:id 这类接口前端常常「带 content-type 但没有 body」，
+ * 就会莫名其妙 500（E2E agent 实测复现）。这里把空 body 解析成 undefined，
+ * 让路由能正常走到参数校验。
+ */
+function registerLenientJsonParser(app: FastifyInstance): void {
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body: string, done) => {
+      if (body === undefined || body === null || body.trim() === '') {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(body));
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+}
 
 export async function buildApp(): Promise<FastifyInstance> {
   const cfg = getConfig();
@@ -33,6 +62,11 @@ export async function buildApp(): Promise<FastifyInstance> {
     bodyLimit: 2 * 1024 * 1024, // JSON 2MB（§6.1）
     trustProxy: true,
   });
+
+  // 容错 JSON 解析（必须先移除 Fastify 内置的，否则同类型重复注册会报
+  // FST_ERR_CTP_ALREADY_PRESENT）
+  app.removeContentTypeParser('application/json');
+  registerLenientJsonParser(app);
 
   await app.register(cookie);
   await app.register(multipart, {
@@ -109,6 +143,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerProjectRoutes(app);
   await registerStatsRoutes(app);
   await registerIdeaRoutes(app);
+  await registerScheduleRoutes(app);
+  await registerRiskRoutes(app);
+  await registerFileRoutes(app);
 
   return app;
 }

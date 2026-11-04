@@ -81,6 +81,8 @@ export interface Task {
   parentId: number | null;
   /** 子任务数 */
   subtaskCount: number;
+  /** 日程开始时间（有则画时间段） */
+  startAt: string | null;
 }
 
 export interface Project {
@@ -202,4 +204,102 @@ export interface DistributionResult {
 
 export interface TeamWorkloadResult {
   members: TeamMemberWorkload[];
+}
+
+/** 里程碑与会议（用户端「日程安排」「进度追踪」页） */
+
+export interface Milestone {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  name: string;
+  dueDate: string | null;
+  status: 'pending' | 'done';
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meeting {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  title: string;
+  location: string | null;
+  startAt: string;
+  endAt: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 风险与问题（用户端「风险问题管理」页） */
+
+export type RiskLevel = 'low' | 'medium' | 'high';
+export type RiskStatus = 'open' | 'handling' | 'resolved';
+
+export interface Risk {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  code: string | null;
+  kind: 'risk' | 'issue';
+  title: string;
+  description: string | null;
+  level: RiskLevel;
+  impact: RiskLevel | null;
+  probability: RiskLevel | null;
+  status: RiskStatus;
+  ownerId: number | null;
+  ownerName: string | null;
+  dueDate: string | null;
+  responsePlan: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RiskStats {
+  total: number;
+  byLevel: Record<RiskLevel, { count: number; percent: number }>;
+  byStatus: Record<RiskStatus, number>;
+  byKind: { risk: number; issue: number };
+  /** 键是 `impact:probability`，值是数量 */
+  matrix: Record<string, number>;
+}
+
+/** 文件资料（用户端「文件资料」页）—— 本期只存元数据，不存二进制 */
+
+export type FileKind = 'doc' | 'sheet' | 'slide' | 'image' | 'pdf' | 'archive' | 'other';
+
+export interface FileAsset {
+  id: number;
+  projectId: number | null;
+  projectName: string | null;
+  folderId: number | null;
+  folderName: string | null;
+  name: string;
+  kind: FileKind;
+  sizeBytes: number;
+  version: string;
+  currentVersion: boolean;
+  ownerName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FileFolder {
+  id: number;
+  projectId: number | null;
+  parentId: number | null;
+  name: string;
+  fileCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FileStats {
+  totalCount: number;
+  totalBytes: number;
+  folderCount: number;
+  byKind: Array<{ kind: FileKind; count: number; bytes: number }>;
 }

@@ -37,12 +37,13 @@ export interface TaskRow {
   reminder_at: Date | null;
   parent_id: number | null;
   subtask_count: string;
+  start_at: Date | null;
 }
 
 export const TASK_SELECT = `
 SELECT t.id, t.user_id, t.project_id, t.title, t.status, t.priority,
        p.name AS project_name, t.due_date, t.done_at, t.created_at, t.updated_at,
-       t.assignee_id, u.name AS assignee_name, t.category, t.reminder_at, t.parent_id,
+       t.assignee_id, u.name AS assignee_name, t.category, t.reminder_at, t.parent_id, t.start_at,
        (SELECT count(*) FROM task st
          WHERE st.parent_id = t.id AND st.deleted_at IS NULL) AS subtask_count
   FROM task t
@@ -71,6 +72,7 @@ function toTask(r: TaskRow): Task {
     reminderAt: formatTimestamp(r.reminder_at),
     parentId: r.parent_id === null ? null : Number(r.parent_id),
     subtaskCount: Number(r.subtask_count ?? 0),
+    startAt: formatTimestamp(r.start_at),
   };
 }
 
@@ -193,6 +195,7 @@ export interface CreateTaskInput {
   category?: string | null;
   reminderAt?: string | null;
   parentId?: number | null;
+  startAt?: string | null;
 }
 
 /** 新建任务：只能归属当前登录用户 */
@@ -213,8 +216,8 @@ export async function createTask(
   const ins = await queryOne<{ id: number }>(
     `INSERT INTO task
        (user_id, project_id, title, status, priority, due_date,
-        assignee_id, category, reminder_at, parent_id)
-     VALUES ($1, $2, $3, 'todo', COALESCE($4, 'medium'), $5, $6, $7, $8, $9)
+        assignee_id, category, reminder_at, parent_id, start_at)
+     VALUES ($1, $2, $3, 'todo', COALESCE($4, 'medium'), $5, $6, $7, $8, $9, $10)
      RETURNING id`,
     [
       actor.user.id,
@@ -226,6 +229,7 @@ export async function createTask(
       input.category ?? null,
       input.reminderAt ?? null,
       input.parentId ?? null,
+      input.startAt ?? null,
     ],
   );
   if (!ins) throw notFound('创建失败');
@@ -243,6 +247,7 @@ export interface UpdateTaskInput {
   category?: string | null;
   reminderAt?: string | null;
   parentId?: number | null;
+  startAt?: string | null;
 }
 
 export async function updateTask(
@@ -282,6 +287,7 @@ export async function updateTask(
             category = CASE WHEN $10::boolean THEN $11 ELSE category END,
             reminder_at = CASE WHEN $12::boolean THEN $13 ELSE reminder_at END,
             parent_id = CASE WHEN $14::boolean THEN $15 ELSE parent_id END,
+            start_at = CASE WHEN $16::boolean THEN $17 ELSE start_at END,
             updated_at = now()
       WHERE id = $1`,
     [
@@ -300,6 +306,8 @@ export async function updateTask(
       input.reminderAt ?? null,
       input.parentId !== undefined,
       input.parentId ?? null,
+      input.startAt !== undefined,
+      input.startAt ?? null,
     ],
   );
 
