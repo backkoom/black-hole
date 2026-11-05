@@ -1,134 +1,152 @@
 # 工作台与组织架构（workbench-app）
 
-一期「工作台 + 任务 + 项目 + 组织账号 + 模板」内网管理系统。
-**Phase 0 契约包已完成，等待人类书面确认契约后再进入 Phase 1。**
+内网项目管理系统：用户端 10 页固定界面 + 管理员端（工作台编排 / 账号 / 组织架构 / 模板）。
 
-## 契约文档（先看这些）
+前后端分离的 **BS 架构**：浏览器端 React SPA + 服务端 Fastify REST API + PostgreSQL。
 
-| 文件 | 内容 |
-|---|---|
-| [docs/contracts/openapi.yaml](docs/contracts/openapi.yaml) | 34 个接口的唯一契约（OpenAPI 3.1） |
-| [docs/contracts/decisions.md](docs/contracts/decisions.md) | **已决策项 + 未决项 + 影响面** —— 动手前先看这份 |
-| [docs/contracts/modules.md](docs/contracts/modules.md) | 15 个模块（12 active + 3 placeholder）与 config schema |
-| [docs/contracts/pages.md](docs/contracts/pages.md) | 10 个页面的组件树、字段、交互、状态 |
-| [docs/contracts/acceptance.md](docs/contracts/acceptance.md) | 40 项验收逐条映射到测试与手工步骤 |
+```
+浏览器 (React 18 + Vite 5 + Ant Design 5)
+   │  fetch /api/*   ← 同源，不启用 CORS
+   ▼
+Fastify 5 (Node 22 + TypeScript strict + zod + 手写参数化 SQL)
+   ▼
+PostgreSQL 18
+```
 
-上游契约：《工作台与组织架构-可执行版-v2.md》（产品口径）、《AI 开发执行包-工作台与组织架构.md》（工程契约）。
-本仓库的文档**不替代**它们，只做落地与追踪。
+---
+
+## 功能
+
+### 用户端（10 页）
+
+| 路由 | 页面 | 说明 |
+|---|---|---|
+| `/` | 项目总览 | 指标卡 · 项目进度 · 日程 · 今日任务 · 任务状态环图 |
+| `/kanban` | 项目看板 | 4 列看板（待开始 / 进行中 / 已逾期 / 已完成），拖拽换列 |
+| `/tasks` | 任务清单 | 10 列表格 + 5 个筛选下拉 + 日期范围 + 导出 |
+| `/calendar` | 日程安排 | 周一起始月历 + 今日时间轴 + 里程碑 + 任务提醒 |
+| `/progress` | 进度追踪 | 项目进度计划 + 健康度 + 阶段进度 + 偏差分析 |
+| `/team` | 团队协作 | 成员 · 角色分工 · 会议纪要 |
+| `/files` | 文件资料 | 文件夹 / 分类 / 清单 / 版本历史（**只存元数据**） |
+| `/risks` | 风险问题管理 | 3×3 影响×概率矩阵 · 应对计划 · 状态统计 |
+| `/analytics` | 数据统计 | 完成趋势 · 分类分布 · 进度分布 · 团队工作量 · 排行 |
+| `/settings/*` | 设置 | 个人资料 / 修改密码 / 账号管理 / 组织架构 / 工作台模板 |
+
+### 管理员端
+
+工作台编辑器（12 个 active 模块自由编排、拖拽排序、缩放、草稿、模板）、账号管理（批量导入）、组织架构树、工作台模板。
+
+---
 
 ## 技术栈
 
-TypeScript 5（strict）· Node 22 · npm workspaces · React 18 + Vite 5 + Ant Design 5 · Fastify 5 · PostgreSQL 18 · pg 8 手写参数化 SQL · zod 3 · Vitest 2 / Playwright
+TypeScript 5（strict）· Node 22 · npm workspaces · React 18 + Vite 5 + Ant Design 5 · Fastify 5 · PostgreSQL 18 · pg 8（手写参数化 SQL）· zod 3 · Vitest 2 / Playwright
 
-不用 Prisma/TypeORM、Redis、消息队列、CDN、图表库、react-grid-layout。
+**刻意不用**：Prisma/TypeORM、Redis、消息队列、CDN、图表库、react-grid-layout。
+图表全部手写 SVG（`apps/web/src/components/ui/charts.tsx`）。
+
+---
 
 ## 目录
 
 ```
 workbench-app/
-  apps/api/          Fastify 后端
-  apps/web/          React 前端
-  packages/shared/   前后端共享类型、模块定义、错误码
-  db/migrations/     SQL 迁移（001_init.sql）
-  db/seed.ts         种子脚本（幂等）
-  docs/contracts/    契约文档
+  apps/api/          Fastify 后端（路由 / 服务 / 认证 / 测试）
+  apps/web/          React 前端（页面 / 组件 / 主题）
+  packages/shared/   跨端共享类型与纯函数
+  db/                迁移（.sql + .js 包装）与种子脚本
+  deploy/            部署资产（systemd / nginx / 环境变量模板 / 手册）
+  scripts/           打包 / 截图 / 脱敏工具
+  docs/contracts/    接口契约、决策记录、模块与页面定义、验收清单
 ```
 
-## 本地开发
+---
 
-### 前置
-
-- Node.js 22
-- PostgreSQL 18
-
-### 数据库
-
-本机已备好一个**独立的开发实例**（与已装的 5432 / 5433 实例完全隔离，端口 **15432**）：
+## 快速开始（本地开发）
 
 ```bash
-# 启动（数据目录 D:/workspace/pg-dev/data）
-"/c/Program Files/PostgreSQL/18/bin/pg_ctl" -D "D:/workspace/pg-dev/data" -o "-p 15432" -l "D:/workspace/pg-dev/server.log" start
+# 依赖
+npm install
 
-# 建库建角色（首次）
-psql -h 127.0.0.1 -p 15432 -U postgres -c "CREATE DATABASE workbench_dev;"
-psql -h 127.0.0.1 -p 15432 -U postgres -c "CREATE ROLE workbench LOGIN PASSWORD 'workbench_dev_only';"
-psql -h 127.0.0.1 -p 15432 -U postgres -d template1 -c "GRANT ALL ON SCHEMA public TO workbench;"
+# 准备数据库（独立开发库，别用系统库）
+docker compose up -d          # 或用你自己的 PostgreSQL 16+
+cp .env.example .env          # 改 DATABASE_URL 等
+
+# 迁移 + 种子
+npm run migrate
+npm run seed
+
+# 开发（API 3000 + Web 5173，/api 已配同源代理）
+npm run dev
 ```
 
-> PostgreSQL 15+ 起 `public` schema 默认不给 PUBLIC `CREATE` 权限，必须显式 `GRANT`。
-> 授到 `template1` 是为了让以后新建的库都带上这条授权。
+打开 <http://localhost:5173>，种子账号 `admin`，口令见 `npm run seed` 的输出（**首次登录强制改密**）。
 
-用 docker 的话：`docker compose up -d db`（compose 里是 `postgres:18`，端口 5432，`docker compose config` 已校验通过）。
-
-> ⚠️ **本机 5432 / 5433 已被老6 自己装的 PostgreSQL 服务占用**，所以本项目开发实际用上面的 15432 原生实例。
-> compose 是给「没有冲突的机器」和 CI 用的（执行包 §4.4 规定的标准启动路径）。
-> Docker 29.9.2 + Compose v5.6.1 已装，PATH 里默认看不见，手动加一次即可：
-> `export PATH="/c/Program Files/Docker/Docker/resources/bin:$PATH"`
-
-### 命令
+### 质量门
 
 ```bash
-npm install          # 装依赖（npm 缓存与全局目录在 D 盘）
-npm run migrate      # 执行迁移
-npm run seed         # 跑种子（Phase 1 实现）
-npm run dev          # api:3000 + web:5173（Vite 把 /api 代理到 3000）
-npm run verify       # lint + typecheck + test + build
+npm run verify     # lint + typecheck + vitest + build
+npm run test:e2e   # Playwright（需先起 dev server）
 ```
 
-开发端口固定：Vite **5173**，API **3000**。前端只写相对路径 `/api`，不启用 CORS。
+---
 
-### 环境变量
+## 部署
 
-复制 `.env.example` 为 `.env`（**`.env` 不进仓库**）。启动时用 zod 校验，缺关键变量直接退出，不用默认密码兜底。
+`deploy/` 里有完整链路：打包 → 安装 → 验收 → 升级/回滚。
 
-## 硬约束（摘自执行包，违反即返工）
+```bash
+# 开发机打包（先跑 verify）
+bash scripts/package-release.sh
+# 产物：dist-release/workbench-release-<时间戳>.tar.gz
 
-- 页面不直接拼 SQL；API 不返回数据库行原样，做显式映射
-- `apps/api` 不 import `apps/web`；共享类型放 `packages/shared`
-- 所有写接口 zod 校验；数据库异常不直接返回
-- 所有非 GET 校验 Origin/Referer 同源
-- 未知字段默认剥离（`/api/users*` 三个接口例外，见 decisions.md D-01）
-- 所有 `:id` 用 bigint 字符串解析，非法 id 返回 400 且不查库
-- 密码 bcryptjs cost 12；初始密码只返回一次、不落库
-- 不把 `.env`、密码、token、证书私钥、内网服务器信息提交进仓库
+# 上传后，在服务器上
+sudo bash install.sh --tarball /tmp/workbench-release-*.tar.gz
+```
 
-## 规模假设：500 人（一期小版本）
+详见 **[deploy/README.md](deploy/README.md)**（前置准备 / nginx / 播种 / 验收 / 升级 / 回滚 / 排障速查表）。
 
-老6 确认最终 **500 名使用者**，但**一期功能范围不变**（10 页面 / 34 接口 / 15 模块 / 40 验收）。
-规模只影响四条实现约束，已写进 `docs/contracts/decisions.md` D-13：
+部署形态：nginx 托管静态资源并把 `/api` 同源反代到 Fastify；API **只监听回环地址**；systemd 托管；环境变量集中在 `/etc/workbench/api.env`（`chmod 600`）。
 
-| Phase | 约束 |
+> ⚠️ 内网无 HTTPS 证书时用 `NODE_ENV=staging`（允许 http）；`production` 强制 https + `COOKIE_SECURE=true`。
+
+---
+
+## 安全说明
+
+- 口令 bcrypt（cost 12）；会话走 HttpOnly Cookie；同源校验（Origin/Referer）
+- 所有 SQL 参数化绑定；无 `dangerouslySetInnerHTML`；iframe 强制 `sandbox`
+- 改密强制拦截（`must_change_password`）；登录失败锁定；会话定期清理
+- API 非开发环境只绑 `127.0.0.1`；nginx 侧安全头 + gzip + 上传体积限制
+
+### 脱敏
+
+本仓库曾用于内网交付，发布前已做脱敏：组织架构链与账号名替换为示例数据，**并重写了全部 git 历史**（`git filter-repo`）。仓库内不含任何真实组织信息。
+
+脱敏工具留在仓库里，便于二次发布前复查：
+
+```bash
+python3 scripts/gen-replace-text.py         # 生成替换表
+python3 scripts/scrub-sensitive.py --scan   # 扫工作区 + git 历史
+```
+
+---
+
+## 文档
+
+| 文件 | 内容 |
 |---|---|
-| Phase 1 | pg 连接池设 **20**；会话清理任务**必须做**；`statement_timeout` 必配 |
-| Phase 2 | 500 人导入**必须批量 INSERT**，禁止循环逐条写（= 3000 行） |
-| Phase 4 | 项目进度**必须一条 `GROUP BY project_id` 聚合取回**，禁止 N+1 查询 |
-| Phase 7 | 规模验收：500 人导入成功、抽查 20 个账号可登录、真实数据量下页面响应 < 1 秒 |
+| [docs/contracts/openapi.yaml](docs/contracts/openapi.yaml) | 接口契约（OpenAPI 3.1） |
+| [docs/contracts/decisions.md](docs/contracts/decisions.md) | 已决策项 + 未决项 + 影响面 |
+| [docs/contracts/modules.md](docs/contracts/modules.md) | 15 个模块（12 active + 3 placeholder）与 config schema |
+| [docs/contracts/pages.md](docs/contracts/pages.md) | 页面组件树、字段、交互、状态 |
+| [docs/contracts/acceptance.md](docs/contracts/acceptance.md) | 验收项映射到测试与手工步骤 |
+| [deploy/README.md](deploy/README.md) | 部署手册 |
 
-数据库不是瓶颈（12 万任务 ≈ 100MB 量级）。**不要因为"500 人"去上 Redis 或连接池中间件。**
+页面截图见 `docs/screenshots/`。
 
-## 当前状态
+---
 
-| Phase | 范围 | 状态 |
-|---|---|---|
-| **Phase 0** | 契约包（不写业务代码） | ✅ 已完成，老6 已确认「契约通过」 |
-| **Phase 1** | 地基、认证、会话、应用壳 | ✅ **已完成**：后端+前端+迁移+种子+36 单测+5 E2E，全绿 |
-| **Phase 2** | 组织、账号、导入 | ✅ **已完成**：组织树增删改移 + 账号管理 + CSV 批量导入，16 条新测试 |
-| **Phase 3** | 工作台壳、布局、版本、模板 | ✅ **已完成**：5 个接口 + CAS/409 + 工作台页与模板页（**拖拽与缩放留到 Phase 5**） |
-| **Phase 4** | 任务、项目、进度 | ✅ **已完成**：12 个接口 + 实时进度 + 统计后端 + 三页前端，14 条新测试 |
-| Phase 5 | 任务/项目/设置页 UI 还原 | ⏸ |
-| Phase 6 | 统计与指标卡接线 | ⏸ |
-| Phase 7 | 部署与验收 | ⏸ |
+## License
 
-### Phase 1 已完成的部分（2026-11-02）
-
-- **后端**（`apps/api`）：配置校验、pg 连接池、统一响应与错误映射、requestId、pino 日志、
-  Cookie 会话（只存 token hash）、登录/退出/me/改密、5 次错误锁 10 分钟、
-  must_change 只放行 3 个接口、Origin 同源校验、会话清理任务
-- **前端**（`apps/web`）：登录页、改密页、App Shell、403/404 页、路由守卫、
-  普通用户隐藏管理导航、设计变量按 `visual-baseline.md` 注入 AntD token
-- **数据库**：`001_init.sql`（唯一 DDL 基线）+ `001_init.js` 包装器 + `seed.ts`（6 级组织链、幂等）
-- **测试**：36 条（登录 7 / 会话与改密 8 / Origin 5 / 模块 schema 16），全绿
-- **实测**：真实服务冒烟 4/4 通过；经 Vite 代理的真实登录链路通过（Cookie 正常下发）
-
-Phase 0 验收清单见 [docs/contracts/phase0-gate.md](docs/contracts/phase0-gate.md)，
-Phase 1 范围与实现点见 [docs/contracts/phase1-plan.md](docs/contracts/phase1-plan.md)。
+MIT
