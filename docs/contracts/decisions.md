@@ -572,6 +572,112 @@ reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把�
 
 ---
 
+## 一之六、D-15 用户端 10 页 E2E 冒烟补齐 + 部署手册与脚本对齐（2026-11-05）
+
+**背景**
+仓库转公开后，两处「没人能测」的空档暴露出来：
+
+1. **用户端 10 页完全没有 E2E** —— `e2e/` 只有 `auth.spec.ts`（5 条）与
+   `workspace.spec.ts`（8 条），覆盖的是认证链路与工作台编辑器。
+   而用户真正每天用的 10 个页面（总览/看板/任务清单/日程/进度/团队/文件/风险/统计/个人资料）
+   **一条 E2E 都没有** —— 公开仓库后别人改坏前端，没有任何测试能拦住。
+2. **`deploy/README.md` 与脚本实际行为对不上** —— 手册写的冒烟脚本路径
+   `/data/workbench/scripts/smoke.sh` 在服务器上**根本不存在**（`install.sh` 只复制 `deploy/`）；
+   脚本支持的 `--direct` / `--origin=` / `SMOKE_ACCOUNT` / `SEED_ADMIN_PASSWORD_FILE`
+   四个参数手册一个字没提；「普通账号跑时管理员接口 403 属预期」这条也没写 ——
+   运维照手册跑会误判成故障。
+
+**决策**
+
+### 一、用户端 10 页 E2E 冒烟（新增 `e2e/user-pages.spec.ts`，12 条）
+
+**核心原则：断言「页面上的数字 === 接口返回的数字」，不接受「页面没白屏」这种弱断言。**
+
+| 页面 | 路由 | 断言要点（数字一律与接口比对） |
+|---|---|---|
+| 项目总览 | `/` | 4 张指标卡（项目总数/进行中/待办任务/团队成员）分别等于 `GET /api/projects` 的 `total`、`GET /api/stats/overview` 的 `projectCount`、`GET /api/stats/tasks` 的 `todo`、`GET /api/users` 的 `items.length`；5 个面板标题齐全；「项目进度」「今日任务」「项目列表」里能看到造出来的数据 |
+| 项目看板 | `/kanban` | 4 列（待开始/进行中/已逾期/已完成）的 `aria-label` 计数分别等于按 `GET /api/tasks` 全量算出的口径；指标卡「全部任务/待处理」等于 `GET /api/stats/tasks` |
+| 项目看板（交互） | `/kanban` | 用列内「快速添加」新建一个任务后，「待开始」列计数 **+1**，且新卡片标题可见 |
+| 任务清单 | `/tasks` | 卡片标题「任务列表（共 N 项）」的 N === `GET /api/tasks` 的 `total`；每页切到 50 行后，**表格行数 === 接口 total** |
+| 任务清单（筛选） | `/tasks` | 5 个筛选下拉（全部项目/状态/优先级/负责人/分类）+ 搜索框 + 「更多筛选」「重置」都存在；按「已完成」筛选后标题计数 === `GET /api/tasks?status=done` 的 total；「重置」后回到全量；关键字搜索命中 1 条 |
+| 日程安排 | `/calendar` | 月历格子数 **= 42**（6 行 × 7 列）；表头 7 天；「今天」那格 `aria-label` 含「N 项任务」且**有圆点**；6 个面板标题齐全；「今日会议」「任务提醒」「重要里程碑」里能看到造出来的数据；指标卡「会议安排」「重要里程碑」=== 接口条数 |
+| 进度追踪 | `/progress` | 4 个面板标题齐全；指标卡「已完成任务」「进行中任务」=== `GET /api/stats/tasks`；「里程碑达成」=== 已完成项目数/项目总数；「项目进度计划」「阶段进度」里有造出来的项目与阶段 |
+| 团队协作 | `/team` | 3 个面板标题齐全；指标卡「团队成员数」=== `GET /api/users` 条数；成员行数一致；「会议纪要」里有造出来的会议 |
+| 文件资料 | `/files` | 6 个面板标题齐全；指标卡「文件总数」=== `GET /api/files/summary` 的 `totalCount`；「文件夹」「文件列表」里有造出来的文件夹与文件；分类里有 PDF |
+| 风险问题 | `/risks` | 6 个面板标题齐全；指标卡「高风险数」「待解决问题数」=== `GET /api/risks/summary`；「风险问题列表」「风险应对计划」里有造出来的风险 |
+| 数据统计 | `/analytics` | 6 个面板标题齐全；指标卡「项目总数」「任务总数」「已完成任务」=== 对应接口；「项目完成率排行」里有造出来的项目 |
+| 个人资料 | `/settings/profile` | 当前仍是 Placeholder 占位页 → 断言页面出现「迭代」字样（⚠️ 主线程把它做成真页面后，这条断言要相应调整） |
+
+**造数与清理**
+- `beforeAll` 里**用真实接口**造数据（POST /api/projects、/api/tasks、/api/risks、
+  /api/files、/api/folders、/api/meetings、/api/milestones），**不 mock**；
+  账号统一用 `e2e-user-` 前缀，与其它 spec 的数据隔离。
+- `afterAll` 里用 **DELETE 接口**清理（任务/风险/文件/文件夹/会议/里程碑/项目），
+  再按 `e2e-user-` 前缀扫描一遍兜底（覆盖「页面上快速添加」产生的那条）。
+- admin 的 `must_change_password` 默认是 `true` → 登录前调 `e2e/helpers.ts` 里已有的
+  `clearMustChange()`（**复用，不重复实现**），跑完用 `resetAdmin()` 恢复种子状态
+  （口令 + 必须改密标记 + 清会话）。
+
+**错误收集（每条用例的 `afterEach` 断言）**
+任何 `console.error`、`pageerror`、4xx/5xx 的 `/api/` 响应都算失败。
+**显式豁免两处预期行为**：
+
+| 豁免 | 原因 |
+|---|---|
+| `GET /api/auth/me` → 401 | 未登录时前端首屏探测登录态的正常分支 |
+| `GET /api/users*` → 403 | 普通账号访问管理员接口，权限拦截生效，**不是故障** |
+
+另有一条**已知第三方噪音**白名单：antd 5.29+ 对 `ConfigProvider` 的
+`autoInsertSpaceInButton` 属性打弃用警告（`apps/web/src/main.tsx` 仍在用旧写法，
+该文件不在本次改动范围内）。除这一条外，任何 `console.error` 仍然算失败。
+
+**口令来源**：`process.env.SEED_ADMIN_PASSWORD`，由 `playwright.config.ts` 注入
+（新增 `process.loadEnvFile('.env')`，不覆盖外部已有的环境变量 → CI 的值优先）。
+**口令绝不写进代码或提交进仓库。**
+
+**影响面**
+只新增 `e2e/user-pages.spec.ts` + 改 `playwright.config.ts`（加 env 注入）。
+**不改任何前端页面、后端接口、共享类型** —— 用户端 10 页的源码本次一行没动。
+跑测顺序：Playwright 按文件名排序，`auth.spec.ts` → `user-pages.spec.ts` → `workspace.spec.ts`；
+`auth.spec.ts` 与 `workspace.spec.ts` 各自 `afterAll` 都会 `resetAdmin()`，
+与本 spec 的 `afterAll` 顺序兼容，三份 spec 可连续跑通（**实测 25 条全绿**）。
+
+**推翻成本**：低（纯测试文件；页面口径变了就改断言，改的是测试不是契约）。
+
+### 二、部署手册与脚本对齐（改 `deploy/README.md`）
+
+**原则：手册以脚本实际行为为准。** 本次逐条核对 `deploy/install.sh`、
+`deploy/one-shot.sh`、`deploy/smoke.sh` 的真实参数与行为，修正如下：
+
+| # | 手册原来写的 | 实际行为 | 处理 |
+|---|---|---|---|
+| 1 | 冒烟脚本在 `/data/workbench/scripts/smoke.sh` | `install.sh` 只复制 `deploy/` → 服务器上是 **`/data/workbench/deploy/smoke.sh`**；`scripts/` 只是发布包里的副本 | 改正路径，并加「找不到文件」的排障条目 |
+| 2 | 未提 `--direct` | 跳过首页/前端静态资源/SPA 回退/安全头 4 项，只查接口 | 补参数说明 |
+| 3 | 未提 `--origin=` | 写请求的 `Origin` 头，默认取基地址。**直连 API 时必须显式指定**，否则登录就被 403「请求来源不被信任」拦掉（实测） | 补参数说明 + 排障条目 |
+| 4 | 未提 `SMOKE_ACCOUNT` | 登录账号，默认 `admin` | 补环境变量表 |
+| 5 | 未提 `SEED_ADMIN_PASSWORD_FILE` | 口令来源之一（**指向文件路径**，脚本读该文件第一行）；另有 `SEED_ADMIN_PASSWORD` 与 `/etc/workbench/api.env` 两个来源 | 补三个来源的优先级 + 「口令不要写命令行」提醒 |
+| 6 | 未写普通账号的 403 预期 | 脚本对 `/api/users*` 与 `/api/org/tree` 的 403 **显式豁免**并计为通过（实测：普通账号跑，17 项全过） | 补「403 属预期，不是故障」专节 |
+| 7 | 「迁移」当作 `install.sh` 的一步 | `node-pg-migrate` 是**仓库根的 devDependency**，生产装依赖用 `npm ci --omit=dev` → 发布包里**没有**迁移工具 → `install.sh` 会打印「跳过迁移」**继续执行**，表其实没建 | 单开 §4.1「先建表」，给开发机迁移 + 手工迁移两种做法，并加排障条目 |
+| 8 | 未提 `--use-glob` 的必要性 | `-m` 给的是 glob，**少 `--use-glob` 会把 `.sql` 也当迁移跑一遍，DDL 跑两遍** | 在迁移小节明确标注 |
+| 9 | 播种账号写作 `user01` + `user02`~`user07` | `db/seed.ts` 实际造的是 **`user01`~`user07`**（`user${i}` 补零），现有库里的 `user01` 是被导入改过名的历史数据 | 按脚本改正，并说明播种幂等、账号名以库里为准 |
+| 10 | 播种口令来源未说明 | 优先 `SEED_ADMIN_PASSWORD` / `SEED_USER_PASSWORD`；**没给就随机生成 12 位且只打印一次** | 补口径 |
+| 11 | 未提种子口令变量名对不上 | 模板里是 `SEED_RAQE_HYRLYHYI`，而 `db/seed.ts` 读的是 **`SEED_USER_PASSWORD`** → 7 个普通用户的固定口令目前设不进去 | 写明差异 + 给绕过办法（播种前显式 export） |
+| 12 | 回滚只写 `cp -r` | `cp -r 备份/apps /data/workbench/` 会**拷进已有目录**（变成 `apps/apps/...`），旧文件也留着 → 等于没回滚。`install.sh` 自己也是先 `rm -rf` 再拷 | 回滚步骤补 `rm -rf`，并说明备份只含 `apps/` 与 `db/` |
+| 13 | 开机自启只提 API | `install.sh` 只 enable 了 `workbench-api`；**nginx 与 postgresql 要自己 enable**（`one-shot.sh` 才做） | 新增 §6.1「开机自启的三个服务」表 |
+| 14 | Node 20+ / PG 16+ | `package.json` 的 `engines` 要求 **Node ≥ 22**；PG 已定统一 **18**（D-08 / U-5） | 改正版本号，并说明 `install.sh` 自己只查 Node ≥ 20 但仓库要求 ≥ 22 |
+| 15 | 未提 `install.sh` 的其它参数 | 实际支持 `--tarball`（必填）/ `--env-file` / `--dir` / `--skip-migrate` | 补参数表 |
+
+**影响面**
+只改 `deploy/README.md` 一个文件。**不改 `deploy/install.sh` / `one-shot.sh` / `smoke.sh`**
+—— 本条记录的是「文档向脚本对齐」，不是「改脚本」。
+排障表补了 8 条新条目（迁移被跳过、nginx/postgresql 没自启、脚本路径找不到、
+`--direct` 缺 `--origin` 报 403、口令三个来源都没有等），
+每条都是运维照手册操作时**真实会踩**的坑。
+
+**推翻成本**：低（纯文档；脚本参数变了就再对一次）。
+
+---
+
 ## 二、未决项（等外部条件，不阻塞编码）
 
 | # | 未决项 | 卡在谁 | 什么时候要 | 默认怎么先跑 |
@@ -617,6 +723,7 @@ reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把�
 
 | 日期 | 变更 | 影响 |
 |---|---|---|
+| 2026-11-05 | **D-15：用户端 10 页 E2E 冒烟补齐 + 部署手册与脚本对齐** —— 新增 `e2e/user-pages.spec.ts`（**12 条**）覆盖总览/看板/任务清单/日程/进度/团队/文件/风险/统计/个人资料 10 个路由：数据**全部走真实接口**造（`beforeAll` POST / `afterAll` DELETE，前缀 `e2e-user-`），断言一律「页面数字 === 接口数字」（指标卡、看板 4 列计数、任务表格行数与 total、月历 42 格、今天有圆点、面板标题与数据区非空），每条用例 `afterEach` 断言无 `console.error` / `pageerror` / 4xx-5xx 接口响应（**显式豁免** `GET /api/auth/me` 的 401 与 `GET /api/users*` 的 403 两处预期行为）；口令从 `process.env.SEED_ADMIN_PASSWORD` 读（`playwright.config.ts` 新增 env 注入），复用 `helpers.ts` 的 `clearMustChange()` / `resetAdmin()`。同时把 `deploy/README.md` 与 `deploy/*.sh` 的实际行为逐条对齐（改正冒烟脚本路径为 `deploy/smoke.sh`、补 `--direct` / `--origin=` / `SMOKE_ACCOUNT` / `SEED_ADMIN_PASSWORD_FILE`、补普通账号 403 属预期、点明发布包无迁移工具所以 `install.sh` 会跳过建表、补回滚必须先 `rm -rf`、补 nginx+postgresql 开机自启、改正 Node ≥ 22 / PG 18 / 种子账号 `user01`~`user07`） | **不改任何前端页面、后端接口、共享类型**，用户端 10 页源码一行没动；只新增 `e2e/user-pages.spec.ts`、改 `playwright.config.ts`（加 env 注入）与 `deploy/README.md`；**不改 `deploy/*.sh`**（本条记录的是文档向脚本对齐）。实测 `npx playwright test` **25 条全绿**（原 13 + 新 12），跑完开发库无 `e2e-user-` 残留 |
 | 2026-11-05 | **D-14：OpenAPI 契约对齐实际实现** —— 路径 24 → **40**、操作 34 → **57**，补齐用户端批次 2/3 的 16 条路径（统计聚合 / 风险 / 文件 / 里程碑 / 会议）与任务·项目的新增字段、筛选参数；并修正 16 处与代码不一致的原有描述（401/404/400/422 归属、account 长度、`info.version` → 2.1.0） | **只改 `docs/contracts/openapi.yaml` + 本决策记录，零代码改动**。路径集合经脚本比对差异为 0；发现 `GET /api/projects/{id}` 的任务数组缺批次 2 扩展字段（代码侧问题，已在契约里如实标注，未改代码） |
 | 2026-11-02 | Phase 0 建立本文件；D-01~D-09 定稿；组织层级改为上限 4 级 + 人员挂末级 | DDL 1 处、类型 1 处、应用层 3 处、验收措辞 4 条、接口描述若干 |
 | 2026-11-02 | 补 D-10（迁移执行器）、D-11（demo 定位）、D-12（GitHub 通道）、**D-13（规模 7 人 → 500 人）**；关闭 U-1 / U-5 / U-8；新增 U-10 | D-13 **不改任何接口、表结构、40 项验收**；只新增 Phase 1/2/4/7 四条实现约束 |

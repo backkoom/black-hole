@@ -1,6 +1,9 @@
 # 工作台与组织架构 —— 部署手册
 
-> 面向运维/实施。本文每条命令都可直接执行，**假设 Linux + systemd + nginx + PostgreSQL 16+**。
+> 面向运维/实施。本文每条命令都可直接执行，**假设 Linux + systemd + nginx + PostgreSQL 18**。
+>
+> ⚠️ 本文所有路径与参数**以 `deploy/install.sh`、`deploy/one-shot.sh`、`deploy/smoke.sh` 的实际行为为准**。
+> 脚本改了本文没跟上，**以脚本为准**。
 
 ---
 
@@ -33,9 +36,9 @@
 ## 1. 服务器前置准备
 
 ```bash
-# Node 20+ / PostgreSQL 16+ / nginx
-node -v            # 需 >= v20
-psql --version
+# Node 22 / PostgreSQL 18 / nginx
+node -v            # 需 >= v22（根 package.json 的 engines 是 >=22）
+psql --version     # 需 18
 nginx -v
 
 # 建服务账号与目录（不要用 root 跑服务）
@@ -47,6 +50,9 @@ sudo chown workbench:workbench /data/workbench
 sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
 ```
 
+> ⚠️ `install.sh` 自己只检查 Node ≥ 20，但仓库 `package.json` 的 `engines` 要求 **≥ 22**。
+> 20 能装上但不受支持，请统一用 22。
+
 ### 数据库
 
 ```bash
@@ -57,6 +63,9 @@ CREATE DATABASE workbench OWNER workbench;
 ALTER DATABASE workbench SET LC_COLLATE 'zh_CN.UTF-8';
 SQL
 ```
+
+> ⚠️ **口令里的特殊字符（`@ : / ? #`）必须 URL 编码**后再写进 `DATABASE_URL`，
+> 否则连接串会被截断（`postgresql://user:p@ss@host/db` 里第一个 `@` 之后会被当成主机分隔符）。
 
 ---
 
@@ -79,18 +88,39 @@ scp dist-release/workbench-release-*.tar.gz <user>@<host>:/tmp/
 ### 2.3 服务器上安装
 
 ```bash
-sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz
+# 解包后从包内取 install.sh（包里 scripts/ 与 deploy/ 各有一份，内容相同）
+tar -xzf /tmp/workbench-release-*.tar.gz -C /tmp
+sudo bash /tmp/workbench-release-*/scripts/install.sh --tarball /tmp/workbench-release-*.tar.gz
 ```
 
 `install.sh` 会依次完成：备份旧版本 → 解包 → 装生产依赖 → 生成环境变量文件 → 跑数据库迁移 → 装 systemd unit → 启动服务。
+
+> ⚠️ **迁移这一步在生产包上会被跳过**：`node-pg-migrate` 是仓库根的 **devDependency**，
+> 而 `install.sh` 装依赖用的是 `npm ci --omit=dev`（只装运行时依赖），
+> 所以发布包里**没有** `node_modules/node-pg-migrate/bin/node-pg-migrate.js`。
+> `install.sh` 检测不到它就会打印「node-pg-migrate 不在发布包里，跳过迁移」并继续 —— **不会报错，但表也没建**。
+>
+> 正确做法：**在开发机先跑一次迁移**，把建好的库导过去；或在服务器上手工执行（见 §4.1）。
+
+`install.sh` 的其它参数：
+
+| 参数 | 说明 |
+|---|---|
+| `--tarball <路径>` | **必填**。发布包 `.tar.gz` 的路径 |
+| `--env-file <路径>` | 环境变量文件路径，默认 `/etc/workbench/api.env` |
+| `--dir <路径>` | 应用目录，默认 `/data/workbench` |
+| `--skip-migrate` | 跳过迁移步骤（表已建好时用，避免重复执行） |
 
 **首次运行会因为环境变量还没填而退出（退出码 2），这是设计如此**：
 
 ```bash
 sudo vi /etc/workbench/api.env      # 填 DATABASE_URL / APP_ORIGIN / 口令
 sudo chmod 600 /etc/workbench/api.env
-sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz   # 重跑
+sudo bash /tmp/workbench-release-*/scripts/install.sh --tarball /tmp/workbench-release-*.tar.gz   # 重跑
 ```
+
+> ⚠️ 重跑时 `install.sh` **不会**再重新生成 `/etc/workbench/api.env`（文件已存在就跳过），
+> 所以填错的值不会被自动纠正 —— 填完请自己核对一遍。
 
 ### 2.4 环境变量怎么填
 
@@ -103,6 +133,8 @@ sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz   # 重跑
 
 > ⚠️ `APP_ORIGIN` 必须与浏览器地址栏**完全一致**，否则所有写请求会被 403「请求来源不被信任」拦掉。
 > ⚠️ 口令含 `@ : / ? #` 等特殊字符时必须 URL 编码。
+> ⚠️ 模板里的 `SEED_ADMIN_PASSWORD` / `SEED_RAQE_HYRLYHYI` 两行**只在首次播种时用得上**，
+> 播种完建议删掉（见 §4）。
 
 ---
 
@@ -120,7 +152,8 @@ sudo nginx -t && sudo systemctl reload nginx
 - `try_files $uri $uri/ /index.html` —— SPA 路由回退
 - `/assets/` 长缓存（带 hash）、`index.html` 不缓存（发版后立刻生效）
 - `.map` 源映射文件拒绝访问
-- gzip + 安全响应头 + 2MB 上传上限（账号批量导入用）
+- gzip + 安全响应头（HSTS / nosniff / X-Frame-Options / Referrer-Policy）
+- `client_max_body_size 4m` —— 账号批量导入单文件限 2MB，这里留到 4m 宽一点
 
 **没有 HTTPS 证书时**：把 443 那段 server 注释掉，只留 80，并把 `APP_ORIGIN` 设成 `http://`，
 同时 `NODE_ENV=staging`（`production` 强制要求 https，会启动失败）。
@@ -129,14 +162,70 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## 4. 初始化数据
 
+### 4.1 先建表（迁移）
+
+发布包里**没有**迁移工具（见 §2.3），所以建表要单独做。两种做法：
+
 ```bash
+# 做法 A（推荐）：开发机先迁移，再把库导到服务器
+#   开发机（仓库根目录）
+npm run migrate        # = node-pg-migrate up -m "db/migrations/*.js" --use-glob
+pg_dump -h <服务器> -U workbench workbench > workbench.sql
+#   服务器
+psql -U workbench -d workbench < workbench.sql
+```
+
+```bash
+# 做法 B：服务器上临时装一次迁移工具再跑
+cd /data/workbench
+npm i -g node-pg-migrate@7
+export DATABASE_URL='postgres://workbench:<口令>@127.0.0.1:5432/workbench'
+node-pg-migrate up -m "db/migrations/*.js" --use-glob
+```
+
+> ⚠️ `-m` 后面给的是 **glob 模式**，所以**必须同时带 `--use-glob`**。
+> 少了 `--use-glob`，`db/migrations/*.sql` 也会被当成迁移文件执行一遍，DDL 会跑两遍。
+> 迁移表名是 `pgmigrations`，重复执行 `up` 是幂等的。
+
+### 4.2 播种账号
+
+```bash
+# tsx 是仓库根的 devDependency，生产包里没有 → 用 npx 临时拉
 sudo -u workbench bash -c '
   set -a; . /etc/workbench/api.env; set +a
-  cd /data/workbench && npx tsx db/seed.ts
+  cd /data/workbench && npx --yes tsx db/seed.ts
 '
 ```
 
-播种后会创建 admin + 7 个普通用户（`user01` + `user02`~`user07`），**所有账号初始都要求改密**。
+播种后会创建：
+
+| 账号 | 姓名 | 角色 | 说明 |
+|---|---|---|---|
+| `admin` | 系统管理员 | 超管 | `is_super=true` |
+| `user01` ~ `user07` | 用户01 ~ 用户07 | 普通用户 | 7 个 |
+
+> ⚠️ `db/seed.ts` 是**幂等**的：账号已存在就跳过，不会改它的名字。
+> 所以老库里可能看到 `user01` 被改成了别的账号名（例如通过「账号管理 → 批量导入」导入时改的），
+> 这时重跑播种**不会**把它改回来 —— 账号名以库里为准。
+
+**所有账号初始都要求改密**（`must_change_password=true`），首次登录会被强制跳到改密页。
+
+口令来源（`db/seed.ts` 的实际逻辑）：
+
+- `SEED_ADMIN_PASSWORD` / `SEED_USER_PASSWORD` 环境变量里给了 → 用它；
+- **没给** → 每个人随机生成 12 位，**只在这次运行的终端输出里打印一次**，之后查不到。
+
+```bash
+# 想让口令可预测，播种前显式给上（至少 8 位，含字母和数字）
+set -a; . /etc/workbench/api.env; set +a
+echo "SEED_ADMIN_PASSWORD=换成强口令"  # 已存在则不生效
+npx --yes tsx db/seed.ts
+```
+
+> ⚠️ 环境变量模板里的第二个种子口令键名是 **`SEED_RAQE_HYRLYHYI`**，
+> 而 `db/seed.ts` 读的是 **`SEED_USER_PASSWORD`** —— 两者**对不上**，
+> 所以 7 个普通用户的口令目前只能靠随机生成 + 终端打印一次拿到。
+> 需要固定口令时，请在播种命令前显式 `export SEED_USER_PASSWORD=...`（见上）。
 
 > 真实组织架构与人员数据建议直接用「账号管理 → 批量导入」导入，不要改种子脚本。
 
@@ -145,8 +234,12 @@ sudo -u workbench bash -c '
 ## 5. 验收
 
 ```bash
-bash /data/workbench/scripts/smoke.sh https://<你的域名>
+bash /data/workbench/deploy/smoke.sh https://<你的域名>
 ```
+
+> ⚠️ **脚本路径是 `deploy/smoke.sh`，不是 `scripts/smoke.sh`**。
+> `install.sh` 只把 `deploy/` 复制到 `/data/workbench/deploy/`，
+> 发布包里的 `scripts/smoke.sh` 是**给开发机看的副本**，服务器上不存在那个路径。
 
 脚本逐项检查并输出通过/失败：
 
@@ -154,18 +247,46 @@ bash /data/workbench/scripts/smoke.sh https://<你的域名>
 |---|---|
 | 1/6 | 首页可达 |
 | 2/6 | 未登录访问 `/api/auth/me` 返回 401 |
-| 3/6 | admin 登录成功、会话建立 |
+| 3/6 | 登录成功、会话建立 |
 | 4/6 | 15 个核心接口全部 200（任务/项目/用户/组织/工作台/统计/风险/文件/里程碑/会议） |
 | 5/6 | 前端 JS 包可访问、SPA 路由回退正常 |
-| 6/6 | 安全响应头 |
+| 6/6 | 安全响应头（X-Content-Type-Options；HSTS 缺失只提示不失败） |
+
+退出码：`0` = 全通过，`1` = 有失败项。
+
+### 5.1 脚本参数与环境变量
+
+| 参数 / 变量 | 作用 |
+|---|---|
+| `<url>`（第 1 个位置参数） | 被检查的基地址。**默认 `http://127.0.0.1:3000`**（不传参数就跑直连） |
+| `--direct` | 直连 API 模式：**跳过**首页可达、前端静态资源、SPA 回退、安全响应头这 4 项，只查接口 |
+| `--origin=<url>` | 请求头 `Origin` 的值，**默认取基地址**。直连 API 时要用它覆盖成 `APP_ORIGIN`，否则写请求会被 403「请求来源不被信任」拦掉 |
+| `SMOKE_ACCOUNT` | 登录账号，**默认 `admin`** |
+| `SEED_ADMIN_PASSWORD` | 登录口令。也可用 `SEED_ADMIN_PASSWORD_FILE`（**指向文件路径**，脚本读该文件第一行） |
+| `/etc/workbench/api.env` | 口令的第三来源：脚本会在 `SEED_ADMIN_PASSWORD` 与 `SEED_ADMIN_PASSWORD_FILE` 都没有时，从这里读 `SEED_ADMIN_PASSWORD` |
+
+```bash
+# 直连 API 排查（跳过前端与安全头检查）
+bash /data/workbench/deploy/smoke.sh http://127.0.0.1:3000 --direct --origin=https://<你的域名>
+
+# 用普通账号验收（不改 admin 的初始改密状态）
+SMOKE_ACCOUNT=user01 SEED_ADMIN_PASSWORD_FILE=/root/.smoke_pw \
+  bash /data/workbench/deploy/smoke.sh https://<你的域名>
+```
+
+> ⚠️ **口令不要写在命令行里** —— 会进 shell 历史，也可能被中间层过滤成随机串。
+> 优先用 `SEED_ADMIN_PASSWORD_FILE`，其次 `SEED_ADMIN_PASSWORD`，再次让它读 `/etc/workbench/api.env`。
+
+### 5.2 用普通账号跑时，管理员接口返回 403 属预期
+
+`/api/users` 与 `/api/org/tree` 是**管理员专属**接口。用 `SMOKE_ACCOUNT=user01` 这类普通账号跑时，
+这两个接口返回 **403 是权限拦截生效，不是故障** —— 脚本会把它记成
+「403（管理员接口，普通账号被正确拦截）」并算作**通过**。
+
+脚本对这两个路径的 403 做了显式豁免（`is_admin_only`），其它路径的 4xx/5xx 一律算失败。
 
 **注意**：首次部署 admin 处于「必须改密」状态，服务端会拦截除改密外的所有接口（403）——
 这是设计行为。脚本会识别并提示「请先改密」，**改完密再重跑一次才是完整验收**。
-
-```bash
-# 直连 API 排查用（跳过前端与安全头检查）
-bash /data/workbench/scripts/smoke.sh http://127.0.0.1:3000 --direct
-```
 
 ---
 
@@ -178,6 +299,22 @@ journalctl -u workbench-api -n 100 --no-pager   # 最近 100 行
 sudo systemctl restart workbench-api     # 重启
 ```
 
+### 6.1 开机自启的三个服务
+
+| 服务 | unit 名 | 谁来 enable | 检查命令 |
+|---|---|---|---|
+| API | `workbench-api` | `install.sh` 自动 `systemctl enable` | `systemctl is-enabled workbench-api` |
+| nginx | `nginx` | **要自己 enable**（`install.sh` 只装 unit 不动 nginx） | `systemctl is-enabled nginx` |
+| PostgreSQL | `postgresql` | **要自己 enable**（`one-shot.sh` 会做，`install.sh` 不会） | `systemctl is-enabled postgresql` |
+
+```bash
+# 走 install.sh 路线的话，nginx 与 postgresql 要自己补上开机自启
+sudo systemctl enable nginx
+sudo systemctl enable postgresql
+```
+
+> ⚠️ 忘了 enable nginx 或 postgresql，机器重启后站点就起不来 —— 这是最常见的「昨天还好好的，今天打不开了」。
+
 ### 升级
 
 ```bash
@@ -185,23 +322,36 @@ sudo systemctl restart workbench-api     # 重启
 bash scripts/package-release.sh
 scp dist-release/workbench-release-*.tar.gz <user>@<host>:/tmp/
 # 服务器
-sudo bash /tmp/install.sh --tarball /tmp/workbench-release-*.tar.gz
-bash /data/workbench/scripts/smoke.sh https://<域名>
+tar -xzf /tmp/workbench-release-*.tar.gz -C /tmp
+sudo bash /tmp/workbench-release-*/scripts/install.sh --tarball /tmp/workbench-release-*.tar.gz
+bash /data/workbench/deploy/smoke.sh https://<域名>
 ```
 
 `install.sh` 幂等，重复跑安全。每次安装前自动备份到 `/data/workbench/.releases/<时间戳>/`（保留最近 5 个）。
 
+> ⚠️ 升级**不会**自动跑迁移（见 §2.3：发布包里没有迁移工具）。
+> 这次版本带了新迁移的话，先在开发机 `npm run migrate` 并把库导过去，或在服务器上手工执行。
+
 ### 回滚
+
+`install.sh` 的备份只含 **`apps/` 与 `db/` 两个目录**（不含 `deploy/`、不含环境变量）。
+所以回滚就是「把这两个目录换回旧版本」：
 
 ```bash
 sudo systemctl stop workbench-api
+sudo rm -rf /data/workbench/apps /data/workbench/db
 sudo cp -r /data/workbench/.releases/<时间戳>/apps /data/workbench/
 sudo cp -r /data/workbench/.releases/<时间戳>/db    /data/workbench/
 sudo systemctl start workbench-api
 ```
 
+> ⚠️ **必须先 `rm -rf` 再 `cp -r`。** 直接 `cp -r 备份/apps /data/workbench/` 会把文件
+> **拷进已有目录**（变成 `apps/apps/...`），旧文件也留在那儿，回滚等于没回滚。
+> `install.sh` 自己的行为也是先 `rm -rf "$APP_DIR/apps" "$APP_DIR/db"` 再拷。
+
 > ⚠️ **数据库迁移不自动回滚**。如果新版本改了表结构，回滚代码前先确认旧版能兼容新表；
 > 必要时用 `pg_dump` 备份后手工回滚表结构。
+> 回滚 `db/` 目录只是还原**迁移脚本文件**，已执行的迁移记录（`pgmigrations` 表）不会回退。
 
 ---
 
@@ -217,3 +367,9 @@ sudo systemctl start workbench-api
 | 前端能开但接口 404 | nginx 没配 `/api/` 反代 | 检查 proxy_pass |
 | 登录后刷新就掉 | Cookie 的 secure 与实际协议不匹配 | staging 用 http 时 `COOKIE_SECURE=false`；https 时 `true` |
 | systemd 反复重启 | 环境变量校验失败 | `journalctl -u workbench-api -n 50` 看具体报错 |
+| 机器重启后站点打不开了 | nginx / postgresql 没 enable 自启 | `sudo systemctl enable nginx postgresql`（见 §6.1） |
+| 冒烟脚本第 4 项大面积 404 | 表没建 —— 发布包没有迁移工具，迁移被跳过了 | 按 §4.1 手工建表 |
+| 冒烟脚本报「node-pg-migrate 不在发布包里」 | 同上（这是**提示不是错误**，脚本会继续） | 同上 |
+| 冒烟脚本找不到文件 | 用了 `scripts/smoke.sh`（服务器上没这个路径） | 改成 `deploy/smoke.sh`（见 §5） |
+| 冒烟脚本登录 403「请求来源不被信任」 | `--direct` 时 Origin 与 `APP_ORIGIN` 不一致 | 加 `--origin=<APP_ORIGIN 的值>` |
+| 冒烟脚本报「未提供 SEED_ADMIN_PASSWORD」 | 口令三个来源都没有 | 设 `SEED_ADMIN_PASSWORD_FILE` 指向口令文件（见 §5.1） |
