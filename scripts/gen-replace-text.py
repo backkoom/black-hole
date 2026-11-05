@@ -30,10 +30,16 @@ S_USER = cps('121,97,114,117,56,88')        # 真实账号名
 # 写入文件时不经中间层 → 实际内容可靠（用码位验证过）。
 T_USER = cps('117,115,101,114,48,49')    # 通用账号名，与工作区一致
 
+# ---- 内网地址（历史版 one-shot.sh 里写死过发布包下载源）----
+# 源：内网 IP + 端口；目标：占位主机名（与工作区当前值一致）
+S_PKG_HOST = cps('49,48,46,49,46,52,46,53') + cps('58,56,56,57')      # pkg-host.internal:8899
+T_PKG_HOST = cps('112,107,103,45,104,111,115,116,46,105,110,116,101,114,110,97,108') \
+    + cps('58,56,56,57')                                              # pkg-host.internal:8899
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'dist-release', 'replace.txt')
 
-PAIRS = [(S_USER, T_USER)]
+PAIRS = [(S_USER, T_USER), (S_PKG_HOST, T_PKG_HOST)]
 
 
 def main() -> int:
