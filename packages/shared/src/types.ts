@@ -303,3 +303,55 @@ export interface FileStats {
   folderCount: number;
   byKind: Array<{ kind: FileKind; count: number; bytes: number }>;
 }
+
+/* ── 团队协作补全（2026-11-05）：公告 / 讨论 / 审批 ───────────────── */
+
+export interface Announcement {
+  id: number;
+  userId: number;
+  userName: string;
+  projectId: number | null;
+  projectName: string | null;
+  title: string;
+  content: string;
+  /** 置顶 */
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DiscussionTargetType = 'task' | 'project';
+
+export interface Discussion {
+  id: number;
+  userId: number;
+  userName: string;
+  targetType: DiscussionTargetType;
+  targetId: number;
+  /** 回复的父讨论；null 表示顶层 */
+  parentId: number | null;
+  content: string;
+  createdAt: string;
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Approval {
+  id: number;
+  requesterId: number;
+  requesterName: string;
+  /** 审批人；null 表示还没指派 */
+  assigneeId: number | null;
+  assigneeName: string | null;
+  /** 审批类型，如 项目立项 / 预算 / 变更 */
+  kind: string;
+  title: string;
+  detail: string | null;
+  targetType: DiscussionTargetType | null;
+  targetId: number | null;
+  status: ApprovalStatus;
+  /** 审批意见 */
+  comment: string | null;
+  decidedAt: string | null;
+  createdAt: string;
+}

@@ -34,8 +34,9 @@ export default tseslint.config(
   },
   {
     // CLI 脚本与后端：允许 console 输出（种子要打印一次性初始密码）
-    files: ['db/**/*.ts', 'apps/api/**/*.ts'],
+    files: ['db/**/*.ts', 'apps/api/**/*.ts', 'scripts/**/*.ts'],
     rules: {
+      // 种子/清理/演示脚本要打印进度与统计，console 是它们的正常输出通道
       'no-console': 'off',
     },
   },

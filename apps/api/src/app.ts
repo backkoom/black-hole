@@ -15,6 +15,7 @@ import { registerStatsRoutes } from './stats/routes.js';
 import { registerIdeaRoutes } from './ideas/routes.js';
 import { registerScheduleRoutes } from './schedule/routes.js';
 import { registerRiskRoutes } from './risks/routes.js';
+import { registerTeamRoutes } from './team/routes.js';
 import { registerFileRoutes } from './files/routes.js';
 import { getConfig } from './config.js';
 
@@ -146,6 +147,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerScheduleRoutes(app);
   await registerRiskRoutes(app);
   await registerFileRoutes(app);
+  await registerTeamRoutes(app);
 
   return app;
 }

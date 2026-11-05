@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { Dayjs } from 'dayjs';
 import {
   CheckCircleOutlined,
@@ -6,19 +6,22 @@ import {
   FundProjectionScreenOutlined,
   ScheduleOutlined,
 } from '@ant-design/icons';
+import { Select } from 'antd';
 import type { Project, Task } from '@workbench/shared/types';
 import { useAllTasks } from '../hooks/useAllTasks';
 import { useUserProjects } from '../hooks/useUserData';
 import { useStatsTaskCounts } from '../hooks/useUserStats';
-import { formatDateOnly, parseDateOnly, todayShanghaiDate } from '../utils/datetime';
+import { parseDateOnly, todayShanghaiDate } from '../utils/datetime';
 import { designVars } from '../styles/theme';
 import { LegendItem, MetricCard, Panel, ToneTag, type TagTone } from '../components/ui';
 import { LineChart, ProgressRing } from '../components/ui/charts';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
 import { ThinProgress } from '../components/user/ThinProgress';
-import { projectColor } from '../components/user/visuals';
+import { GanttChart, type GanttGroupBy } from '../components/gantt';
+import { useMilestones } from '../components/gantt/useMilestones';
 import '../styles/charts.css';
+import '../styles/progress.css';
 
 /**
  * 进度追踪页（老六最终用户端界面 · 图5）。
@@ -27,24 +30,22 @@ import '../styles/charts.css';
  * ProgressPage
  * ├─ PageHeader(「进度追踪」+ 副标题)
  * ├─ .wb-metric-row（4 张指标卡）
- * ├─ .wb-grid-left：项目进度计划（左侧宽）
+ * ├─ .wb-grid-left：项目进度计划（左侧宽 · **真甘特图**）
  * ├─ .wb-grid-right：项目健康度（右上）
  * ├─ .wb-grid-full：阶段进度（通栏）
  * └─ .wb-grid-left：进度偏差分析（左下）
  *
  * 数据口径（全部来自真实接口，没有 mock）：
  * - 项目与进度：GET /api/projects（progress / phase / dueDate 由服务端实时算好）
+ * - 里程碑：GET /api/milestones（甘特图上的菱形标记）
  * - 任务状态计数：GET /api/stats/tasks（todo / doing / done）
  * - 计划进度：项目「已过天数 / 总天数 × 100」的线性推算（封顶 100%）后取平均
  * - 实际进度：按任务完成时间（doneAt）回溯的项目平均完成率，末点即当前项目平均进度
  * - 成本控制 / 资源使用 / 风险状态：**接口没有这三个数据源 → 一律显示「暂无数据」**
  *
- * ⚠️ 不画真甘特图 —— 没有任务依赖关系数据，只做「项目级时间条 + 进度填充」。
+ * 甘特图（components/gantt/）是**项目级**的：只画项目时间条 + 里程碑 + 今天线，
+ * 不画任务级甘特（没有依赖箭头 / 任务条的数据源）。
  */
-
-/** 行栅格：项目名 / 时间条 / 百分比 / 截止日（时间轴表头与每一行共用，保证纵向对齐） */
-const ROW_GRID = 'minmax(0, 190px) minmax(0, 1fr) 46px 92px';
-const ROW_GAP = 12;
 
 /** 进度分档：≥80 良好，≥50 正常，其余预警 */
 function gradeProgress(percent: number): { label: string; tone: TagTone } {
@@ -58,45 +59,6 @@ function milestoneRate(projects: Project[]): { done: number; total: number; perc
   const total = projects.length;
   const done = projects.filter((project) => project.status === 'done').length;
   return { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100) };
-}
-
-/** 把「某天」换算成时间轴上的百分比位置 */
-function ratioOf(day: Dayjs, start: Dayjs, end: Dayjs): number {
-  const span = end.diff(start, 'day');
-  if (span <= 0) return 0;
-  const offset = day.diff(start, 'day');
-  return Math.max(0, Math.min(100, (offset / span) * 100));
-}
-
-/**
- * 轴标签的对齐方式 —— 贴边的标签改成左/右对齐，避免一半跑到面板外面。
- * 0% 用 translateX(0)，100% 用 translateX(-100%)，中间用 translateX(-50%)。
- */
-function clampTransform(percent: number): string {
-  if (percent <= 0) return 'translateX(0)';
-  if (percent >= 100) return 'translateX(-100%)';
-  return 'translateX(-50%)';
-}
-
-/** 时间轴刻度：跨度大按月、中等按周、跨度小按天 */
-function buildTicks(start: Dayjs, end: Dayjs): { day: Dayjs; label: string }[] {
-  const days = end.diff(start, 'day');
-  const stepDays =
-    days > 150 ? 30 : days > 60 ? 14 : days > 21 ? 7 : Math.max(1, Math.ceil(days / 4));
-  const ticks: { day: Dayjs; label: string }[] = [];
-  for (let offset = 0; offset <= days; offset += stepDays) {
-    const day = start.add(offset, 'day');
-    ticks.push({ day, label: day.format('MM-DD') });
-  }
-  // 末尾刻度与前一个太近会叠字 —— 距离不足半步就替换掉，否则才追加
-  const last = ticks[ticks.length - 1];
-  if (!last) return ticks;
-  if (end.diff(last.day, 'day') * 2 <= stepDays) {
-    ticks[ticks.length - 1] = { day: end, label: end.format('MM-DD') };
-  } else {
-    ticks.push({ day: end, label: end.format('MM-DD') });
-  }
-  return ticks;
 }
 
 /**
@@ -179,10 +141,15 @@ export function ProgressPage() {
   const projectsQuery = useUserProjects();
   const tasksQuery = useAllTasks();
   const taskStatsQuery = useStatsTaskCounts();
+  const milestonesQuery = useMilestones();
+
+  /** 甘特图分组方式（默认按阶段分组 —— 对齐设计稿图5 的下拉） */
+  const [groupBy, setGroupBy] = useState<GanttGroupBy>('phase');
 
   const projects = projectsQuery.data?.items ?? [];
   const tasks = tasksQuery.data ?? [];
   const taskStats = taskStatsQuery.data;
+  const milestones = milestonesQuery.data ?? [];
 
   /** 总体进度 = 所有项目 progress 的平均值 */
   const overallProgress = useMemo(() => {
@@ -192,54 +159,6 @@ export function ProgressPage() {
   }, [projects]);
 
   const milestone = useMemo(() => milestoneRate(projects), [projects]);
-
-  /** 时间轴范围：所有项目的创建日 ~ 最晚截止日（无截止日时取今天），并把今天包进来 */
-  const timeline = useMemo(() => {
-    const today = parseDateOnly(todayShanghaiDate());
-    if (today === null || projects.length === 0) return null;
-
-    const createdDays = projects
-      .map((project) => parseDateOnly(project.createdAt))
-      .filter((day): day is Dayjs => day !== null);
-    const dueDays = projects
-      .map((project) => parseDateOnly(project.dueDate))
-      .filter((day): day is Dayjs => day !== null);
-
-    const earliest =
-      createdDays.length > 0 ? createdDays.reduce((a, b) => (a.isBefore(b) ? a : b)) : today;
-    const latestDue =
-      dueDays.length > 0 ? dueDays.reduce((a, b) => (a.isAfter(b) ? a : b)) : today;
-    const start = earliest.isBefore(today) ? earliest : today;
-    const end = latestDue.isAfter(today) ? latestDue : today;
-
-    return {
-      start,
-      end,
-      ticks: buildTicks(start, end),
-      todayPercent: ratioOf(today, start, end),
-    };
-  }, [projects]);
-
-  /** 每个项目在时间轴上的位置（从创建日到截止日） */
-  const rows = useMemo(() => {
-    if (!timeline) return [];
-    return projects.map((project, index) => {
-      const created = parseDateOnly(project.createdAt);
-      const due = parseDateOnly(project.dueDate);
-      const hasDue = due !== null;
-      const startDay = created ?? timeline.start;
-      const endDay = hasDue ? due : timeline.end;
-      const left = ratioOf(startDay, timeline.start, timeline.end);
-      const right = ratioOf(endDay, timeline.start, timeline.end);
-      return {
-        project,
-        color: projectColor(project.color, index),
-        left,
-        width: Math.max(1.5, right - left),
-        hasDue,
-      };
-    });
-  }, [projects, timeline]);
 
   /** 阶段分组（没有阶段的项目归到「未设置阶段」，不编造阶段名） */
   const phaseGroups = useMemo(() => {
@@ -315,176 +234,46 @@ export function ProgressPage() {
           />
         </div>
 
-        {/* 左：项目进度计划（左侧宽） */}
+        {/* 左：项目进度计划（左侧宽 · 真甘特图） */}
         <div className="wb-grid-left">
-          <Panel title="项目进度计划" flush>
+          <Panel
+            title="项目进度计划"
+            extra={
+              <Select
+                size="small"
+                value={groupBy}
+                onChange={(value: GanttGroupBy) => setGroupBy(value)}
+                options={[
+                  { value: 'phase', label: '按阶段分组' },
+                  { value: 'none', label: '不分组' },
+                ]}
+                style={{ width: 116 }}
+              />
+            }
+            flush
+          >
             <div style={{ padding: '0 18px 16px' }}>
               <StateBlock
-                loading={projectsQuery.isPending}
-                error={projectsQuery.isError ? projectsQuery.error : undefined}
-                onRetry={() => void projectsQuery.refetch()}
+                loading={projectsQuery.isPending || milestonesQuery.isPending}
+                error={
+                  projectsQuery.isError
+                    ? projectsQuery.error
+                    : milestonesQuery.isError
+                      ? milestonesQuery.error
+                      : undefined
+                }
+                onRetry={() => {
+                  void projectsQuery.refetch();
+                  void milestonesQuery.refetch();
+                }}
                 isEmpty={projects.length === 0}
                 emptyText="还没有项目"
               >
-                {timeline ? (
-                  <>
-                    {/* 时间轴刻度 + 今天竖虚线 */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: ROW_GRID,
-                        columnGap: ROW_GAP,
-                        alignItems: 'center',
-                        height: 34,
-                        borderBottom: '1px solid #f2f5f9',
-                      }}
-                    >
-                      <span style={{ fontSize: 12, color: designVars.muted }}>项目 / 阶段</span>
-                      <div style={{ position: 'relative', height: 34 }}>
-                        {/* 今天的竖虚线（贯穿表头，与每行的虚线对齐） */}
-                        <span
-                          style={{
-                            position: 'absolute',
-                            left: `${timeline.todayPercent}%`,
-                            top: 0,
-                            bottom: 0,
-                            borderLeft: '1px dashed #f59e0b',
-                          }}
-                        />
-                        <span
-                          style={{
-                            position: 'absolute',
-                            left: `${timeline.todayPercent}%`,
-                            top: 0,
-                            transform: clampTransform(timeline.todayPercent),
-                            fontSize: 11,
-                            lineHeight: '12px',
-                            color: designVars.orange,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          今天
-                        </span>
-                        {timeline.ticks.map((tick) => {
-                          const percent = ratioOf(tick.day, timeline.start, timeline.end);
-                          return (
-                            <span
-                              key={tick.label}
-                              style={{
-                                position: 'absolute',
-                                left: `${percent}%`,
-                                top: 16,
-                                transform: clampTransform(percent),
-                                fontSize: 11,
-                                lineHeight: '12px',
-                                color: designVars.muted,
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {tick.label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                      <span />
-                      <span />
-                    </div>
-
-                    {/* 每个项目一行 */}
-                    {rows.map((row) => (
-                      <div
-                        key={row.project.id}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: ROW_GRID,
-                          columnGap: ROW_GAP,
-                          alignItems: 'center',
-                          padding: '10px 0',
-                          borderBottom: '1px solid #f2f5f9',
-                        }}
-                      >
-                        <div style={{ minWidth: 0 }}>
-                          <div
-                            style={{
-                              overflow: 'hidden',
-                              color: designVars.text,
-                              fontSize: 13.5,
-                              fontWeight: 600,
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={row.project.name}
-                          >
-                            {row.project.name}
-                          </div>
-                          <div style={{ marginTop: 3 }}>
-                            {row.project.phase ? (
-                              <ToneTag tone="purple">{row.project.phase}</ToneTag>
-                            ) : (
-                              <span style={{ fontSize: 12, color: designVars.muted }}>—</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 横向时间条：条体 = 创建日 ~ 截止日，内部按 progress 填充 */}
-                        <div style={{ position: 'relative', height: 24 }}>
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: 0,
-                              right: 0,
-                              top: 9,
-                              height: 6,
-                              borderRadius: 3,
-                              background: '#f2f5f9',
-                            }}
-                          />
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: `${row.left}%`,
-                              width: `${row.width}%`,
-                              top: 7,
-                              height: 10,
-                              borderRadius: 5,
-                              background: '#e6eaf2',
-                              overflow: 'hidden',
-                            }}
-                            title={
-                              row.hasDue
-                                ? `${row.project.name}：${formatDateOnly(row.project.createdAt)} ~ ${formatDateOnly(row.project.dueDate)}`
-                                : `${row.project.name}：${formatDateOnly(row.project.createdAt)} 起（未设置截止日）`
-                            }
-                          >
-                            <div
-                              style={{
-                                width: `${Math.max(0, Math.min(100, row.project.progress))}%`,
-                                height: '100%',
-                                background: `linear-gradient(90deg, ${row.color}, ${designVars.primary})`,
-                                transition: 'width .3s ease',
-                              }}
-                            />
-                          </div>
-                          {/* 今天竖虚线 */}
-                          <div
-                            style={{
-                              position: 'absolute',
-                              left: `${timeline.todayPercent}%`,
-                              top: 0,
-                              bottom: 0,
-                              borderLeft: '1px dashed #f59e0b',
-                            }}
-                          />
-                        </div>
-
-                        <span className="wb-progress-percent">{row.project.progress}%</span>
-                        <span className="wb-progress-date">
-                          {row.hasDue ? formatDateOnly(row.project.dueDate) : '—'}
-                        </span>
-                      </div>
-                    ))}
-                  </>
-                ) : null}
+                <GanttChart
+                  projects={projects}
+                  milestones={milestones}
+                  groupBy={groupBy}
+                />
               </StateBlock>
             </div>
           </Panel>

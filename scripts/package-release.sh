@@ -73,6 +73,10 @@ cp    packages/shared/package.json "$PKG_DIR/packages/shared/"
 cp -r packages/shared/dist       "$PKG_DIR/packages/shared/" 2>/dev/null || true
 cp -r db/migrations        "$PKG_DIR/db/"
 cp    db/seed.ts           "$PKG_DIR/db/"     # 播种脚本（一次性用 tsx 跑）
+cp    scripts/seed-demo.ts "$PKG_DIR/scripts/" # 演示数据播种
+cp    scripts/reset-and-demo.sh "$PKG_DIR/scripts/" # 服务器数据重置 + 演示数据
+cp    scripts/seed-demo.ts "$PKG_DIR/scripts/" # 演示数据播种
+cp    scripts/reset-and-demo.sh "$PKG_DIR/scripts/" # 服务器数据重置 + 演示数据
 cp -r deploy               "$PKG_DIR/"
 cp    deploy/install.sh    "$PKG_DIR/scripts/"
 cp    deploy/one-shot.sh   "$PKG_DIR/scripts/"

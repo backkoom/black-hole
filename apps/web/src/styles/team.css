@@ -3,7 +3,7 @@
  *
  * 单独成文件而不是塞进 global.css：
  * - global.css 是全局基线，页面私有样式不该污染它；
- * - 本页的栅格是 12 列里的 8/4/12 混排。
+ * - 本页的栅格是 12 列里的 8/4/6/12 混排。
  */
 
 /* 12 列栅格：间距 18px（与设计稿一致） */
@@ -14,15 +14,21 @@
   align-items: start;
 }
 
-/* 左侧宽（团队成员） */
+/* 左侧宽（团队成员 / 团队公告） */
 .wb-team-8 {
   grid-column: span 8;
   min-width: 0;
 }
 
-/* 右侧窄（角色分工） */
+/* 右侧窄（角色分工 / 待我审批） */
 .wb-team-4 {
   grid-column: span 4;
+  min-width: 0;
+}
+
+/* 半宽（最近讨论 / 会议纪要） */
+.wb-team-6 {
+  grid-column: span 6;
   min-width: 0;
 }
 
@@ -55,7 +61,6 @@
   justify-content: center;
 }
 
-/* 状态点：取账号状态（接口没有实时在线状态字段） */
 .wb-team-dot {
   position: absolute;
   right: 0;
@@ -121,6 +126,332 @@
   line-height: 1.7;
 }
 
+/* ================= 指标卡 ================= */
+
+/*
+ * 本页 6 张指标卡 —— 覆盖 global.css 的 .wb-metric-row（4 列）。
+ * 用 `.wb-metric-row.wb-team-metric-row` 提高一级特异性，
+ * 保证不受 global.css 里媒体查询的覆盖顺序影响。
+ */
+.wb-metric-row.wb-team-metric-row {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+@media (max-width: 1439px) {
+  .wb-metric-row.wb-team-metric-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .wb-metric-row.wb-team-metric-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .wb-metric-row.wb-team-metric-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ================= 团队公告 ================= */
+
+/* 一条公告：标题行 + 摘要 + 元信息 */
+.wb-team-ann {
+  padding: 12px 0;
+  border-bottom: 1px solid #f2f5f9;
+}
+
+.wb-team-ann:last-child {
+  border-bottom: none;
+}
+
+.wb-team-ann-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.wb-team-ann-title {
+  overflow: hidden;
+  flex: 1;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 编辑 / 删除按钮 —— 靠右，不占正文宽度 */
+.wb-team-ann-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.wb-team-ann:hover .wb-team-ann-actions {
+  opacity: 1;
+}
+
+/* 内容摘要 —— 最多两行 */
+.wb-team-ann-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* 发布人 / 相对时间 / 项目标签 */
+.wb-team-ann-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.wb-team-ann-author {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.wb-team-ann-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 分页条 */
+.wb-team-ann-pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+}
+
+/* ================= 最近讨论 ================= */
+
+/* 工具条：讨论对象下拉 + 输入框 + 发表按钮 */
+.wb-team-disc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+}
+
+.wb-team-disc-target {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.wb-team-disc-input {
+  flex: 3 1 260px;
+  min-width: 0;
+}
+
+/* 一个讨论串 */
+.wb-team-thread {
+  padding: 12px 0;
+  border-bottom: 1px solid #f2f5f9;
+}
+
+.wb-team-thread:last-child {
+  border-bottom: none;
+}
+
+/* 一条讨论：正文 + 操作 */
+.wb-team-disc-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.wb-team-disc-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.wb-team-disc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.wb-team-disc-author {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wb-team-disc-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-team-disc-content {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* 操作按钮 */
+.wb-team-disc-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+/* 回复区 —— 缩进 + 左侧竖线 */
+.wb-team-thread-replies {
+  margin: 8px 0 0 18px;
+  padding-left: 12px;
+  border-left: 2px solid #eef1f6;
+}
+
+.wb-team-thread-replies .wb-team-disc-row + .wb-team-disc-row {
+  margin-top: 10px;
+}
+
+/* 回复输入框 */
+.wb-team-disc-replybox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0 0 18px;
+  padding-left: 12px;
+  border-left: 2px solid #eef3ff;
+}
+
+.wb-team-disc-replybox .ant-input {
+  flex: 1 1 240px;
+}
+
+/* ================= 待我审批 ================= */
+
+/* 筛选条 */
+.wb-team-appr-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.wb-team-appr-select {
+  min-width: 118px;
+}
+
+/* 一条审批 */
+.wb-team-appr {
+  padding: 12px 0;
+  border-bottom: 1px solid #f2f5f9;
+}
+
+.wb-team-appr:last-child {
+  border-bottom: none;
+}
+
+.wb-team-appr-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.wb-team-appr-title {
+  overflow: hidden;
+  flex: 1 1 140px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 审批详情 */
+.wb-team-appr-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* 提交人 / 时间 / 审批人 */
+.wb-team-appr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 已处理：审批意见 */
+.wb-team-appr-comment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f7f9fc;
+  font-size: 12.5px;
+}
+
+.wb-team-appr-comment-label {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.wb-team-appr-comment-text {
+  color: var(--text-2);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* 通过 / 驳回按钮 */
+.wb-team-appr-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 审批弹窗 */
+.wb-team-appr-modal-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wb-team-appr-modal-meta {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* ================= 会议纪要 ================= */
 
 /* 一条纪要：时间 + 标题 / 地点 · 项目 / 备注 */
@@ -180,6 +511,7 @@
 /* 窄屏收敛：12 列改成单列，避免出现横向滚动条 */
 @media (max-width: 1200px) {
   .wb-team-8,
+  .wb-team-6,
   .wb-team-4,
   .wb-team-12 {
     grid-column: span 12;
@@ -193,5 +525,10 @@
 
   .wb-team-org {
     display: none;
+  }
+
+  .wb-team-minute {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
   }
 }

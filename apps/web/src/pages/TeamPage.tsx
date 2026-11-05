@@ -6,6 +6,8 @@ import {
   CommentOutlined,
   EnvironmentOutlined,
   FileDoneOutlined,
+  MessageOutlined,
+  NotificationOutlined,
   ProjectOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
@@ -13,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Role, UserListItem } from '@workbench/shared/types';
 import { listUsers } from '../api/users';
 import { listMeetings } from '../api/schedule';
+import { listAllDiscussions, listAnnouncements, teamKeys } from '../api/team';
 import { errorStatus } from '../api/messages';
 import { useUserProjects, useUserTasks } from '../hooks/useUserData';
 import {
@@ -27,36 +30,42 @@ import type { TagTone } from '../components/ui';
 import { DonutChart } from '../components/ui/charts';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
+import { AnnouncementsPanel } from '../components/team/AnnouncementsPanel';
+import { DiscussionsPanel } from '../components/team/DiscussionsPanel';
+import { ApprovalsPanel, usePendingApprovalCount } from '../components/team/ApprovalsPanel';
 import '../styles/team.css';
 
 /**
- * 团队协作页（老六最终用户端界面 · 稿子图6）—— **本期降级版**。
+ * 团队协作页（老六最终用户端界面 · 稿子图6）。
  *
- * 稿子里的「团队公告」「最近讨论」「待我审批」「协作动态」都依赖
- * 即时通讯 / 通知链路，**本期不做**，所以这四块一个都不画
- * （宁缺毋滥 —— 不放「暂无数据」的假面板）。
- *
- * 本期只做四块：
+ * 组件树：
+ * TeamPage
  * ├─ PageHeader（「团队协作」+ 副标题）
- * ├─ .wb-metric-row（4 张指标卡）
+ * ├─ .wb-metric-row.wb-team-metric-row（6 张指标卡）
  * ├─ .wb-team-grid（12 列栅格）
  * │  ├─ .wb-team-8：Panel「团队成员」（头像 + 姓名 + 角色标签 + 所属组织 + 状态点）
  * │  ├─ .wb-team-4：Panel「角色分工」（环形图，成员按角色分组）
- * │  └─ .wb-team-12：Panel「会议纪要」（标题 + 时间 + 地点 + 项目）
+ * │  ├─ .wb-team-8：Panel「团队公告」（置顶优先 + 摘要 + 发布人 + 相对时间 + 项目标签）
+ * │  ├─ .wb-team-4：Panel「待我审批」（状态筛选 + 通过 / 驳回 + 审批意见）
+ * │  ├─ .wb-team-6：Panel「最近讨论」（按讨论串分组，回复缩进）
+ * │  └─ .wb-team-6：Panel「会议纪要」（标题 + 时间 + 地点 + 项目）
  *
  * 数据口径（全部来自真实接口，没有 mock）：
  * - 成员名单：GET /api/users —— **仅管理员**，普通用户 403；
  *   降级路径：403 时改用 GET /api/projects 的 members（项目成员姓名）∪
  *   GET /api/tasks 的 assigneeName（任务负责人姓名），
  *   此时**角色与组织拿不到**，显示「—」，不编造；
+ * - 公告：GET /api/announcements（服务端已按「置顶优先 + 时间倒序」排序）；
+ * - 讨论：GET /api/discussions（服务端按创建时间**升序**，此处翻完页后倒序取最近）；
+ * - 审批：GET /api/approvals?status=&scope=（scope=mine 指派给我的 / submitted 我提交的 / all 全部）；
  * - 会议：GET /api/meetings（普通用户看自己的，管理员看全员）。
- * - 今日讨论 = 今天的会议数（讨论数据源本期不存在，用会议数代替并注明）；
- * - 待审批 = 无数据源 → 显示「—」；
- * - 本周会议 = 本周（周一至周日，东八区）的会议数。
  *
  * ⚠️ 「在线状态」没有数据源 —— 接口没有 presence / 在线字段。
  *    面板里的状态点取账号的 status（active / disabled），并用 Tooltip 说明，
  *    不假装是实时在线状态。
+ *
+ * ⚠️ 相对时间（刚刚 / N 分钟前 / N 天前）由 components/team/relativeTime.ts 提供 ——
+ *    utils/datetime.ts 只有绝对时间格式化，没有相对时间函数。
  */
 
 /** 角色 → 中文标签 */
@@ -70,6 +79,9 @@ const ROLE_TONE: Record<Role, TagTone> = {
   admin: 'purple',
   user: 'blue',
 };
+
+/** 公告 / 讨论列表的每页条数 —— 与后端分页口径一致 */
+const PAGE_SIZE = 20;
 
 /** 降级来源：目录（GET /api/users）还是从项目 / 任务反推出来的成员 */
 type MemberSource = 'directory' | 'derived';
@@ -105,16 +117,38 @@ export function TeamPage() {
     retry: false,
   });
 
-  /** 会议（会议纪要 + 今日 / 本周会议数） */
+  /** 会议（会议纪要 + 本周会议数） */
   const meetingsQuery = useQuery({
     queryKey: ['schedule', 'meetings', 'team'],
     queryFn: () => listMeetings(),
     staleTime: 30_000,
   });
 
+  /**
+   * 公告 —— 与公告面板用**同一个 queryKey**，react-query 会复用同一份数据，
+   * 指标卡的「团队公告数」直接取 total，不再发第二次请求。
+   */
+  const announcementsQuery = useQuery({
+    queryKey: teamKeys.announcements({ page: 1, pageSize: PAGE_SIZE }),
+    queryFn: () => listAnnouncements({ page: 1, pageSize: PAGE_SIZE }),
+    staleTime: 30_000,
+  });
+
+  /** 讨论 —— 与讨论面板共用同一份数据（同样按 key 复用） */
+  const discussionsQuery = useQuery({
+    queryKey: teamKeys.discussions({}),
+    queryFn: () => listAllDiscussions(),
+    staleTime: 30_000,
+  });
+
+  /** 待我审批数（与审批面板默认筛选共用同一份数据） */
+  const pendingApprovalCount = usePendingApprovalCount();
+
   const meetings = meetingsQuery.data ?? [];
   const projects = projectsQuery.data?.items ?? [];
   const tasks = tasksQuery.data?.items ?? [];
+  const announcementTotal = announcementsQuery.data?.total ?? 0;
+  const discussionTotal = discussionsQuery.data?.total ?? 0;
 
   /**
    * 成员名单与来源：
@@ -162,10 +196,11 @@ export function TeamPage() {
     ];
   }, [members]);
 
-  /** 今天的会议数（代替「今日讨论」） */
-  const todayMeetings = useMemo(() => {
-    return meetings.filter((meeting) => toCalendarDate(meeting.startAt) === today);
-  }, [meetings, today]);
+  /** 今天的讨论数（讨论数据源已接入，不再拿会议数顶替） */
+  const todayDiscussions = useMemo(() => {
+    const items = discussionsQuery.data?.items ?? [];
+    return items.filter((item) => toCalendarDate(item.createdAt) === today).length;
+  }, [discussionsQuery.data, today]);
 
   /** 本周（周一至周日，东八区）的会议数 */
   const weekMeetings = useMemo(() => {
@@ -199,24 +234,38 @@ export function TeamPage() {
       hint: source === 'directory' ? '账号目录中的成员' : '项目成员与任务负责人去重',
     },
     {
-      label: '今日讨论',
-      value: todayMeetings.length,
-      icon: <CommentOutlined />,
-      color: designVars.green,
-      hint: '讨论数据源未接入，暂以今日会议数代替',
+      label: '团队公告数',
+      value: announcementTotal,
+      icon: <NotificationOutlined />,
+      color: designVars.orange,
+      hint: '全部公告（置顶优先展示）',
     },
     {
-      label: '待审批',
-      value: '—',
+      label: '今日讨论',
+      value: todayDiscussions,
+      icon: <CommentOutlined />,
+      color: designVars.green,
+      hint: '今天新增的讨论条数（东八区）',
+    },
+    {
+      label: '讨论总数',
+      value: discussionTotal,
+      icon: <MessageOutlined />,
+      color: designVars.purple,
+      hint: '任务与项目上的讨论',
+    },
+    {
+      label: '待我审批数',
+      value: pendingApprovalCount,
       icon: <FileDoneOutlined />,
-      color: designVars.orange,
-      hint: '审批链路本期未接入',
+      color: designVars.red,
+      hint: '待处理且我能处理的审批',
     },
     {
       label: '本周会议',
       value: weekMeetings.length,
-      color: designVars.purple,
       icon: <CalendarOutlined />,
+      color: designVars.primary,
       hint: '周一至周日（东八区）',
     },
   ];
@@ -225,8 +274,8 @@ export function TeamPage() {
     <div className="wb-page">
       <PageHeader title="团队协作" subtitle="查看成员分工与会议纪要，了解团队协作节奏" />
 
-      {/* 4 张指标卡 */}
-      <div className="wb-metric-row">
+      {/* 6 张指标卡 */}
+      <div className="wb-metric-row wb-team-metric-row">
         {metricCards.map((card) => (
           <MetricCard
             key={card.label}
@@ -361,8 +410,23 @@ export function TeamPage() {
           </Panel>
         </div>
 
+        {/* 团队公告 */}
+        <div className="wb-team-8">
+          <AnnouncementsPanel projects={projects} />
+        </div>
+
+        {/* 待我审批 */}
+        <div className="wb-team-4">
+          <ApprovalsPanel />
+        </div>
+
+        {/* 最近讨论 */}
+        <div className="wb-team-6">
+          <DiscussionsPanel projects={projects} tasks={tasks} />
+        </div>
+
         {/* 会议纪要 */}
-        <div className="wb-team-12">
+        <div className="wb-team-6">
           <Panel
             title="会议纪要"
             more="全部会议"

@@ -1,0 +1,216 @@
+/**
+ * 进度追踪页（用户端「进度追踪」）的样式 —— 甘特图部分。
+ *
+ * 设计约束：
+ * - 甘特区自身横向可滚动（overflow-x:auto），页面本身不产生横向滚动条；
+ * - 左侧项目列、右侧数值列固定，只有中间的时间轴滚动；
+ * - 颜色一律取自 styles/theme.ts 的 designVars（CSS 变量见 global.css）。
+ */
+
+/* 甘特区外壳 */
+.wb-gantt {
+  width: 100%;
+  min-width: 0;
+}
+
+/* 三列栅格：项目列 | 时间轴 | 数值列 */
+.wb-gantt-grid {
+  display: grid;
+  grid-template-columns: var(--wb-gantt-left) minmax(0, 1fr) var(--wb-gantt-right);
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 左列：项目名 + 阶段标签 */
+.wb-gantt-left {
+  min-width: 0;
+  padding-right: 10px;
+}
+
+.wb-gantt-head-cell {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.wb-gantt-label-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 10px 6px 0;
+}
+
+.wb-gantt-name {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-left: 9px;
+  cursor: default;
+}
+
+/* 项目名前的主题色竖条（设计稿里的 ▌）—— 颜色取项目自带色 */
+.wb-gantt-name::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 13px;
+  border-radius: 2px;
+  background: currentcolor;
+  content: '';
+  transform: translateY(-50%);
+}
+
+/* 项目名文字本身用正文色 —— 色块只体现在左侧竖条上 */
+.wb-gantt-name-text {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-gantt-phase {
+  flex: 0 0 auto;
+  max-width: 76px;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 分组标题行（按阶段分组时出现） */
+.wb-gantt-group-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px 5px 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.wb-gantt-group-title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-gantt-group-meta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 中列：时间轴画布（横向可滚动） */
+.wb-gantt-chart {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.wb-gantt-svg {
+  display: block;
+}
+
+/* 右列：进度百分比 + 截止日 */
+.wb-gantt-right {
+  min-width: 0;
+  padding-left: 12px;
+}
+
+.wb-gantt-value-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.wb-gantt-pct {
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.wb-gantt-due {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 悬停提示浮层 */
+.wb-gantt-tip {
+  position: absolute;
+  z-index: 5;
+  min-width: 150px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 6px 18px rgba(31, 41, 55, 0.12);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.wb-gantt-tip-title {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wb-gantt-tip-row {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.wb-gantt-tip-label {
+  color: var(--muted);
+}
+
+.wb-gantt-tip-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 无可排期项目 */
+.wb-gantt-empty {
+  padding: 28px 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 窄屏：左右两列收窄，避免横向撑破面板 */
+@media (max-width: 1200px) {
+  .wb-gantt-grid {
+    grid-template-columns: minmax(0, 150px) minmax(0, 1fr) minmax(0, 128px);
+  }
+
+  .wb-gantt-phase {
+    max-width: 56px;
+  }
+}
