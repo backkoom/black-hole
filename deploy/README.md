@@ -140,23 +140,79 @@ sudo bash /tmp/workbench-release-*/scripts/install.sh --tarball /tmp/workbench-r
 
 ## 3. 配置 nginx
 
+先选形态——**这两种不一样，别混着用**：
+
+| 形态 | 适用 | 用哪个文件 |
+|---|---|---|
+| **A. 项目自带 nginx** | 这台机器只服务工作台，80/443 归它 | `deploy/nginx.conf.example`（完整 `server{}`） |
+| **B. 接入已有 nginx** | 机器上已经跑着别的站点，工作台另开 `server{}` 或贴进现有 `server{}` | `deploy/nginx-integrate.conf.snippet`（只有 `location` 片段） |
+
+> ⚠️ 形态 B 只支持挂在**域名根路径 `/`**。想挂 `/workbench/` 这种子路径要改前端 router 的
+> `basename`，属于代码改动，不在这套配置能力范围内——需要子路径就单独说。
+
+### 3.1 形态 A：项目自带 nginx
+
 ```bash
 sudo cp /data/workbench/deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
 sudo vi /etc/nginx/conf.d/workbench.conf      # 改 server_name / 证书路径
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-模板里做了这几件事：
+### 3.2 形态 B：接入已有 nginx
 
-- `/api/` → 反代到 `127.0.0.1:3000`（同源）
+```bash
+sudo vi /etc/nginx/conf.d/<你已有的站点>.conf
+# 把 deploy/nginx-integrate.conf.snippet 里的 ①~⑤ 贴进那个 server{} 里
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+贴之前确认两件事：`/` 没被别的站点占用；**`add_header` 是覆盖不是合并**，
+所以片段里每个 `location` 都把安全头重复写了一遍——别删。
+
+### 3.3 模板做了这几件事（两种形态一致）
+
+- `/api/` → 反代到 `127.0.0.1:3000`（同源，前端不跨域）
 - `try_files $uri $uri/ /index.html` —— SPA 路由回退
 - `/assets/` 长缓存（带 hash）、`index.html` 不缓存（发版后立刻生效）
 - `.map` 源映射文件拒绝访问
 - gzip + 安全响应头（HSTS / nosniff / X-Frame-Options / Referrer-Policy）
 - `client_max_body_size 4m` —— 账号批量导入单文件限 2MB，这里留到 4m 宽一点
+- 用 `listen 443 ssl http2;` 而不是 `http2 on;` —— 后者要 nginx ≥ 1.25.1，
+  Ubuntu 24.04 是 1.24，会报 `unknown directive "http2"` 直接起不来
 
-**没有 HTTPS 证书时**：把 443 那段 server 注释掉，只留 80，并把 `APP_ORIGIN` 设成 `http://`，
-同时 `NODE_ENV=staging`（`production` 强制要求 https，会启动失败）。
+### 3.4 HTTPS：三条路，按手上有什么选
+
+| 情况 | 怎么做 |
+|---|---|
+| 有企业 CA / 正式域名证书 | 把 `.crt`/`.key` 放 `/etc/nginx/ssl/`，改模板里两行路径即可 |
+| 什么都没有，先把 HTTPS 跑起来 | `sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102`（自签，浏览器提示不安全，点继续访问） |
+| 有公网域名 | 装 certbot 走 ACME，模板里已留 `/.well-known/acme-challenge/` 落点 |
+
+**切 HTTPS 必须同时改 4 处，少一处就登不上或起不来：**
+
+```bash
+sudo vi /etc/workbench/api.env
+#   1. APP_ORIGIN=https://<域名>     ← 协议必须写 https，且与地址栏完全一致
+#   2. COOKIE_SECURE=true            ← HTTPS 下必须开；还在 HTTP 时**不能**开，开了登录拿不到 Cookie
+#   3. NODE_ENV=production           ← production 强制要求 https；反过来说 HTTP 环境得留 staging
+sudo nginx -t && sudo systemctl reload nginx
+sudo systemctl restart workbench-api
+bash /data/workbench/deploy/smoke.sh https://<域名>
+```
+
+> 顺序很重要：**先让 nginx 的 443 起来，再改 `APP_ORIGIN`/`COOKIE_SECURE` 并重启 API**。
+> 反过来会有一段时间 API 拒绝所有请求（Origin 不匹配），现场看起来像"登录坏了"。
+
+### 3.5 没有证书时（纯 HTTP 内网）
+
+把 443 那段和 80 跳转那段注释掉，只留一个 80 的 `server`（现网就是这么跑的：
+`listen 80 default_server; server_name _;` + 三个 location），并保证：
+
+```bash
+APP_ORIGIN=http://<IP或域名>
+COOKIE_SECURE=false
+NODE_ENV=staging
+```
 
 ---
 
@@ -299,7 +355,54 @@ journalctl -u workbench-api -n 100 --no-pager   # 最近 100 行
 sudo systemctl restart workbench-api     # 重启
 ```
 
-### 6.1 开机自启的三个服务
+### 6.1 备份与恢复（每天自动 + 每季度真演练一次）
+
+**装定时备份（一次就好）：**
+
+```bash
+sudo install -m 755 /data/workbench/deploy/backup.sh  /data/workbench/deploy/backup.sh
+sudo cp /data/workbench/deploy/workbench-backup.service /etc/systemd/system/
+sudo cp /data/workbench/deploy/workbench-backup.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now workbench-backup.timer
+
+systemctl list-timers workbench-backup.timer      # 看下次触发时间
+sudo systemctl start workbench-backup.service     # 立刻跑一次（验证用）
+journalctl -u workbench-backup.service -n 40 --no-pager
+```
+
+备份内容（每次一个时间戳目录，四件套）：数据库 `pg_dump` 自定义格式、前端产物、
+`api.env`（含口令，权限 600）、`manifest.txt`（SHA256 + 版本 + 各表行数）。
+默认放 `/data/backups/workbench`，保留最近 14 份；**建议改到另一块盘或 NAS**：
+`sudo systemctl edit workbench-backup.service` 里加 `Environment=DEST=/mnt/backup/workbench`。
+
+**恢复演练（每季度做一次，别等真出事才试）：**
+
+```bash
+# ① 先看这份备份对不对
+cat /data/backups/workbench/<时间戳>/manifest.txt
+
+# ② 导进演练库（不动生产）
+sudo bash /data/workbench/deploy/restore.sh \
+     --dump /data/backups/workbench/<时间戳> --to workbench_drill
+#   脚本会自动核对 users / org_nodes / projects / tasks 行数，任一为 0 就报错退出
+
+# ③ 核对完删掉演练库
+sudo -u postgres psql -c 'DROP DATABASE "workbench_drill"'
+```
+
+**真回滚（生产库）：**
+
+```bash
+sudo bash /data/workbench/deploy/backup.sh                    # 先把"现在"存一份
+sudo bash /data/workbench/deploy/restore.sh \
+     --dump /data/backups/workbench/<时间戳> --to workbench --force
+bash /data/workbench/deploy/smoke.sh http://127.0.0.1         # 回滚后必须冒烟
+```
+
+`restore.sh` 不带 `--force` 时**拒绝**覆盖服务正在用的库——这是故意的，防手滑。
+
+### 6.2 开机自启的三个服务
 
 | 服务 | unit 名 | 谁来 enable | 检查命令 |
 |---|---|---|---|
@@ -331,6 +434,23 @@ bash /data/workbench/deploy/smoke.sh https://<域名>
 
 > ⚠️ 升级**不会**自动跑迁移（见 §2.3：发布包里没有迁移工具）。
 > 这次版本带了新迁移的话，先在开发机 `npm run migrate` 并把库导过去，或在服务器上手工执行。
+
+**升级后要逐项确认（缺一项都可能"升级成功但页面是旧的"）：**
+
+```bash
+# 1. 版本对上了没（install.sh 会把包的 RELEASE.txt 拷到安装目录）
+cat /data/workbench/RELEASE.txt
+
+# 2. 线上 index.html 引用的资源 hash 是不是新的
+grep -o 'index-[A-Za-z0-9_-]*\.\(js\|css\)' /data/workbench/apps/web/dist/index.html
+curl -s http://127.0.0.1/ | grep -o 'index-[A-Za-z0-9_-]*\.\(js\|css\)'   # 两行必须一致
+
+# 3. 服务活着、接口通
+systemctl is-active workbench-api
+bash /data/workbench/deploy/smoke.sh http://127.0.0.1
+```
+
+> 第 2 步两行不一致 = nginx 的 `root` 指到了旧目录，是最常见的"发版了但用户看不到"。
 
 ### 回滚
 

@@ -1,11 +1,17 @@
 # ==============================================================================
-# 工作台与组织架构 —— nginx 配置模板
+# 形态 A：项目自带 nginx（这个 server 独占 80/443）—— 完整配置文件
 #
 # 用法：
 #   sudo cp deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
 #   sudo nginx -t && sudo systemctl reload nginx
 #
+# 如果服务器上**已经跑着别的站点**，别用这个文件，改用
+#   deploy/nginx-integrate.conf.snippet（只贴 location 片段）
+#
 # ⚠️ 下文的域名、端口、证书路径要按实际环境改。
+# ⚠️ 没有证书时：把「80 跳转」那段和 443 那段先注释掉，只留一个 80 的 server
+#    （可以直接照抄本机现状：listen 80 default_server; server_name _; + 同样三个 location）。
+#    HTTP 下 NODE_ENV 必须是 staging（production 强制要求 https，会启动失败）。
 # ==============================================================================
 
 # ---------------------------------------------------------------------------
@@ -30,9 +36,11 @@ server {
 # 主站
 # ---------------------------------------------------------------------------
 server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    http2 on;
+    # ⚠️ 写成 `listen 443 ssl http2;` 而不是 `listen 443 ssl;` + `http2 on;`：
+    #    后者要 nginx ≥ 1.25.1，Ubuntu 24.04 仓库里是 1.24，会直接报 unknown directive。
+    #    1.25+ 上这种写法只会有一条 deprecated 警告，不影响运行。
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name workbench.example.internal;
 
     # --- 证书 ---

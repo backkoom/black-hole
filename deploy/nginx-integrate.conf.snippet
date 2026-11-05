@@ -1,0 +1,66 @@
+# ==============================================================================
+# 形态 B：接入**已有 nginx**（服务器上已经跑着别的站点）—— location 片段
+#
+# ⚠️ 这是「片段」，不是完整配置文件：把它贴进你现有 server{} 里，不要单独 include 到 http{}。
+#
+# 贴之前先确认三件事：
+#   1. 域名根路径 / 有没有被别的站点占用。工作台必须挂在**根路径**，
+#      不支持 /workbench/ 这种子路径（前端路由是绝对路径，做子路径要改 basename，
+#      属于另一件事）。如果 / 已被占用 → 给工作台单独一个子域名 server{}，
+#      然后用 deploy/nginx.conf.example（形态 A）。
+#   2. `add_header` 在 nginx 里是**覆盖**不是合并：某个 location 里写了 add_header，
+#      外层的安全头就全失效。所以下面每个 location 都重复写了一遍。
+#   3. API 必须同源反代（前端只请求相对路径 /api），跨域方案不适用。
+# ==============================================================================
+
+    # --- ① 前端静态文件 ---
+    # 换成你的实际安装目录
+    root /data/workbench/apps/web/dist;
+    index index.html;
+
+    client_max_body_size 4m;
+
+    # --- ② 带 hash 的静态资源：长缓存 ---
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "same-origin" always;
+        try_files $uri =404;
+    }
+
+    # --- ③ API 反代到本机 Fastify（只监听 127.0.0.1:3000）---
+    location /api/ {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # --- ④ SPA 回退：未命中静态文件的一律交给 index.html ---
+    location / {
+        try_files $uri $uri/ /index.html;
+        # index.html 不缓存，否则发版后用户手里还是旧壳
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "same-origin" always;
+    }
+
+    # --- ⑤ 源码映射不对外 ---
+    location ~* \.map$ {
+        deny all;
+    }
+
+# ==============================================================================
+# 验证与生效：
+#   sudo nginx -t && sudo systemctl reload nginx
+#   bash /data/workbench/deploy/smoke.sh https://<你的域名>
+#
+# 如果 smokes 报 403「请求来源不被信任」：/etc/workbench/api.env 里的 APP_ORIGIN
+# 必须与浏览器地址栏的协议+域名端口**完全一致**（含 https 与端口）。
+# ==============================================================================
