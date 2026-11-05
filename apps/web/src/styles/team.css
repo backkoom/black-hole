@@ -74,18 +74,20 @@
   border-top: 1px solid #f2f5f9;
 }
 
-/* 头像 + 状态点的容器 */
+/* 头像 + 状态点的容器
+ * ⚠️ 宽度必须与 Avatar 的 size（32）一致：之前容器 40px、头像 32px 居中，
+ * 状态点定位在容器 right:0 → 点飘在头像右外侧，看着像掉了的绿点。 */
 .wb-team-avatar {
   position: relative;
   display: inline-flex;
-  width: 40px;
+  width: 32px;
   justify-content: center;
 }
 
 .wb-team-dot {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: -1px;
+  bottom: -1px;
   width: 9px;
   height: 9px;
   border: 2px solid #fff;

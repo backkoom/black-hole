@@ -11,7 +11,7 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  /* 不写 align-items:start —— 默认 stretch，同排左右面板才等高（底部齐平） */
 }
 
 /* 左侧宽（文件夹 / 文件列表） */

@@ -44,9 +44,44 @@
   --side-border: #e6eaf2;
 }
 
+/* ================= 全局重置 =================
+ * 浏览器给 body 的默认 margin 是 8px。之前这里只写了 .wb-layout{height:100vh}，
+ * 结果：
+ *   ① 整个界面被顶到 (8,8)，左上角露白边；
+ *   ② .wb-layout 高 100vh + body 上下各 8px → 文档比视口高 16px，
+ *      于是**文档级滚动条和内容区滚动条同时出现**（就是右侧那两条并排的滚动条）。
+ * 这里把根节点锁成 100%，滚动只交给 .wb-content 一处。
+ */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* ⚠️ #root 下面还嵌着 <AntdApp> 生成的 .ant-app 包裹层，高度链要在这一层
+ * 接上：把 #root 变成纵向 flex，直接子元素吃掉剩余高度。否则 .ant-app 是
+ * height:auto，.wb-layout 的 height:100% 会退化成「随内容长高」。 */
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+#root > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
 /* 全局骨架 —— visual-baseline.md §2.1 */
 .wb-layout {
-  height: 100vh;
+  height: 100%;
 }
 
 .wb-main {
@@ -55,12 +90,18 @@
 }
 
 .wb-content {
+  /* flex 子项默认 min-height:auto，内容一长就会被撑高、滚不动 */
+  min-height: 0;
   overflow-y: auto;
   padding: 20px 22px 30px;
+  /* 常驻滚动条槽：有无滚动条时内容宽度一致，切页不会左右跳 15px */
+  scrollbar-gutter: stable;
 }
 
+/* 内容区宽度随窗口自适应；只有超宽屏才收边（原来死卡 1440，宽屏上左右
+ * 各留一大片空白，卡片被压在中间显得没铺满）。 */
 .wb-content-inner {
-  max-width: 1440px;
+  max-width: 1680px;
   margin: 0 auto;
 }
 
@@ -1459,6 +1500,12 @@
   .wb-cal-grid
 ) > * {
   min-width: 0;
+}
+
+/* 同排面板等高：包裹层（.wb-file-8 / .wb-risk-8 等）被 stretch 撑满行高后，
+ * 里面的 <section> 必须跟着撑满 —— 否则卡片仍按内容收尾，同一行左右底部参差。 */
+:is(.wb-file-grid, .wb-risk-grid, .wb-agg-grid) > * > section {
+  height: 100%;
 }
 
 /* 同排的左右栏：末个面板撑满剩余高度 → 两栏底部对齐 */
