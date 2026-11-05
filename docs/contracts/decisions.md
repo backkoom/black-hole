@@ -497,6 +497,81 @@ v2 §0.1 的前提是「7 名普通用户 + 1 个部门」，v2 §0.3/§13.4 明
 
 ---
 
+## 一之五、D-14 OpenAPI 契约对齐实际实现（24 路径 → 40 路径 / 57 路由）
+
+**背景**
+用户端批次 2/3 落地后，`docs/contracts/openapi.yaml` 只声明了 **24 条路径 / 34 个操作**，
+而 `apps/api/src/**/routes.ts` 的路由注册表里实际有 **40 条路径 / 57 个操作**。
+契约自称「唯一契约」，实际漏掉了 16 条路径（统计聚合、风险问题、文件资料、里程碑与会议），
+以及任务 / 项目的新增字段与筛选参数——**契约与代码已经对不上了**。
+
+**决策**
+把契约**改成代码的现状**（代码是裁判，不是反过来），路径数从 24 补到 40、路由数对齐到 57。
+
+| 项 | 改前 | 改后 |
+|---|---|---|
+| 路径数 | 24 | **40** |
+| 操作数 | 34 | **57** |
+| 缺失路径 | — | 补 16 条（见下） |
+| `info.version` | 2.0.0 | 2.1.0 |
+
+**补齐的 16 条路径（23 个操作）**
+- 统计聚合：`GET /api/stats/trend`、`GET /api/stats/distribution`、`GET /api/stats/team-workload`
+- 风险：`GET /api/risks`、`GET /api/risks/summary`、`POST /api/risks`、`PUT /api/risks/{id}`、`PATCH /api/risks/{id}/status`、`DELETE /api/risks/{id}`
+- 文件：`GET /api/files`、`GET /api/files/summary`、`POST /api/files`、`DELETE /api/files/{id}`、`GET /api/folders`、`POST /api/folders`、`DELETE /api/folders/{id}`
+- 里程碑：`GET /api/milestones`、`POST /api/milestones`、`PATCH /api/milestones/{id}`、`DELETE /api/milestones/{id}`
+- 会议：`GET /api/meetings`、`POST /api/meetings`、`DELETE /api/meetings/{id}`
+
+**顺手修正的原有契约错误（以代码为准）**
+| 位置 | 原来写的 | 代码实际 | 处理 |
+|---|---|---|---|
+| `POST /api/auth/logout` | 401 未登录 | **无会话也返回 200**（幂等） | 去掉 401 |
+| `PUT /api/auth/password` | 422 旧密码错误 | **400**（`badRequest`） | 422 → 400 |
+| `PUT /api/auth/password` 200 响应 | `data: null` | `data: { user }`（查不到用户才为 null） | 改为 `oneOf` |
+| `CreateUserRequest.account` | maxLength 32 + `^[A-Za-z][A-Za-z0-9_]*$` | **maxLength 64，无 pattern**（4-32 字母开头只约束 CSV 导入） | 改宽 + 加说明 |
+| `POST /api/users` 响应 `user` | `User` | `UserListItem`（多 status / lastLoginAt） | 换 schema |
+| `POST /api/org` | 无 404 | **上级节点不存在 → 404** | 补 404 |
+| `DELETE /api/org/{id}` | 无 400 | **非法 id → 400** | 补 400 |
+| `GET /api/workspace/template` | 无 404 | **模板不存在 → 404** | 补 404 |
+| `PUT /api/workspace/template` | 无 404 | 同上 | 补 404 + 新增 `WorkspaceTemplateRequest`（带 name/subtitle） |
+| `PUT /api/workspace`、`PUT /api/workspace/layout` | 无 404、无 403 | **工作台不存在 → 404**；非 GET 还要 Origin 403 | 补齐 |
+| `POST /api/projects`、`PUT /api/projects/{id}` | 无 422 | **名称 / 负责人超长 → 422** | 补 422 |
+| `GET /api/ideas`、`GET /api/stats/*`、`GET /api/tasks` 等 | 无 400 | **查询参数不合法 → 400** | 补 400 |
+| 全部 GET（除 auth 白名单） | 无 403 | **must_change → 403**（onRequest 全局拦截，GET 也拦） | 补 403 + 新增 `ForbiddenMustChange` |
+| 422 文案「超过 4 层」 | 4 层 | **MAX_ORG_LEVEL（默认 32）** | 改文案（对齐 D-07） |
+| `info.description` 的 D-07 | 「上限 4 级」 | 「不设固定上限」 | 改文案 |
+
+**新增字段（批次 2/3）**
+- `Task` 响应 +`assigneeId / assigneeName / category / reminderAt / parentId / subtaskCount / startAt`
+- `Project` 响应 +`icon / color / phase / members / memberCount`
+- `GET /api/tasks` 查询 +`priority / assigneeId / category / from / to`
+- `POST/PUT /api/tasks` 请求体 +`assigneeId / category / reminderAt / parentId / startAt`
+- `POST/PUT /api/projects` 请求体 +`icon / color / phase`
+
+**⚠️ 发现一处代码与共享类型的不一致（已在契约里如实标注，未改代码）**
+`GET /api/projects/{id}` 的任务数组由 `projects/service.ts` **手工映射**，
+只返回 11 个基础字段，**不含**批次 2 的 `assigneeId / assigneeName / category /
+reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把这 7 个字段都标成了必填。
+契约里已明确标注该差异（`ProjectDetail.tasks` 的 description），并提示需要这些字段请用 `GET /api/tasks`。
+**这是代码侧的问题，契约不替代码圆场，也不擅自改代码。**
+
+**影响面**
+**只改 `docs/contracts/openapi.yaml`（+ 本条决策记录），零代码改动。**
+不改任何接口行为、不改表结构、不改前端调用方式——前端 `apps/web/src/api/*.ts` 的调用本来就是对的，
+是契约没跟上。
+
+**验证方式（脚本比对，不靠眼力）**
+1. 从 `routes.ts` 正则抽取全部 `app.<method>('<path>'` → 与契约 `paths` 做集合比对
+   → **57 操作 / 40 路径，差异 0**
+2. 逐个 operation 的 query 参数 / requestBody 字段 vs 对应 zod schema 的键 → **36 处全对**
+3. 响应 schema 字段名 + 可空性 vs `packages/shared/src/types.ts` 的 interface → **22 个类型全对**
+4. `x-errors` 声明 vs `responses` 实际状态码 → **57 个 operation 全一致**
+5. `$ref` 悬空检查 + `openapi-spec-validator` 校验 OpenAPI 3.1 → **通过**
+
+**推翻成本**：低（纯文档；代码若再变，重跑上面的脚本即可）。
+
+---
+
 ## 二、未决项（等外部条件，不阻塞编码）
 
 | # | 未决项 | 卡在谁 | 什么时候要 | 默认怎么先跑 |
@@ -542,6 +617,7 @@ v2 §0.1 的前提是「7 名普通用户 + 1 个部门」，v2 §0.3/§13.4 明
 
 | 日期 | 变更 | 影响 |
 |---|---|---|
+| 2026-11-05 | **D-14：OpenAPI 契约对齐实际实现** —— 路径 24 → **40**、操作 34 → **57**，补齐用户端批次 2/3 的 16 条路径（统计聚合 / 风险 / 文件 / 里程碑 / 会议）与任务·项目的新增字段、筛选参数；并修正 16 处与代码不一致的原有描述（401/404/400/422 归属、account 长度、`info.version` → 2.1.0） | **只改 `docs/contracts/openapi.yaml` + 本决策记录，零代码改动**。路径集合经脚本比对差异为 0；发现 `GET /api/projects/{id}` 的任务数组缺批次 2 扩展字段（代码侧问题，已在契约里如实标注，未改代码） |
 | 2026-11-02 | Phase 0 建立本文件；D-01~D-09 定稿；组织层级改为上限 4 级 + 人员挂末级 | DDL 1 处、类型 1 处、应用层 3 处、验收措辞 4 条、接口描述若干 |
 | 2026-11-02 | 补 D-10（迁移执行器）、D-11（demo 定位）、D-12（GitHub 通道）、**D-13（规模 7 人 → 500 人）**；关闭 U-1 / U-5 / U-8；新增 U-10 | D-13 **不改任何接口、表结构、40 项验收**；只新增 Phase 1/2/4/7 四条实现约束 |
 | 2026-11-02 | **D-07 二次修订**：从「上限 4 级」改为「**层级数不设固定上限**」，业务上限走 `MAX_ORG_LEVEL` 环境变量（默认 32） | DDL `level CHECK 1..4` → `1..32`；`OrgNode.level` 类型放宽为 `number`；openapi 3 处描述、pages 9 处、验收新增 2 行口径调整（**原文未动**）；新增 `.env.example` 的 `MAX_ORG_LEVEL` |

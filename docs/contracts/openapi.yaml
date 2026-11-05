@@ -2,12 +2,17 @@ openapi: 3.1.0
 
 info:
   title: 工作台与组织架构 API
-  version: 2.0.0
+  version: 2.1.0
   description: |
-    一期「工作台 + 任务 + 项目 + 组织账号 + 模板」的唯一接口契约。
+    「工作台 + 任务 + 项目 + 组织账号 + 模板 + 统计聚合 + 风险问题 + 文件资料 + 日程」的唯一接口契约。
 
     来源：《AI 开发执行包-工作台与组织架构》§6.4（34 个接口）、§6.2（共享类型）、§6.3（错误映射）。
     路径与方法与 §6.4 逐条一致，含 `/api` 前缀。
+
+    覆盖范围（2026-11-05 逐条核对 `apps/api/src/**/routes.ts` 的路由注册表）：
+    - 一期 §6.4 的 34 个操作（24 条路径）
+    - 用户端批次 2/3 新增 23 个操作（16 条路径）：统计聚合、风险问题、文件资料、里程碑与会议
+    - 合计 **57 个操作 / 40 条路径**，与代码注册表逐条一致
 
     统一约定（§6.1）：
     - 成功 HTTP 200，body `{ code: 0, message: "ok", data: ... }`
@@ -17,10 +22,12 @@ info:
     - 日期 YYYY-MM-DD；时间戳 ISO 8601 带 +08:00
     - 所有非 GET 校验 Origin/Referer 同源，不通过 403
     - 所有 :id 用 bigint 字符串解析，非法 id 返回 400 且不查库
+    - **必须改密（must_change_password=true）时，除 `/api/auth/me`、`/api/auth/password`、
+      `/api/auth/logout` 外的所有接口（含 GET）统一返回 403「请先修改初始密码」**
 
     与原文的偏离（见 docs/contracts/decisions.md）：
     - D-01 `/api/users*` 的请求体使用严格校验（带禁止字段 → 403/422），其余接口仍默认剥离未知字段
-    - D-07 组织层级上限 4 级；人员挂在无子节点的末级节点上
+    - D-07 组织层级**不设固定上限**（业务上限走服务端 `MAX_ORG_LEVEL`，默认 32）；人员挂在无子节点的末级节点上
     - D-02 `weeklyRate` 为 0–100 的整数（分母为 0 时为 null）
     - D-04 时间戳由连接层固定 `timezone=Asia/Shanghai` 后序列化为 +08:00
     - D-05 校验顺序：Origin(403) → 会话(401) → must_change(403)
@@ -52,6 +59,12 @@ tags:
     description: 灵感记录
   - name: 统计
     description: 工作台指标卡与任务分布
+  - name: 风险
+    description: 风险与问题登记、流转与汇总
+  - name: 文件
+    description: 文件资料与文件夹（仅元数据，不含二进制）
+  - name: 日程
+    description: 里程碑与会议
 
 paths:
   # ==========================================================================
@@ -127,10 +140,12 @@ paths:
     post:
       operationId: logout
       summary: 退出登录
-      description: 删除当前 session 并清除 Cookie。需同源（Origin/Referer 校验）。
+      description: |
+        删除当前 session 并清除 Cookie。需同源（Origin/Referer 校验）。
+        **无会话也返回 200**（幂等），不返回 401。
       tags: [认证]
-      x-permission: 已登录
-      x-errors: [401, 403]
+      x-permission: 公开（无会话也返回 200）
+      x-errors: [403]
       responses:
         '200':
           description: 退出成功
@@ -143,7 +158,6 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
-        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
 
   /api/auth/me:
@@ -192,10 +206,11 @@ paths:
       description: |
         校验旧密码；成功后置 must_change_password = false，
         删除该用户其他 session、保留当前 session。
-        新密码 8 至 64 位，至少一个字母和一个数字。
+        新密码 8 至 64 位，至少一个字母和一个数字；新旧密码相同也拒绝。
+        成功后返回刷新过的用户信息；查不到用户时 data 为 null。
       tags: [认证]
       x-permission: 已登录（含 must_change）
-      x-errors: [400, 401, 403, 422]
+      x-errors: [400, 401, 403]
       requestBody:
         required: true
         content:
@@ -213,17 +228,33 @@ paths:
                 properties:
                   code: { const: 0 }
                   message: { const: 'ok' }
-                  data: { type: 'null' }
-              example: { code: 0, message: ok, data: null }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
-        '422':
-          description: 旧密码错误或新密码不满足策略
+                  data:
+                    oneOf:
+                      - type: object
+                        properties:
+                          user: { $ref: '#/components/schemas/User' }
+                      - type: 'null'
+              example:
+                code: 0
+                message: ok
+                data:
+                  user:
+                    id: 2
+                    account: user01
+                    name: 用户01
+                    role: user
+                    isSuper: false
+                    orgId: 3
+                    org: { company: 示例研究院, dept: 示例部门 }
+                    mustChangePassword: false
+        '400':
+          description: 参数不合法 / 新密码不满足策略 / 新旧密码相同 / 旧密码错误
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-              example: { code: 422, message: 旧密码不正确 }
+              example: { code: 400, message: 旧密码不正确 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
 
   # ==========================================================================
   # 5-8 组织
@@ -296,7 +327,7 @@ paths:
         新增子节点时，若父节点已挂人员，父节点必须先被清空人员——否则父节点不再是末级，422。
       tags: [组织]
       x-permission: 管理员
-      x-errors: [400, 401, 403, 422]
+      x-errors: [400, 401, 403, 404, 422]
       requestBody:
         required: true
         content:
@@ -325,8 +356,14 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
+        '404':
+          description: 上级节点不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 404, message: 上级节点不存在 }
         '422':
-          description: 同级重名 / 超过 4 层 / 父节点不存在
+          description: 同级重名 / 超过 MAX_ORG_LEVEL（默认 32）/ 父节点下仍有人员
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -343,6 +380,7 @@ paths:
         移动/新增后整棵子树的 level 不得超过服务端 MAX_ORG_LEVEL（默认 32，超过 422）；
         **有人员的节点必须是末级（无子节点）**，移动后若不再是无子节点则 422，
         要求先把人员移到新的末级节点。
+        同一 parent 下 name 唯一（重复 422）。
       tags: [组织]
       x-permission: 管理员
       x-errors: [400, 401, 403, 404, 422]
@@ -378,7 +416,7 @@ paths:
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
-          description: 成环 / 超过 4 层 / 同级重名 / 有人员的节点不再是末级
+          description: 成环 / 超过 MAX_ORG_LEVEL（默认 32）/ 同级重名 / 有人员的节点不再是末级
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -386,10 +424,10 @@ paths:
     delete:
       operationId: deleteOrg
       summary: 删除组织节点
-      description: 有子节点或有人员时拒绝（422）；空节点可删。
+      description: 有子节点或有人员时拒绝（422）；根节点不可删除（422）；空节点可删。
       tags: [组织]
       x-permission: 管理员
-      x-errors: [401, 403, 404, 422]
+      x-errors: [400, 401, 403, 404, 422]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -404,15 +442,16 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
-          description: 有子节点或仍有人员
+          description: 根节点不可删除 / 有子节点 / 仍有人员
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
-              example: { code: 422, message: 该节点下仍有子节点或人员，不能删除 }
+              example: { code: 422, message: 该节点下仍有子节点，不能删除 }
 
   # ==========================================================================
   # 9-14 账号
@@ -426,7 +465,7 @@ paths:
         keyword 1 至 64，大小写不敏感，匹配 account 或 name 的子串；空字符串按未传处理。
       tags: [账号]
       x-permission: 管理员
-      x-errors: [401, 403]
+      x-errors: [400, 401, 403]
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -442,6 +481,10 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [active, disabled] }
+        - name: userId
+          in: query
+          description: 仅管理员生效；指定只看某个账号
+          schema: { type: integer }
       responses:
         '200':
           description: 账号列表
@@ -478,6 +521,7 @@ paths:
                   total: 9
                   page: 1
                   pageSize: 20
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
     post:
@@ -486,7 +530,8 @@ paths:
       description: |
         初始密码只返回一次；must_change_password = true。
         同一事务创建 kind=user 的 workspace 并复制当前模板 4 条 layout。
-        账号 4 至 32 位，字母开头，字母/数字/下划线，统一小写存储，唯一。
+        账号 4 至 64 位，统一小写存储，唯一（**本接口不校验字母开头/下划线规则**；
+        批量导入 CSV 才按「4 至 32 位、字母开头、字母数字下划线」逐行校验）。
         姓名 1 至 64 字符，去首尾空格。
         role 仅超管可填 admin；管理员只能创建 user。
         orgId 必须是末级（无子节点）组织节点。
@@ -513,7 +558,7 @@ paths:
                   data:
                     type: object
                     properties:
-                      user: { $ref: '#/components/schemas/User' }
+                      user: { $ref: '#/components/schemas/UserListItem' }
                       initialPassword: { type: string, description: '一次性返回，不落库' }
               example:
                 code: 0
@@ -606,7 +651,7 @@ paths:
         同时置 must_change_password = true、清空 failed_attempts / locked_until、删除该用户全部 session。
       tags: [账号]
       x-permission: 管理员；超管账号仅超级管理员
-      x-errors: [401, 403, 404]
+      x-errors: [400, 401, 403, 404]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -627,6 +672,7 @@ paths:
                 code: 0
                 message: ok
                 data: { initialPassword: mT4kR8vZ1xQ }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -743,7 +789,7 @@ paths:
         返回 workspace 表里 kind='template' 的唯一一行（管理员）。
       tags: [工作台]
       x-permission: 管理员
-      x-errors: [401, 403]
+      x-errors: [401, 403, 404]
       responses:
         '200':
           description: 模板
@@ -787,6 +833,12 @@ paths:
                       config: {}
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
+        '404':
+          description: 模板不存在（未执行种子）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 404, message: 模板不存在，请先执行种子 }
     put:
       operationId: updateWorkspaceTemplate
       summary: 保存工作台模板
@@ -797,13 +849,13 @@ paths:
         items 顺序即 sort，服务端按数组下标写 0..n-1。
       tags: [工作台]
       x-permission: 管理员
-      x-errors: [400, 401, 403, 409, 422]
+      x-errors: [400, 401, 403, 404, 409, 422]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WorkspaceLayoutRequest'
+              $ref: '#/components/schemas/WorkspaceTemplateRequest'
       responses:
         '200':
           description: 保存成功
@@ -818,6 +870,12 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenAdmin' }
+        '404':
+          description: 模板不存在（未执行种子）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 404, message: 模板不存在，请先执行种子 }
         '409': { $ref: '#/components/responses/VersionConflict' }
         '422':
           description: 布局不合法（模块不可用 / 重复 / divider 超限 / 总数超限 / config 不合规）
@@ -835,7 +893,7 @@ paths:
         正常创建/导入用户时已建好）。
       tags: [工作台]
       x-permission: 已登录
-      x-errors: [401]
+      x-errors: [401, 403]
       responses:
         '200':
           description: 工作台
@@ -848,6 +906,7 @@ paths:
                   message: { const: 'ok' }
                   data: { $ref: '#/components/schemas/Workspace' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
     put:
       operationId: updateWorkspaceMeta
       summary: 修改工作台名称与副标题
@@ -856,7 +915,7 @@ paths:
         **名称与副标题不参与 version，不触发 409。**
       tags: [工作台]
       x-permission: 已登录（仅自己的）
-      x-errors: [400, 401, 422]
+      x-errors: [400, 401, 403, 404, 422]
       requestBody:
         required: true
         content:
@@ -880,6 +939,13 @@ paths:
                   data: { $ref: '#/components/schemas/Workspace' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404':
+          description: 工作台不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 404, message: 工作台不存在 }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /api/workspace/layout:
@@ -897,7 +963,7 @@ paths:
         config 按模块 schema 且 ≤ 64KB。
       tags: [工作台]
       x-permission: 已登录（仅自己的）
-      x-errors: [400, 401, 403, 409, 413, 422]
+      x-errors: [400, 401, 403, 404, 409, 413, 422]
       requestBody:
         required: true
         content:
@@ -929,6 +995,12 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404':
+          description: 工作台不存在
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 404, message: 工作台不存在 }
         '409': { $ref: '#/components/responses/VersionConflict' }
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '422': { $ref: '#/components/responses/Unprocessable' }
@@ -947,9 +1019,12 @@ paths:
         keyword 1 至 64，大小写不敏感，匹配 title 子串，空字符串按未传。
         普通用户强制按 user_id = 当前用户过滤，忽略 userId 参数。
         列表响应带 projectName（JOIN 计算，不落库）；projectId 为空时为 null。
+        priority / assigneeId / category / from / to 为批次 2 新增筛选：
+        priority 按优先级精确匹配；assigneeId 按负责人 id 精确匹配；
+        category 按分类精确匹配；from / to 对 due_date 做闭区间过滤（YYYY-MM-DD）。
       tags: [任务]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [400, 401]
+      x-errors: [400, 401, 403]
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -965,6 +1040,26 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [todo, doing, done] }
+        - name: priority
+          in: query
+          description: 按优先级精确筛选（批次 2 新增）
+          schema: { type: string, enum: [low, medium, high] }
+        - name: assigneeId
+          in: query
+          description: 按负责人 id 精确筛选（批次 2 新增）
+          schema: { type: integer, minimum: 1 }
+        - name: category
+          in: query
+          description: 按分类精确筛选（批次 2 新增）
+          schema: { type: string, minLength: 1, maxLength: 32 }
+        - name: from
+          in: query
+          description: due_date 下界（含），YYYY-MM-DD（批次 2 新增）
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: due_date 上界（含），YYYY-MM-DD（批次 2 新增）
+          schema: { type: string, format: date }
         - name: userId
           in: query
           description: 仅管理员生效；普通用户忽略
@@ -1003,11 +1098,19 @@ paths:
                       doneAt: null
                       createdAt: '2026-10-29T09:12:00+08:00'
                       updatedAt: '2026-10-29T09:40:00+08:00'
+                      assigneeId: 3
+                      assigneeName: 用户02
+                      category: 产品需求
+                      reminderAt: null
+                      parentId: null
+                      subtaskCount: 0
+                      startAt: null
                   total: 1
                   page: 1
                   pageSize: 20
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
     post:
       operationId: createTask
       summary: 新建任务
@@ -1017,6 +1120,9 @@ paths:
         priority 三值，默认 medium；dueDate 可空，YYYY-MM-DD；
         新建默认 status = todo。priority 默认 medium，status 默认 todo。
         dueDate 只用于筛选和逾期判断，不自动改状态。
+        批次 2 新增可选字段：assigneeId（负责人）、category（分类，最长 32）、
+        reminderAt（提醒时间，ISO 8601 带时区）、parentId（父任务 id）、startAt（开始时间）。
+        assigneeId / category / reminderAt / parentId / startAt 均可传 null 清空。
       tags: [任务]
       x-permission: 已登录
       x-errors: [400, 401, 403, 422]
@@ -1031,6 +1137,8 @@ paths:
               projectId: 5
               priority: high
               dueDate: '2026-10-30'
+              assigneeId: 3
+              category: 产品需求
       responses:
         '200':
           description: 创建成功
@@ -1061,11 +1169,18 @@ paths:
                     doneAt: null
                     createdAt: '2026-10-29T11:40:00+08:00'
                     updatedAt: '2026-10-29T11:40:00+08:00'
+                    assigneeId: 3
+                    assigneeName: 用户02
+                    category: 产品需求
+                    reminderAt: null
+                    parentId: null
+                    subtaskCount: 0
+                    startAt: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '422':
-          description: projectId 不属于当前用户
+          description: 标题不合法 / projectId 不属于当前用户
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -1079,6 +1194,8 @@ paths:
         不在这里改 status。普通用户做归属校验，管理员可改全员；
         projectId 按**任务归属人**校验，不按当前操作人（管理员代改也一样）。
         任务标题 1 至 256；dueDate 可空，YYYY-MM-DD。
+        批次 2 新增可选字段：assigneeId / category / reminderAt / parentId / startAt，
+        均可传 null 清空；不传（undefined）则保持原值不变。
       tags: [任务]
       x-permission: 已登录；普通用户仅自己
       x-errors: [400, 401, 403, 404, 422]
@@ -1116,7 +1233,7 @@ paths:
       description: 软删。删除后列表、统计、项目进度都不再计入。
       tags: [任务]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [401, 403, 404]
+      x-errors: [400, 401, 403, 404]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -1131,6 +1248,7 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1187,6 +1305,13 @@ paths:
                     doneAt: '2026-10-29T11:45:00+08:00'
                     createdAt: '2026-10-29T11:40:00+08:00'
                     updatedAt: '2026-10-29T11:45:00+08:00'
+                    assigneeId: 3
+                    assigneeName: 用户02
+                    category: 产品需求
+                    reminderAt: null
+                    parentId: null
+                    subtaskCount: 0
+                    startAt: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
@@ -1208,7 +1333,7 @@ paths:
         默认按 created_at desc。
       tags: [项目]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [400, 401]
+      x-errors: [400, 401, 403]
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -1250,27 +1375,41 @@ paths:
                       status: active
                       createdAt: '2026-10-20T09:00:00+08:00'
                       updatedAt: '2026-10-29T11:45:00+08:00'
+                      icon: 'tool'
+                      color: '#1677ff'
+                      phase: 实施中
+                      members: [用户02, 张三]
+                      memberCount: 2
                   total: 1
                   page: 1
                   pageSize: 20
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
     post:
       operationId: createProject
       summary: 新建项目
       description: |
         名称 1 至 128；owner 可空，最长 64；dueDate 可空。
         新项目 0 任务、active、0%。
+        批次 2 新增可选字段：icon（图标标识，最长 16）、color（主题色，最长 16）、
+        phase（当前阶段，最长 64），均可传 null。
       tags: [项目]
       x-permission: 已登录
-      x-errors: [400, 401, 403]
+      x-errors: [400, 401, 403, 422]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProjectRequest'
-            example: { name: 设备巡检, owner: 张三, dueDate: '2026-11-30' }
+            example:
+              name: 设备巡检
+              owner: 张三
+              dueDate: '2026-11-30'
+              icon: 'tool'
+              color: '#1677ff'
+              phase: 实施中
       responses:
         '200':
           description: 创建成功
@@ -1288,15 +1427,25 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 名称超长或负责人超长
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 项目名需 1 至 128 个字符 }
 
   /api/projects/{id}:
     get:
       operationId: getProject
       summary: 项目详情
-      description: 项目 + 任务列表。任务列表复用任务管理的行组件语义。无权访问返回 404。
+      description: |
+        项目 + 任务列表。任务列表复用任务管理的行组件语义。无权访问返回 404。
+        ⚠️ 任务数组只含**基础字段**（不含 assigneeId / category / reminderAt /
+        parentId / subtaskCount / startAt）——详情接口的实现是手工映射，
+        不走任务列表的扩展字段查询。需要这些字段请用 GET /api/tasks。
       tags: [项目]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [401, 404]
+      x-errors: [400, 401, 403, 404]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -1310,15 +1459,19 @@ paths:
                   code: { const: 0 }
                   message: { const: 'ok' }
                   data: { $ref: '#/components/schemas/ProjectDetail' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
       operationId: updateProject
       summary: 修改项目
-      description: 普通用户做归属校验；管理员可改全员。
+      description: |
+        普通用户做归属校验；管理员可改全员。
+        批次 2 新增可选字段：icon / color / phase，均可传 null 清空。
       tags: [项目]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [400, 401, 403, 404]
+      x-errors: [400, 401, 403, 404, 422]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       requestBody:
@@ -1327,7 +1480,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateProjectRequest'
-            example: { name: 设备巡检（改） }
+            example: { name: 设备巡检（改）, phase: 验收中 }
       responses:
         '200':
           description: 修改成功
@@ -1346,6 +1499,12 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 名称超长或负责人超长
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 项目名需 1 至 128 个字符 }
     delete:
       operationId: deleteProject
       summary: 删除项目
@@ -1355,7 +1514,7 @@ paths:
         不做级联软删任务。
       tags: [项目]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [401, 403, 404]
+      x-errors: [400, 401, 403, 404]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -1370,6 +1529,7 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1384,7 +1544,7 @@ paths:
       description: 只返回自己的；管理员也不越权。默认按 created_at desc。
       tags: [灵感]
       x-permission: 已登录
-      x-errors: [401]
+      x-errors: [400, 401, 403]
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
@@ -1418,7 +1578,9 @@ paths:
                   total: 1
                   page: 1
                   pageSize: 20
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
     post:
       operationId: createIdea
       summary: 新增灵感
@@ -1462,7 +1624,7 @@ paths:
       description: 软删。无权访问返回 404（不泄露存在性）。
       tags: [灵感]
       x-permission: 已登录；仅自己的
-      x-errors: [401, 403, 404]
+      x-errors: [400, 401, 403, 404]
       parameters:
         - $ref: '#/components/parameters/IdParam'
       responses:
@@ -1477,12 +1639,13 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ==========================================================================
-  # 33-34 统计
+  # 33-37 统计（33/34 为一期；35/36/37 为用户端批次 2 新增）
   # ==========================================================================
   /api/stats/overview:
     get:
@@ -1490,6 +1653,7 @@ paths:
       summary: 工作台指标卡
       description: |
         管理员可带 userId；普通用户忽略 userId，只看自己。
+        管理员**不传** userId 时统计全员（与任务列表同口径）。
         口径：
         - todayTotal：due_date = 今天且未删除的任务数；todayDone：其中 status=done 的数量
         - doingTotal：status = doing 且未删除（不含 todo）；doingToday：其中 due_date = 今天的数量
@@ -1499,7 +1663,7 @@ paths:
           分子是集合中 status=done 的数量，分母是集合总数
       tags: [统计]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [401]
+      x-errors: [400, 401, 403]
       parameters:
         - name: userId
           in: query
@@ -1528,7 +1692,9 @@ paths:
                   weeklyTotal: 14
                   weeklyRate: 57
                   projectCount: 3
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
 
   /api/stats/tasks:
     get:
@@ -1537,7 +1703,7 @@ paths:
       description: 管理员可带 userId；普通用户忽略 userId。供 data-chart 模块使用。
       tags: [统计]
       x-permission: 已登录；普通用户仅自己
-      x-errors: [401]
+      x-errors: [400, 401, 403]
       parameters:
         - name: userId
           in: query
@@ -1558,7 +1724,1048 @@ paths:
                 code: 0
                 message: ok
                 data: { todo: 9, doing: 7, done: 18 }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  /api/stats/trend:
+    get:
+      operationId: getStatsTrend
+      summary: 任务完成趋势（按天）
+      description: |
+        批次 2 新增。返回最近 N 天的任务完成趋势。
+        **按 created_at 落桶**（东八区日历日）：total = 当天创建的任务数，
+        done = 其中已完成的数，pending = 其中未完成的数。
+        days 取值 1 至 90，默认 7；服务端还会再 clamp 一次。
+        返回的 days 数组固定 N 个点，**缺失的日子补 0**（不跳日）。
+        管理员可带 userId；普通用户服务端强制只看自己。
+      tags: [统计]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: days
+          in: query
+          description: 统计天数，1 至 90，默认 7
+          schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 趋势数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { $ref: '#/components/schemas/TrendResult' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  days:
+                    - date: '2026-11-03'
+                      label: 11/03
+                      total: 4
+                      done: 2
+                      pending: 2
+                    - date: '2026-11-04'
+                      label: 11/04
+                      total: 6
+                      done: 5
+                      pending: 1
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  /api/stats/distribution:
+    get:
+      operationId: getStatsDistribution
+      summary: 项目进度分布 + 任务分类分布
+      description: |
+        批次 2 新增。一次返回两组分布：
+        - buckets：项目进度分桶，**顺序固定** 0-20% / 21-50% / 51-80% / 81-99% / 100%，
+          没有项目的桶也返回 count=0（不跳桶）；0 任务的项目归入 0-20%
+        - categories：任务分类分布，category 为空的归「未分类」，
+          最多 12 类，按数量倒序
+        管理员可带 userId；普通用户服务端强制只看自己。
+      tags: [统计]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 分布数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { $ref: '#/components/schemas/DistributionResult' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  buckets:
+                    - { label: 0-20%, count: 1 }
+                    - { label: 21-50%, count: 2 }
+                    - { label: 51-80%, count: 0 }
+                    - { label: 81-99%, count: 1 }
+                    - { label: 100%, count: 1 }
+                  categories:
+                    - { name: 产品需求, count: 8, done: 5 }
+                    - { name: 未分类, count: 3, done: 1 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  /api/stats/team-workload:
+    get:
+      operationId: getStatsTeamWorkload
+      summary: 团队工作量
+      description: |
+        批次 2 新增。按任务**负责人**（assignee_id）聚合：
+        taskCount = 该负责人的任务数，doneCount = 其中已完成数，
+        rate = 完成率（0–100 整数，四舍五入；taskCount 为 0 时为 0）。
+        **只统计有负责人的任务**（SQL 是 JOIN app_user，无负责人不在结果里）；
+        按任务数倒序。
+        管理员可带 userId；普通用户服务端强制只看自己。
+      tags: [统计]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 工作量数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { $ref: '#/components/schemas/TeamWorkloadResult' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  members:
+                    - { userId: 3, name: 用户02, taskCount: 12, doneCount: 9, rate: 75 }
+                    - { userId: 4, name: 张三, taskCount: 4, doneCount: 1, rate: 25 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  # ==========================================================================
+  # 风险与问题（批次 2 新增）
+  # ==========================================================================
+  /api/risks:
+    get:
+      operationId: listRisks
+      summary: 风险与问题列表
+      description: |
+        批次 2 新增。返回当前用户可见的全部风险与问题（不分页）。
+        一张表用 kind 区分 risk（风险）/ issue（问题）；
+        level 与 impact / probability 同为 low / medium / high；
+        status 为 open（待处理）/ handling（处理中）/ resolved（已解决）。
+        筛选可叠加：kind / level / status / projectId。
+        管理员可带 userId；普通用户服务端强制只看自己创建的。
+        默认按 created_at 倒序。
+      tags: [风险]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: kind
+          in: query
+          description: 只看风险或只看问题
+          schema: { type: string, enum: [risk, issue] }
+        - name: level
+          in: query
+          description: 风险等级
+          schema: { type: string, enum: [low, medium, high] }
+        - name: status
+          in: query
+          description: 处理状态
+          schema: { type: string, enum: [open, handling, resolved] }
+        - name: projectId
+          in: query
+          description: 所属项目
+          schema: { type: integer, minimum: 1 }
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 风险与问题列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Risk' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  items:
+                    - id: 12
+                      projectId: 5
+                      projectName: 设备巡检
+                      code: R-001
+                      kind: risk
+                      title: 采集节点离线率偏高
+                      description: 近三天离线率 3.2%
+                      level: high
+                      impact: high
+                      probability: medium
+                      status: handling
+                      ownerId: 3
+                      ownerName: 用户02
+                      dueDate: '2026-11-20'
+                      responsePlan: 增加备用链路
+                      createdAt: '2026-11-01T09:00:00+08:00'
+                      updatedAt: '2026-11-03T14:20:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+    post:
+      operationId: createRisk
+      summary: 新增风险 / 问题
+      description: |
+        批次 2 新增。标题 1 至 256。
+        kind 省略时默认 risk；level 省略时默认 medium；status 恒为 open（新建即待处理）。
+        code 最长 32；description / responsePlan 最长 4000；
+        dueDate 是**日历日**（YYYY-MM-DD）。
+        归属当前登录用户；projectId / ownerId / impact / probability 等可空字段可传 null。
+      tags: [风险]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRiskRequest'
+            example:
+              title: 采集节点离线率偏高
+              kind: risk
+              code: R-001
+              projectId: 5
+              level: high
+              impact: high
+              probability: medium
+              ownerId: 3
+              dueDate: '2026-11-20'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      risk: { $ref: '#/components/schemas/Risk' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 标题不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 标题需 1 至 256 个字符 }
+
+  /api/risks/summary:
+    get:
+      operationId: getRiskSummary
+      summary: 风险与问题汇总统计
+      description: |
+        批次 2 新增。返回等级 / 状态 / 类型 / 影响×概率矩阵四组统计。
+        - byLevel：各等级的数量与占比（percent 为 0–100 整数，总数为 0 时为 0）
+        - byStatus：各处理状态的数量
+        - byKind：risk 与 issue 的数量
+        - matrix：键是 `impact:probability`，值是数量；**只统计 impact 与 probability
+          都非空的记录**（两者任一为空则不进矩阵）
+        管理员可带 userId；普通用户服务端强制只看自己创建的。
+      tags: [风险]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 汇总统计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { $ref: '#/components/schemas/RiskStats' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  total: 8
+                  byLevel:
+                    high: { count: 3, percent: 38 }
+                    medium: { count: 4, percent: 50 }
+                    low: { count: 1, percent: 13 }
+                  byStatus: { open: 3, handling: 4, resolved: 1 }
+                  byKind: { risk: 5, issue: 3 }
+                  matrix:
+                    high:high: 2
+                    high:medium: 1
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  /api/risks/{id}:
+    put:
+      operationId: updateRisk
+      summary: 修改风险 / 问题
+      description: |
+        批次 2 新增。字段与新建一致（可传任意子集），并**额外允许改 status**。
+        不传（undefined）的字段保持原值；传 null 的可空字段会被清空。
+        普通用户只能改自己创建的；他人或不存在一律 404（不泄露存在性）。
+      tags: [风险]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404, 422]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRiskRequest'
+            example: { status: handling, level: medium, dueDate: '2026-11-25' }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      risk: { $ref: '#/components/schemas/Risk' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 标题不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 标题需 1 至 256 个字符 }
+    delete:
+      operationId: deleteRisk
+      summary: 删除风险 / 问题
+      description: 批次 2 新增。软删（deleted_at），服务端保留历史可追溯。
+      tags: [风险]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { type: 'null' }
+              example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/risks/{id}/status:
+    patch:
+      operationId: updateRiskStatus
+      summary: 修改风险 / 问题状态
+      description: |
+        批次 2 新增。状态流转 open → handling → resolved（允许任意互转，不做工作流）。
+        一次只改 status，其它字段不动。
+      tags: [风险]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [open, handling, resolved] }
+            example: { status: resolved }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      risk: { $ref: '#/components/schemas/Risk' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ==========================================================================
+  # 文件资料与文件夹（批次 2 新增；本期只登记元数据，不存二进制）
+  # ==========================================================================
+  /api/files:
+    get:
+      operationId: listFiles
+      summary: 文件资料列表
+      description: |
+        批次 2 新增。返回当前用户可见的全部文件条目（不分页）。
+        ⚠️ **本期只登记元数据，不上传二进制**——没有上传 / 下载接口。
+        kind：doc / sheet / slide / image / pdf / archive / other；
+        version 是版本号字符串（如 v1.0），currentVersion 标记是否当前版本。
+        筛选可叠加：folderId / kind / projectId。
+        管理员可带 userId；普通用户服务端强制只看自己名下的。
+        默认按 created_at 倒序。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: folderId
+          in: query
+          description: 所在文件夹
+          schema: { type: integer, minimum: 1 }
+        - name: kind
+          in: query
+          description: 文件类型
+          schema: { type: string, enum: [doc, sheet, slide, image, pdf, archive, other] }
+        - name: projectId
+          in: query
+          description: 所属项目
+          schema: { type: integer, minimum: 1 }
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 文件列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FileAsset' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  items:
+                    - id: 30
+                      projectId: 5
+                      projectName: 设备巡检
+                      folderId: 8
+                      folderName: 巡检报告
+                      name: 2026年11月巡检报告.pdf
+                      kind: pdf
+                      sizeBytes: 1048576
+                      version: v1.0
+                      currentVersion: true
+                      ownerName: 用户02
+                      createdAt: '2026-11-02T10:00:00+08:00'
+                      updatedAt: '2026-11-02T10:00:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+    post:
+      operationId: createFile
+      summary: 登记文件元数据
+      description: |
+        批次 2 新增。**只登记元数据，不上传二进制。**
+        文件名 1 至 256；kind 省略时默认 other；version 省略时默认 v1.0；
+        sizeBytes 省略时默认 0；新建的记录 currentVersion 恒为 true。
+        归属当前登录用户。
+      tags: [文件]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFileRequest'
+            example:
+              name: 2026年11月巡检报告.pdf
+              kind: pdf
+              sizeBytes: 1048576
+              folderId: 8
+              projectId: 5
+              version: v1.0
+      responses:
+        '200':
+          description: 登记成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      file: { $ref: '#/components/schemas/FileAsset' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 文件名不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 文件名需 1 至 256 个字符 }
+
+  /api/files/summary:
+    get:
+      operationId: getFileSummary
+      summary: 文件资料汇总统计
+      description: |
+        批次 2 新增。返回文件总数、已用存储（字节）、文件夹数与分类分布。
+        byKind 按分类给出数量与字节数，按数量倒序。
+        管理员可带 userId；普通用户服务端强制只看自己名下的。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 汇总统计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { $ref: '#/components/schemas/FileStats' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  totalCount: 42
+                  totalBytes: 10485760
+                  folderCount: 6
+                  byKind:
+                    - { kind: pdf, count: 20, bytes: 5242880 }
+                    - { kind: doc, count: 22, bytes: 5242880 }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+
+  /api/files/{id}:
+    delete:
+      operationId: deleteFile
+      summary: 删除文件资料
+      description: 批次 2 新增。软删（deleted_at）。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { type: 'null' }
+              example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/folders:
+    get:
+      operationId: listFolders
+      summary: 文件夹列表
+      description: |
+        批次 2 新增。返回当前用户可见的全部文件夹（不分页）。
+        fileCount 是该文件夹下未删除的文件数。
+        管理员可带 userId；普通用户服务端强制只看自己名下的。
+        默认按 name、id 排序。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: projectId
+          in: query
+          description: 所属项目
+          schema: { type: integer, minimum: 1 }
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 文件夹列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FileFolder' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  items:
+                    - id: 8
+                      projectId: 5
+                      parentId: null
+                      name: 巡检报告
+                      fileCount: 12
+                      createdAt: '2026-11-02T09:00:00+08:00'
+                      updatedAt: '2026-11-02T09:00:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+    post:
+      operationId: createFolder
+      summary: 新建文件夹
+      description: |
+        批次 2 新增。名称 1 至 128。
+        projectId / parentId 可空（可传 null）；归属当前登录用户。
+      tags: [文件]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderRequest'
+            example: { name: 巡检报告, projectId: 5, parentId: null }
+      responses:
+        '200':
+          description: 新建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      folder: { $ref: '#/components/schemas/FileFolder' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 文件夹名不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 文件夹名需 1 至 128 个字符 }
+
+  /api/folders/{id}:
+    delete:
+      operationId: deleteFolder
+      summary: 删除文件夹
+      description: 批次 2 新增。软删（deleted_at）。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { type: 'null' }
+              example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ==========================================================================
+  # 里程碑与会议（批次 2 新增）
+  # ==========================================================================
+  /api/milestones:
+    get:
+      operationId: listMilestones
+      summary: 里程碑列表
+      description: |
+        批次 2 新增。返回当前用户可见的全部里程碑（不分页）。
+        status 为 pending（未完成）/ done（已完成）。
+        管理员可带 userId；普通用户服务端强制只看自己的。
+        默认按 due_date 升序（null 排最后）、sort、id 排序。
+      tags: [日程]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 里程碑列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Milestone' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  items:
+                    - id: 4
+                      projectId: 5
+                      projectName: 设备巡检
+                      name: 完成首批节点部署
+                      dueDate: '2026-11-15'
+                      status: pending
+                      sort: 0
+                      createdAt: '2026-11-01T09:00:00+08:00'
+                      updatedAt: '2026-11-01T09:00:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+    post:
+      operationId: createMilestone
+      summary: 新建里程碑
+      description: |
+        批次 2 新增。名称 1 至 128。
+        status 省略时默认 pending；dueDate 是**日历日**（YYYY-MM-DD），可空。
+        归属当前登录用户。
+      tags: [日程]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMilestoneRequest'
+            example: { name: 完成首批节点部署, projectId: 5, dueDate: '2026-11-15' }
+      responses:
+        '200':
+          description: 新建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      milestone: { $ref: '#/components/schemas/Milestone' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 里程碑名称不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 里程碑名称需 1 至 128 个字符 }
+
+  /api/milestones/{id}:
+    patch:
+      operationId: updateMilestone
+      summary: 修改里程碑
+      description: |
+        批次 2 新增。可改 name / dueDate / status（任意子集）。
+        不传（undefined）的字段保持原值；dueDate 传 null 会清空。
+        普通用户只能改自己的；他人或不存在一律 404（不泄露存在性）。
+      tags: [日程]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404, 422]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMilestoneRequest'
+            example: { status: done, dueDate: '2026-11-12' }
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      milestone: { $ref: '#/components/schemas/Milestone' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 里程碑名称不合法
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 里程碑名称需 1 至 128 个字符 }
+    delete:
+      operationId: deleteMilestone
+      summary: 删除里程碑
+      description: 批次 2 新增。**硬删**（里程碑是轻量记录，无历史追溯需求）。
+      tags: [日程]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { type: 'null' }
+              example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/meetings:
+    get:
+      operationId: listMeetings
+      summary: 会议列表
+      description: |
+        批次 2 新增。返回当前用户可见的全部会议（不分页）。
+        from / to 按 start_at 过滤（**闭区间**，含端点）；
+        ⚠️ 传参必须是**带时区的完整 ISO 8601**（如 2026-11-04T09:00:00+08:00），
+        只传 YYYY-MM-DD 会让 to 落在当天 00:00，当天后面的会议会被漏掉。
+        管理员可带 userId；普通用户服务端强制只看自己的。
+        默认按 start_at 升序。
+      tags: [日程]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403]
+      parameters:
+        - name: userId
+          in: query
+          description: 仅管理员生效；普通用户忽略
+          schema: { type: integer }
+        - name: from
+          in: query
+          description: 开始时间下界（含），带时区的 ISO 8601
+          schema: { type: string }
+        - name: to
+          in: query
+          description: 开始时间上界（含），带时区的 ISO 8601
+          schema: { type: string }
+      responses:
+        '200':
+          description: 会议列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Meeting' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  items:
+                    - id: 7
+                      projectId: 5
+                      projectName: 设备巡检
+                      title: 11 月项目周会
+                      location: 三号会议室
+                      startAt: '2026-11-04T09:00:00+08:00'
+                      endAt: '2026-11-04T10:00:00+08:00'
+                      note: 汇报巡检进度
+                      createdAt: '2026-11-03T09:00:00+08:00'
+                      updatedAt: '2026-11-03T09:00:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+    post:
+      operationId: createMeeting
+      summary: 新建会议
+      description: |
+        批次 2 新增。标题 1 至 128；startAt 必填。
+        startAt / endAt 是**带时区的 ISO 8601**（如 2026-11-04T09:00:00+08:00）；
+        endAt 可空（可传 null）；location 最长 128；note 最长 2000。
+        归属当前登录用户。
+      tags: [日程]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMeetingRequest'
+            example:
+              title: 11 月项目周会
+              startAt: '2026-11-04T09:00:00+08:00'
+              endAt: '2026-11-04T10:00:00+08:00'
+              location: 三号会议室
+              projectId: 5
+      responses:
+        '200':
+          description: 新建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      meeting: { $ref: '#/components/schemas/Meeting' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '422':
+          description: 标题不合法 / 开始时间为空
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 422, message: 会议开始时间必填 }
+
+  /api/meetings/{id}:
+    delete:
+      operationId: deleteMeeting
+      summary: 删除会议
+      description: 批次 2 新增。**硬删**（会议是轻量记录，无历史追溯需求）。
+      tags: [日程]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data: { type: 'null' }
+              example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 components:
   securitySchemes:
@@ -1600,17 +2807,29 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { code: 401, message: 请先登录 }
     ForbiddenAdmin:
-      description: 管理接口无权（用户、组织、模板）。本人改姓名例外。
+      description: |
+        管理接口无权（用户、组织、模板）。本人改姓名例外。
+        也可能是「必须先修改初始密码」——见 ForbiddenMustChange。
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example: { code: 403, message: 没有权限 }
     ForbiddenOrigin:
-      description: Origin/Referer 不同源，或必须改密（message 为「请先修改初始密码」）
+      description: |
+        Origin/Referer 不同源（非 GET 请求必查）。
+        也可能是「必须先修改初始密码」——见 ForbiddenMustChange。
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example: { code: 403, message: 没有权限 }
+    ForbiddenMustChange:
+      description: |
+        必须先修改初始密码。onRequest 全局拦截：除 /api/auth/me、/api/auth/password、
+        /api/auth/logout 外的**所有**接口（含 GET）在 must_change_password=true 时都返回 403。
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: 403, message: 请先修改初始密码 }
     NotFound:
       description: 业务资源无权或不存在。任务、项目、灵感不泄露存在性。
       content:
@@ -1779,7 +2998,27 @@ components:
 
     Task:
       type: object
-      required: [id, userId, projectId, title, status, priority, projectName, dueDate, doneAt, createdAt, updatedAt]
+      required:
+        [
+          id,
+          userId,
+          projectId,
+          title,
+          status,
+          priority,
+          projectName,
+          dueDate,
+          doneAt,
+          createdAt,
+          updatedAt,
+          assigneeId,
+          assigneeName,
+          category,
+          reminderAt,
+          parentId,
+          subtaskCount,
+          startAt,
+        ]
       properties:
         id: { type: integer }
         userId: { type: integer }
@@ -1792,10 +3031,56 @@ components:
         doneAt: { type: string, nullable: true, description: 'ISO 8601 带 +08:00；status=done 必有' }
         createdAt: { type: string }
         updatedAt: { type: string }
+        assigneeId:
+          type: integer
+          nullable: true
+          description: '负责人用户 id；批次 2 新增。为空表示无负责人'
+        assigneeName:
+          type: string
+          nullable: true
+          description: '负责人姓名（JOIN 计算）；批次 2 新增'
+        category:
+          type: string
+          nullable: true
+          maxLength: 32
+          description: '分类（产品需求 / 会议 / 开发…）；批次 2 新增'
+        reminderAt:
+          type: string
+          nullable: true
+          description: '提醒时间，ISO 8601 带时区；批次 2 新增'
+        parentId:
+          type: integer
+          nullable: true
+          description: '父任务 id；批次 2 新增。为空表示不是子任务'
+        subtaskCount:
+          type: integer
+          description: '子任务数（parent_id 指向本任务的未删除任务数）；批次 2 新增'
+        startAt:
+          type: string
+          nullable: true
+          description: '日程开始时间，ISO 8601 带时区；批次 2 新增'
 
     Project:
       type: object
-      required: [id, userId, name, owner, dueDate, totalItems, doneItems, progress, status, createdAt, updatedAt]
+      required:
+        [
+          id,
+          userId,
+          name,
+          owner,
+          dueDate,
+          totalItems,
+          doneItems,
+          progress,
+          status,
+          createdAt,
+          updatedAt,
+          icon,
+          color,
+          phase,
+          members,
+          memberCount,
+        ]
       properties:
         id: { type: integer }
         userId: { type: integer }
@@ -1810,6 +3095,28 @@ components:
         status: { $ref: '#/components/schemas/ProjectStatus' }
         createdAt: { type: string }
         updatedAt: { type: string }
+        icon:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '图标标识（模块卡片配色用）；批次 2 新增'
+        color:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '主题色；批次 2 新增'
+        phase:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: '当前阶段；批次 2 新增'
+        members:
+          type: array
+          description: '成员姓名（project_member JOIN app_user，按姓名排序）；批次 2 新增。无成员时为空数组'
+          items: { type: string }
+        memberCount:
+          type: integer
+          description: '成员数（= members.length）；批次 2 新增'
 
     ProjectDetail:
       type: object
@@ -1818,6 +3125,11 @@ components:
         project: { $ref: '#/components/schemas/Project' }
         tasks:
           type: array
+          description: |
+            该项目下的任务。⚠️ 当前实现只返回**基础字段**（id / userId / projectId /
+            title / status / priority / projectName / dueDate / doneAt / createdAt / updatedAt），
+            不含批次 2 的 assigneeId / assigneeName / category / reminderAt /
+            parentId / subtaskCount / startAt —— 需要这些字段请用 GET /api/tasks。
           items: { $ref: '#/components/schemas/Task' }
 
     Idea:
@@ -1904,9 +3216,8 @@ components:
         account:
           type: string
           minLength: 4
-          maxLength: 32
-          pattern: '^[A-Za-z][A-Za-z0-9_]*$'
-          description: '字母开头，字母/数字/下划线；统一小写存储；唯一'
+          maxLength: 64
+          description: '统一小写存储；唯一。**本接口不限制字母开头**（批量导入才按 4-32 位字母开头逐行校验）'
         name: { type: string, minLength: 1, maxLength: 64, description: '去首尾空格' }
         orgId: { type: integer, description: '末级（无子节点）组织节点 id' }
         role:
@@ -1936,6 +3247,21 @@ components:
           maxItems: 14
           items: { $ref: '#/components/schemas/LayoutItem' }
 
+    WorkspaceTemplateRequest:
+      type: object
+      required: [version, items]
+      description: |
+        保存工作台模板。name / subtitle 可选（改了会一并更新模板的名称与副标题）；
+        version 与 items 语义同 WorkspaceLayoutRequest（CAS，冲突 409）。
+      properties:
+        name: { type: string, maxLength: 128 }
+        subtitle: { type: string, maxLength: 256 }
+        version: { type: integer, minimum: 1, description: '当前版本号；不匹配返回 409' }
+        items:
+          type: array
+          maxItems: 14
+          items: { $ref: '#/components/schemas/LayoutItem' }
+
     CreateTaskRequest:
       type: object
       required: [title]
@@ -1944,9 +3270,33 @@ components:
         projectId:
           type: integer
           nullable: true
-          description: '必须属于当前登录用户（任务归属人）；管理员也不能代建
+          description: '必须属于当前登录用户（任务归属人）；管理员也不能代建'
         priority: { $ref: '#/components/schemas/Priority', default: medium }
         dueDate: { type: string, nullable: true, format: date }
+        assigneeId:
+          type: integer
+          nullable: true
+          description: '负责人用户 id（批次 2 新增）'
+        category:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 32
+          description: '分类（批次 2 新增）'
+        reminderAt:
+          type: string
+          nullable: true
+          format: date-time
+          description: '提醒时间，ISO 8601 带时区（批次 2 新增）'
+        parentId:
+          type: integer
+          nullable: true
+          description: '父任务 id（批次 2 新增）'
+        startAt:
+          type: string
+          nullable: true
+          format: date-time
+          description: '日程开始时间，ISO 8601 带时区（批次 2 新增）'
 
     UpdateTaskRequest:
       type: object
@@ -1955,6 +3305,30 @@ components:
         projectId: { type: integer, nullable: true }
         priority: { $ref: '#/components/schemas/Priority' }
         dueDate: { type: string, nullable: true, format: date }
+        assigneeId:
+          type: integer
+          nullable: true
+          description: '负责人用户 id；传 null 清空（批次 2 新增）'
+        category:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 32
+          description: '分类；传 null 清空（批次 2 新增）'
+        reminderAt:
+          type: string
+          nullable: true
+          format: date-time
+          description: '提醒时间；传 null 清空（批次 2 新增）'
+        parentId:
+          type: integer
+          nullable: true
+          description: '父任务 id；传 null 清空（批次 2 新增）'
+        startAt:
+          type: string
+          nullable: true
+          format: date-time
+          description: '日程开始时间；传 null 清空（批次 2 新增）'
 
     CreateProjectRequest:
       type: object
@@ -1963,6 +3337,21 @@ components:
         name: { type: string, minLength: 1, maxLength: 128 }
         owner: { type: string, nullable: true, maxLength: 64 }
         dueDate: { type: string, nullable: true, format: date }
+        icon:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '图标标识（批次 2 新增）'
+        color:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '主题色（批次 2 新增）'
+        phase:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: '当前阶段（批次 2 新增）'
 
     UpdateProjectRequest:
       type: object
@@ -1970,3 +3359,380 @@ components:
         name: { type: string, minLength: 1, maxLength: 128 }
         owner: { type: string, nullable: true, maxLength: 64 }
         dueDate: { type: string, nullable: true, format: date }
+        icon:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '图标标识；传 null 清空（批次 2 新增）'
+        color:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: '主题色；传 null 清空（批次 2 新增）'
+        phase:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: '当前阶段；传 null 清空（批次 2 新增）'
+
+    # ==========================================================================
+    # 批次 2 新增：统计聚合
+    # ==========================================================================
+    TrendPoint:
+      type: object
+      required: [date, label, total, done, pending]
+      properties:
+        date: { type: string, format: date, description: '东八区日历日 YYYY-MM-DD' }
+        label: { type: string, description: '图表轴标签（MM/DD）' }
+        total: { type: integer, description: '当天创建的任务数' }
+        done: { type: integer, description: '其中已完成的数量' }
+        pending: { type: integer, description: '其中未完成的数量（= total - done）' }
+
+    TrendResult:
+      type: object
+      required: [days]
+      properties:
+        days:
+          type: array
+          description: '固定 days 个点，缺失的日子补 0'
+          items: { $ref: '#/components/schemas/TrendPoint' }
+
+    ProgressBucket:
+      type: object
+      required: [label, count]
+      properties:
+        label:
+          type: string
+          description: '进度区间标签'
+          enum: ['0-20%', '21-50%', '51-80%', '81-99%', '100%']
+        count: { type: integer, description: '落在该区间的项目数' }
+
+    CategoryStat:
+      type: object
+      required: [name, count, done]
+      properties:
+        name: { type: string, description: '分类名；category 为空的记作「未分类」' }
+        count: { type: integer, description: '该分类的任务数' }
+        done: { type: integer, description: '其中已完成的数量' }
+
+    TeamMemberWorkload:
+      type: object
+      required: [userId, name, taskCount, doneCount, rate]
+      properties:
+        userId: { type: integer, description: '负责人用户 id' }
+        name: { type: string, description: '负责人姓名' }
+        taskCount: { type: integer, description: '该负责人的任务数' }
+        doneCount: { type: integer, description: '其中已完成的数量' }
+        rate:
+          type: integer
+          description: '完成率 0–100 整数，四舍五入；taskCount=0 时为 0'
+
+    DistributionResult:
+      type: object
+      required: [buckets, categories]
+      properties:
+        buckets:
+          type: array
+          description: '项目进度分桶，顺序固定 0-20% / 21-50% / 51-80% / 81-99% / 100%'
+          items: { $ref: '#/components/schemas/ProgressBucket' }
+        categories:
+          type: array
+          description: '任务分类分布，最多 12 类，按数量倒序'
+          items: { $ref: '#/components/schemas/CategoryStat' }
+
+    TeamWorkloadResult:
+      type: object
+      required: [members]
+      properties:
+        members:
+          type: array
+          description: '按负责人聚合；只含**有负责人**的任务，按任务数倒序'
+          items: { $ref: '#/components/schemas/TeamMemberWorkload' }
+
+    # ==========================================================================
+    # 批次 2 新增：风险与问题
+    # ==========================================================================
+    RiskKind:
+      type: string
+      enum: [risk, issue]
+      description: 'risk=风险；issue=问题'
+
+    RiskLevel:
+      type: string
+      enum: [low, medium, high]
+      description: '等级；level / impact / probability 共用同一套取值'
+
+    RiskStatus:
+      type: string
+      enum: [open, handling, resolved]
+      description: 'open=待处理；handling=处理中；resolved=已解决'
+
+    Risk:
+      type: object
+      required:
+        [
+          id,
+          projectId,
+          projectName,
+          code,
+          kind,
+          title,
+          description,
+          level,
+          impact,
+          probability,
+          status,
+          ownerId,
+          ownerName,
+          dueDate,
+          responsePlan,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer, nullable: true }
+        projectName: { type: string, nullable: true, description: 'JOIN 计算，不落库' }
+        code: { type: string, nullable: true, maxLength: 32, description: '编号' }
+        kind: { $ref: '#/components/schemas/RiskKind' }
+        title: { type: string, minLength: 1, maxLength: 256 }
+        description: { type: string, nullable: true, maxLength: 4000 }
+        level: { $ref: '#/components/schemas/RiskLevel' }
+        impact: { type: string, nullable: true, enum: [low, medium, high], description: '影响度' }
+        probability:
+          type: string
+          nullable: true
+          enum: [low, medium, high]
+          description: '发生概率'
+        status: { $ref: '#/components/schemas/RiskStatus' }
+        ownerId: { type: integer, nullable: true, description: '责任人用户 id' }
+        ownerName: { type: string, nullable: true, description: '责任人姓名（JOIN 计算）' }
+        dueDate: { type: string, nullable: true, format: date }
+        responsePlan: { type: string, nullable: true, maxLength: 4000, description: '应对措施' }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    RiskStats:
+      type: object
+      required: [total, byLevel, byStatus, byKind, matrix]
+      properties:
+        total: { type: integer, description: '风险与问题总数' }
+        byLevel:
+          type: object
+          required: [high, medium, low]
+          description: '各等级的数量与占比（percent 为 0–100 整数，总数为 0 时为 0）'
+          properties:
+            high: { $ref: '#/components/schemas/RiskLevelStat' }
+            medium: { $ref: '#/components/schemas/RiskLevelStat' }
+            low: { $ref: '#/components/schemas/RiskLevelStat' }
+        byStatus:
+          type: object
+          required: [open, handling, resolved]
+          properties:
+            open: { type: integer }
+            handling: { type: integer }
+            resolved: { type: integer }
+        byKind:
+          type: object
+          required: [risk, issue]
+          properties:
+            risk: { type: integer }
+            issue: { type: integer }
+        matrix:
+          type: object
+          description: '影响×概率矩阵；键是 `impact:probability`（如 high:medium），值是数量。只统计 impact 与 probability 都非空的记录'
+          additionalProperties: { type: integer }
+
+    RiskLevelStat:
+      type: object
+      required: [count, percent]
+      properties:
+        count: { type: integer }
+        percent: { type: integer, description: '0–100 整数，四舍五入；总数为 0 时为 0' }
+
+    CreateRiskRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 256 }
+        kind: { $ref: '#/components/schemas/RiskKind' }
+        code: { type: string, nullable: true, maxLength: 32 }
+        projectId: { type: integer, nullable: true }
+        description: { type: string, nullable: true, maxLength: 4000 }
+        level: { $ref: '#/components/schemas/RiskLevel' }
+        impact: { type: string, nullable: true, enum: [low, medium, high] }
+        probability: { type: string, nullable: true, enum: [low, medium, high] }
+        ownerId: { type: integer, nullable: true }
+        dueDate: { type: string, nullable: true, format: date }
+        responsePlan: { type: string, nullable: true, maxLength: 4000 }
+
+    UpdateRiskRequest:
+      type: object
+      description: 新建字段的任意子集，**额外允许改 status**。不传的字段保持原值。
+      properties:
+        title: { type: string, minLength: 1, maxLength: 256 }
+        kind: { $ref: '#/components/schemas/RiskKind' }
+        code: { type: string, nullable: true, maxLength: 32 }
+        projectId: { type: integer, nullable: true }
+        description: { type: string, nullable: true, maxLength: 4000 }
+        level: { $ref: '#/components/schemas/RiskLevel' }
+        impact: { type: string, nullable: true, enum: [low, medium, high] }
+        probability: { type: string, nullable: true, enum: [low, medium, high] }
+        ownerId: { type: integer, nullable: true }
+        dueDate: { type: string, nullable: true, format: date }
+        responsePlan: { type: string, nullable: true, maxLength: 4000 }
+        status: { $ref: '#/components/schemas/RiskStatus' }
+
+    # ==========================================================================
+    # 批次 2 新增：文件资料与文件夹
+    # ==========================================================================
+    FileKind:
+      type: string
+      enum: [doc, sheet, slide, image, pdf, archive, other]
+
+    FileAsset:
+      type: object
+      required:
+        [
+          id,
+          projectId,
+          projectName,
+          folderId,
+          folderName,
+          name,
+          kind,
+          sizeBytes,
+          version,
+          currentVersion,
+          ownerName,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer, nullable: true }
+        projectName: { type: string, nullable: true, description: 'JOIN 计算，不落库' }
+        folderId: { type: integer, nullable: true }
+        folderName: { type: string, nullable: true, description: 'JOIN 计算，不落库' }
+        name: { type: string, minLength: 1, maxLength: 256 }
+        kind: { $ref: '#/components/schemas/FileKind' }
+        sizeBytes: { type: integer, description: '字节数' }
+        version: { type: string, maxLength: 16, description: '版本号字符串（如 v1.0）' }
+        currentVersion: { type: boolean, description: '是否当前版本' }
+        ownerName: { type: string, nullable: true, description: '上传人姓名（JOIN 计算）' }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    FileFolder:
+      type: object
+      required: [id, projectId, parentId, name, fileCount, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer, nullable: true }
+        parentId: { type: integer, nullable: true, description: '父文件夹 id；为空表示顶层' }
+        name: { type: string, minLength: 1, maxLength: 128 }
+        fileCount: { type: integer, description: '该文件夹下未删除的文件数' }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    FileStats:
+      type: object
+      required: [totalCount, totalBytes, folderCount, byKind]
+      properties:
+        totalCount: { type: integer, description: '文件总数' }
+        totalBytes: { type: integer, description: '已用存储（字节）' }
+        folderCount: { type: integer, description: '文件夹数' }
+        byKind:
+          type: array
+          description: '分类分布，按数量倒序'
+          items:
+            type: object
+            required: [kind, count, bytes]
+            properties:
+              kind: { $ref: '#/components/schemas/FileKind' }
+              count: { type: integer }
+              bytes: { type: integer }
+
+    CreateFileRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 256 }
+        kind: { $ref: '#/components/schemas/FileKind' }
+        sizeBytes: { type: integer, minimum: 0, description: '字节数；省略时为 0' }
+        folderId: { type: integer, nullable: true }
+        projectId: { type: integer, nullable: true }
+        version: { type: string, maxLength: 16, description: '版本号；省略时为 v1.0' }
+
+    CreateFolderRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        projectId: { type: integer, nullable: true }
+        parentId: { type: integer, nullable: true, description: '父文件夹 id；为空表示顶层' }
+
+    # ==========================================================================
+    # 批次 2 新增：里程碑与会议
+    # ==========================================================================
+    MilestoneStatus:
+      type: string
+      enum: [pending, done]
+      description: 'pending=未完成；done=已完成'
+
+    Milestone:
+      type: object
+      required: [id, projectId, projectName, name, dueDate, status, sort, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer, nullable: true }
+        projectName: { type: string, nullable: true, description: 'JOIN 计算，不落库' }
+        name: { type: string, minLength: 1, maxLength: 128 }
+        dueDate: { type: string, nullable: true, format: date }
+        status: { $ref: '#/components/schemas/MilestoneStatus' }
+        sort: { type: integer, description: '同级排序号' }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    Meeting:
+      type: object
+      required:
+        [id, projectId, projectName, title, location, startAt, endAt, note, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        projectId: { type: integer, nullable: true }
+        projectName: { type: string, nullable: true, description: 'JOIN 计算，不落库' }
+        title: { type: string, minLength: 1, maxLength: 128 }
+        location: { type: string, nullable: true, maxLength: 128 }
+        startAt: { type: string, description: '开始时间，ISO 8601 带 +08:00' }
+        endAt: { type: string, nullable: true, description: '结束时间，ISO 8601 带 +08:00' }
+        note: { type: string, nullable: true, maxLength: 2000 }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    CreateMilestoneRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        projectId: { type: integer, nullable: true }
+        dueDate: { type: string, nullable: true, format: date }
+        status: { $ref: '#/components/schemas/MilestoneStatus' }
+
+    UpdateMilestoneRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 128 }
+        dueDate: { type: string, nullable: true, format: date }
+        status: { $ref: '#/components/schemas/MilestoneStatus' }
+
+    CreateMeetingRequest:
+      type: object
+      required: [title, startAt]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 128 }
+        startAt: { type: string, description: '开始时间，ISO 8601 带时区（如 2026-11-04T09:00:00+08:00）' }
+        endAt: { type: string, nullable: true, description: '结束时间，ISO 8601 带时区' }
+        location: { type: string, nullable: true, maxLength: 128 }
+        projectId: { type: integer, nullable: true }
+        note: { type: string, nullable: true, maxLength: 2000 }
