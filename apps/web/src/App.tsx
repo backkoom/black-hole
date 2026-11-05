@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { SettingsLayout } from './components/SettingsLayout';
 import { RequireAdmin, RequireAuth } from './auth/RequireAuth';
@@ -113,6 +113,9 @@ export const router = createBrowserRouter([
             path: 'projects/:id',
             element: <ProjectDetailPage />,
           },
+          // 直达 /settings 时落到个人资料。之前「设置」的菜单 key 写的是
+          // /settings/password —— 点设置进"改密码"，不符合常理。
+          { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
           {
             element: <SettingsLayout />,
             children: [

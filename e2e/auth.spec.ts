@@ -81,7 +81,8 @@ test.describe('认证链路', () => {
     await page.goto('/workspace');
     // 左侧导航是 AntD Menu → role=menuitem
     await expect(page.getByRole('menuitem', { name: /设\s*置/ }).first()).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: /工\s*作\s*台/ }).first()).toBeVisible();
+    // 2026-11-05 改名：工作台 → 自定义工作台（与「项目总览」消歧）
+    await expect(page.getByRole('menuitem', { name: /自定义工作台/ }).first()).toBeVisible();
   });
 
   test('错误密码显示统一提示，不泄露账号是否存在', async ({ page }) => {

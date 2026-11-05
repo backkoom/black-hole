@@ -3,13 +3,14 @@ import { Avatar, Button, Layout, Menu, Tag } from 'antd';
 import {
   AppstoreOutlined,
   BarChartOutlined,
+  BlockOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
   DashboardOutlined,
-  FolderOutlined,
+  DatabaseOutlined,
+  FolderOpenOutlined,
   LineChartOutlined,
   LogoutOutlined,
-  ProjectOutlined,
   SettingOutlined,
   TeamOutlined,
   WarningOutlined,
@@ -21,9 +22,17 @@ import { designVars } from '../styles/theme';
 const { Sider, Header, Content } = Layout;
 
 /**
- * 左侧导航 10 项（老六最终用户端界面）：
- * 项目总览 / 项目看板 / 任务清单 / 日程安排 / 进度追踪 /
- * 团队协作 / 文件资料 / 风险问题 / 数据统计 / 设置。
+ * 左侧导航 —— 按**工作流分组**（2026-11-05 老六定的二期调整）。
+ *
+ * 之前 12 项平铺、三个"文件夹"图标撞车、管理员项混在末尾，扫一眼分不清。
+ * 现在分三组 + 底部固定「设置」+ 管理员独立一组：
+ *
+ *   我的工作   项目总览 / 任务清单 / 日程安排      ← 每天进来先看自己的事
+ *   项目协作   项目看板 / 团队协作 / 文件资料 / 风险问题
+ *   数据洞察   进度追踪 / 数据统计
+ *   ──────
+ *   设置       始终贴底（不随滚动跑掉）
+ *   系统管理   自定义工作台 / 项目档案（仅管理员，带分组标题隔开）
  *
  * `key` 是菜单选中项与跳转目标；`match` 是用于高亮的路径前缀。
  * 「项目总览」是根路径（/），单独用 exact 判定，避免把 /tasks 也高亮上。
@@ -37,27 +46,61 @@ interface NavItem {
   exact?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { key: '/', match: '/', exact: true, icon: <DashboardOutlined />, label: '项目总览' },
-  { key: '/kanban', match: '/kanban', icon: <ProjectOutlined />, label: '项目看板' },
-  { key: '/tasks', match: '/tasks', icon: <CheckSquareOutlined />, label: '任务清单' },
-  { key: '/calendar', match: '/calendar', icon: <CalendarOutlined />, label: '日程安排' },
-  { key: '/progress', match: '/progress', icon: <LineChartOutlined />, label: '进度追踪' },
-  { key: '/team', match: '/team', icon: <TeamOutlined />, label: '团队协作' },
-  { key: '/files', match: '/files', icon: <FolderOutlined />, label: '文件资料' },
-  { key: '/risks', match: '/risks', icon: <WarningOutlined />, label: '风险问题' },
-  { key: '/analytics', match: '/analytics', icon: <BarChartOutlined />, label: '数据统计' },
-  { key: '/settings/password', match: '/settings', icon: <SettingOutlined />, label: '设置' },
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: '我的工作',
+    items: [
+      { key: '/', match: '/', exact: true, icon: <DashboardOutlined />, label: '项目总览' },
+      { key: '/tasks', match: '/tasks', icon: <CheckSquareOutlined />, label: '任务清单' },
+      { key: '/calendar', match: '/calendar', icon: <CalendarOutlined />, label: '日程安排' },
+    ],
+  },
+  {
+    title: '项目协作',
+    items: [
+      // 看板用「分栏」图标，别再和文件夹撞脸
+      { key: '/kanban', match: '/kanban', icon: <BlockOutlined />, label: '项目看板' },
+      { key: '/team', match: '/team', icon: <TeamOutlined />, label: '团队协作' },
+      { key: '/files', match: '/files', icon: <FolderOpenOutlined />, label: '文件资料' },
+      { key: '/risks', match: '/risks', icon: <WarningOutlined />, label: '风险问题' },
+    ],
+  },
+  {
+    title: '数据洞察',
+    items: [
+      { key: '/progress', match: '/progress', icon: <LineChartOutlined />, label: '进度追踪' },
+      { key: '/analytics', match: '/analytics', icon: <BarChartOutlined />, label: '数据统计' },
+    ],
+  },
 ];
 
 /**
- * 管理员专属入口（老六设计稿的 10 项之外）。
- * 工作台 / 项目管理 是管理员与高级功能，普通用户不显示入口，直接访问走 403。
+ * 管理员专属组（老六设计稿的 10 项之外）。
+ *
+ * 改名是为了消歧：
+ * - 「项目管理」→「项目档案」：和「项目看板」只差两字，一个是列表维护、一个是看板视图；
+ * - 「工作台」→「自定义工作台」：和「项目总览」都像首页，实际这里是模块拖拽编辑器。
  */
-const ADMIN_NAV_ITEMS: NavItem[] = [
-  { key: '/workspace', match: '/workspace', icon: <AppstoreOutlined />, label: '工作台' },
-  { key: '/projects', match: '/projects', icon: <FolderOutlined />, label: '项目管理' },
-];
+const ADMIN_GROUP: NavGroup = {
+  title: '系统管理',
+  items: [
+    { key: '/workspace', match: '/workspace', icon: <AppstoreOutlined />, label: '自定义工作台' },
+    { key: '/projects', match: '/projects', icon: <DatabaseOutlined />, label: '项目档案' },
+  ],
+};
+
+/** 贴底固定项：设置。落地页是个人资料（不是修改密码）。 */
+const SETTINGS_ITEM: NavItem = {
+  key: '/settings/profile',
+  match: '/settings',
+  icon: <SettingOutlined />,
+  label: '设置',
+};
 
 /** 角色标签（shared/types.ts：角色只有 admin / user，另有 isSuper 标记超管）。 */
 function roleLabel(role: string, isSuper: boolean): string {
@@ -65,8 +108,13 @@ function roleLabel(role: string, isSuper: boolean): string {
   return role === 'admin' ? '管理员' : '普通用户';
 }
 
+/** 把 NavItem 转成 AntD Menu 需要的结构（match / exact 不能透传）。 */
+function toMenuItem(item: NavItem) {
+  return { key: item.key, icon: item.icon, label: item.label };
+}
+
 /**
- * App Shell —— 左侧固定导航 + 顶部栏（pages.md §App Shell）。
+ * App Shell —— 左侧分组导航 + 顶部栏（pages.md §App Shell）。
  * 顶部栏只显示当前用户名、角色标签与退出，不显示搜索 / 通知 / AI。
  */
 export function AppShell() {
@@ -74,16 +122,25 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const groups = useMemo(
+    () => (isAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS),
+    [isAdmin],
+  );
+
+  const allItems = useMemo(
+    () => [...groups.flatMap((g) => g.items), SETTINGS_ITEM],
+    [groups],
+  );
+
   // 按路径前缀高亮当前导航项；/settings/* 下的所有子页都高亮「设置」
   const selectedKey = useMemo(() => {
-    const all = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
-    const hit = all.find((item) =>
+    const hit = allItems.find((item) =>
       item.exact
         ? location.pathname === item.key
         : location.pathname === item.match || location.pathname.startsWith(`${item.match}/`),
     );
     return hit?.key ?? '/';
-  }, [location.pathname, isAdmin]);
+  }, [allItems, location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -93,13 +150,11 @@ export function AppShell() {
     }
   };
 
-  const navItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
-
-  // AntD Menu 只认 key / icon / label，多余的 match、exact 不传进去
-  const menuItems = navItems.map((item) => ({
-    key: item.key,
-    icon: item.icon,
-    label: item.label,
+  // 分组标题交给 AntD 的 group 渲染，样式在 global.css 的 .ant-menu-item-group-title 里
+  const menuItems = groups.map((group) => ({
+    type: 'group' as const,
+    label: group.title,
+    children: group.items.map(toMenuItem),
   }));
 
   return (
@@ -111,6 +166,7 @@ export function AppShell() {
           </span>
           <span className="wb-brand-name">项目管理</span>
         </div>
+
         <Menu
           theme="light"
           mode="inline"
@@ -119,6 +175,18 @@ export function AppShell() {
           items={menuItems}
           onClick={({ key }) => void navigate(key)}
         />
+
+        {/* 贴底：设置不随菜单滚动跑掉 */}
+        <div className="wb-sider-foot">
+          <Menu
+            theme="light"
+            mode="inline"
+            className="wb-sider-menu"
+            selectedKeys={[selectedKey]}
+            items={[toMenuItem(SETTINGS_ITEM)]}
+            onClick={({ key }) => void navigate(key)}
+          />
+        </div>
       </Sider>
 
       <Layout className="wb-main">

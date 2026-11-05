@@ -40,7 +40,7 @@ export function ProjectsPage() {
     <div className="wb-page">
       <div className="wb-page-head">
         <div>
-          <h1 className="wb-page-title">项目管理</h1>
+          <h1 className="wb-page-title">项目档案</h1>
           <p className="wb-page-sub">项目进度按任务实时计算；点击卡片查看项目详情与任务。</p>
         </div>
         <div className="wb-page-head-actions">

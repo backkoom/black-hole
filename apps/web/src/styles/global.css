@@ -105,11 +105,37 @@ body {
   margin: 0 auto;
 }
 
-/* 左侧导航 —— 浅色主题 */
+/* 左侧导航 —— 浅色主题 + 三段式（品牌 / 可滚动菜单 / 贴底设置） */
 .wb-sider {
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--side);
   border-right: 1px solid var(--side-border);
+}
+
+/* AntD 在 Sider 里套了一层 .ant-layout-sider-children，flex 要打在它身上 */
+.wb-sider .ant-layout-sider-children {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.wb-sider-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  border-inline-end: none;
+}
+
+/* 设置固定贴底：菜单再长也不会把它挤下去 */
+.wb-sider-foot {
+  flex: 0 0 auto;
+  padding: 4px 0 8px;
+  border-top: 1px solid var(--side-border);
+}
+
+.wb-sider-foot .wb-sider-menu {
+  flex: none;
+  overflow: visible;
 }
 
 .wb-sider .ant-menu-item,
@@ -149,12 +175,23 @@ body {
   border-inline-end: none;
 }
 
+/* 分组标题（我的工作 / 项目协作 / 数据洞察 / 系统管理）——
+ * 之前 12 项平铺没有任何层级，这行是分组的唯一视觉锚点，别调太小 */
 .wb-sider .ant-menu-item-group-title {
+  padding: 12px 16px 4px;
   color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+}
+
+.wb-sider .ant-menu-item-group + .ant-menu-item-group .ant-menu-item-group-title {
+  padding-top: 14px;
 }
 
 .wb-brand {
   display: flex;
+  flex: 0 0 auto;
   gap: 10px;
   align-items: center;
   padding: 4px 10px 20px;
