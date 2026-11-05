@@ -1550,6 +1550,15 @@ body {
   grid-column: span 12;
   grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
   gap: 18px;
+  /* 指标卡与下方面板之间必须有间距 —— 之前这里漏了 margin，卡片下边缘和
+   * 「团队成员 / 文件夹 / 风险分布」面板上边缘正好贴合（量出来间距 0px），
+   * 视觉上就是卡片压在面板上。 */
+  margin-bottom: 18px;
+}
+
+/* 放进 .wb-grid 时由栅格 gap 提供间距，避免叠成 36px */
+.wb-grid > .wb-metric-row {
+  margin-bottom: 0;
 }
 
 /* 项目进度：图标 + 名称 + 细进度条 + 百分比 + 日期 */

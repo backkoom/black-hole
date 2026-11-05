@@ -129,6 +129,18 @@ const probe = () => {
     if (spread > 2) ragged.push({ top, spread });
   }
 
+  // 指标卡与下方面板之间的实际间距（0 = 卡片贴着面板，视觉上像压上去）
+  const mrEl = document.querySelector('.wb-metric-row, .wb-metric-grid');
+  let metricGap = null;
+  if (mrEl) {
+    const mb = mrEl.getBoundingClientRect().bottom;
+    const nextTop = [...document.querySelectorAll('.wb-content section')]
+      .map((e) => e.getBoundingClientRect().top)
+      .filter((t) => t >= mb - 1)
+      .sort((a, b) => a - b)[0];
+    if (nextTop != null) metricGap = Math.round(nextTop - mb);
+  }
+
   return {
     vw: window.innerWidth,
     vh: window.innerHeight,
@@ -139,6 +151,7 @@ const probe = () => {
     cardRows,
     truncated,
     ragged,
+    metricGap,
   };
 };
 
@@ -158,6 +171,7 @@ for (const vp of VIEWPORTS) {
     if (cramped.length) issues.push(`指标卡被压到 ${cramped.map((x) => x.min).join('/')}px`);
     if (r.truncated.length) issues.push(`文本截断 ${r.truncated.length} 处`);
     if (r.ragged.length) issues.push(`同排底边参差 ${r.ragged.length} 行`);
+    if (r.metricGap !== null && r.metricGap < 12) issues.push(`指标卡贴着下方面板(${r.metricGap}px)`);
 
     const tag = `${vp.width}x${vp.height}`.padEnd(10) + route.padEnd(10);
     lines.push(
