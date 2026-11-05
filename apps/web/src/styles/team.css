@@ -11,7 +11,25 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  /* stretch：左右两栏等高（start 会让底部参差） */
+  align-items: stretch;
+}
+
+/* 左右栏内部纵向排列面板；末个面板撑满剩余高度 → 两栏底部对齐 */
+.wb-team-8,
+.wb-team-4,
+.wb-team-6 {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.wb-team-8 > section:last-child,
+.wb-team-4 > section:last-child,
+.wb-team-6 > section:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 左侧宽（团队成员 / 团队公告） */
@@ -43,7 +61,10 @@
 /* 一行成员：头像（含状态点）+ 姓名 + 角色标签 + 所属组织 */
 .wb-team-row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 88px minmax(0, 160px);
+  /* ⚠️ 每一行都是独立的 grid 容器 —— 用 minmax(0, 160px) 的话每行会各自
+   * 算一遍列宽，导致「角色 / 组织」两列在不同行里位置参差。
+   * 这里用固定列宽，各行才对得齐。 */
+  grid-template-columns: 40px minmax(120px, 1fr) 88px 168px;
   gap: 12px;
   align-items: center;
   padding: 9px 0;
@@ -128,32 +149,12 @@
 
 /* ================= 指标卡 ================= */
 
-/*
- * 本页 6 张指标卡 —— 覆盖 global.css 的 .wb-metric-row（4 列）。
- * 用 `.wb-metric-row.wb-team-metric-row` 提高一级特异性，
- * 保证不受 global.css 里媒体查询的覆盖顺序影响。
+
+/* 本页 6 张指标卡 —— **不再写死列数**。
+ * global.css 的 .wb-metric-row 改成 repeat(auto-fit, minmax(196px, 1fr)) 后，
+ * 列数由可用宽度自动决定（6 张放得下就一行，放不下自动换行）。
+ * 之前这里覆盖成固定 6 列 → 1440px 下每张只有 ~190px，内容溢出被切。
  */
-.wb-metric-row.wb-team-metric-row {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-@media (max-width: 1439px) {
-  .wb-metric-row.wb-team-metric-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1000px) {
-  .wb-metric-row.wb-team-metric-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 700px) {
-  .wb-metric-row.wb-team-metric-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* ================= 团队公告 ================= */
 
@@ -520,7 +521,7 @@
 
 @media (max-width: 900px) {
   .wb-team-row {
-    grid-template-columns: 40px minmax(0, 1fr) 88px;
+    grid-template-columns: 40px minmax(120px, 1fr) 88px 168px;
   }
 
   .wb-team-org {

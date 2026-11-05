@@ -59,6 +59,9 @@ npm run build
 echo "==> 4/5 组装发布包"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT_DIR="$ROOT/dist-release"
+# ⚠️ 先清掉「本次产物」标记 —— build 失败时脚本会中止，但旧包还在目录里。
+#    没有标记的话，后续读 LATEST 会拿到**旧包**而不知情（实测踩过）。
+rm -f "$OUT_DIR/LATEST"
 PKG_DIR="$OUT_DIR/workbench-release-$STAMP"
 # ⚠️ 不用 rm -rf 清理（会触发删除拦截）；时间戳目录天然唯一，旧的保留即可
 mkdir -p "$PKG_DIR"/{apps/api,apps/web,db,deploy,scripts,packages/shared}

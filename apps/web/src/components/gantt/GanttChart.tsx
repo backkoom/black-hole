@@ -38,7 +38,7 @@ const GROUP_H = 28;
 const BAR_H = 14;
 
 /** 甘特区左侧信息列宽 / 右侧数值列宽（px） */
-const LEFT_W = 178;
+const LEFT_W = 224;   // 项目名列宽 —— 178 时「演示·企业数据中台」这类名字会被截断
 const RIGHT_W = 144;
 
 /** 轴底部的「今天」标注留白（px） */

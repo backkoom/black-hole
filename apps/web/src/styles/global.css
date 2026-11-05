@@ -1430,7 +1430,8 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  /* stretch：左右栏等高（start 会让两栏底部参差） */
+  align-items: stretch;
 }
 
 /* 左列约 2/3 宽：项目进度 + 今日任务 */
@@ -1440,15 +1441,42 @@
   flex-direction: column;
   gap: 18px;
   min-width: 0;
+  --wb-col-fill: 1;
 }
 
 /* 右列约 1/3 宽：日程安排 + 任务状态 */
+/* ⚠️ grid 子项默认 min-width:auto —— 内容不收缩会把容器撑破（表现为
+ * 卡片/文件夹被右侧切掉）。栅格里的直接子项统一允许收缩。
+ */
+:is(
+  .wb-grid,
+  .wb-grid-left,
+  .wb-grid-right,
+  .wb-grid-full,
+  .wb-team-grid,
+  .wb-risk-grid,
+  .wb-analytics-grid,
+  .wb-cal-grid
+) > * {
+  min-width: 0;
+}
+
+/* 同排的左右栏：末个面板撑满剩余高度 → 两栏底部对齐 */
+.wb-grid-left > section:last-child,
+.wb-grid-right > section:last-child {
+  flex: var(--wb-col-fill, auto);
+  display: flex;
+  flex-direction: column;
+}
+
 .wb-grid-right {
   display: flex;
   grid-column: span 4;
   flex-direction: column;
   gap: 18px;
   min-width: 0;
+  /* 末个面板撑满剩余高度 → 与左栏底部对齐（否则左右栏底部参差） */
+  --wb-col-fill: 1;
 }
 
 /* 底部通栏：项目列表 */
@@ -1458,9 +1486,13 @@
 }
 
 /* 指标卡一行 4 张 */
+/* 指标卡栅格 —— **自适应**：列数由可用宽度决定（4 / 5 / 6 张都放得下，
+ * 放不下自动换行）。之前写死 4 列、页面级又覆盖成 6 列 → 1440px 下每张
+ * 只有 ~190px，卡片内容溢出被切。auto-fit 消除了这个整类问题。
+ */
 .wb-metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
   gap: 18px;
   margin-bottom: 18px;
 }
@@ -1469,7 +1501,7 @@
 .wb-metric-row {
   display: grid;
   grid-column: span 12;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
   gap: 18px;
 }
 
@@ -1746,7 +1778,7 @@
 @media (max-width: 1200px) {
   .wb-metric-row,
   .wb-metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
   }
 
   .wb-project-cards {
