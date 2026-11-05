@@ -654,10 +654,12 @@ test.describe('用户端 10 页', () => {
     await expectPanelContains(page, '项目完成率排行', `${PREFIX}冒烟项目`);
   });
 
-  test('个人资料：占位页显示「迭代」', async ({ page }) => {
+  test('个人资料：真实页面（可改姓名，账号只读）', async ({ page }) => {
     await page.goto('/settings/profile', { waitUntil: 'networkidle' });
     await expect(page.getByRole('heading', { level: 1, name: '个人资料' })).toBeVisible();
-    // ⚠️ 个人资料当前还是 Placeholder 占位页；主线程把它做成真页面后，本条断言需要相应调整
-    await expect(page.getByText('迭代').first()).toBeVisible();
+    // 个人资料页已从占位做成真实页面（2026-11-05）：断言真实内容
+    await expect(page.getByLabel('姓名')).toBeVisible();
+    await expect(page.getByLabel('账号')).toBeDisabled();
+    await expect(page.getByRole('button', { name: '保存' })).toBeVisible();
   });
 });

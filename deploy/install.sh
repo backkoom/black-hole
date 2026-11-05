@@ -114,11 +114,21 @@ else
   log "跑数据库迁移"
   cd "$APP_DIR"
   set -a; . "$ENV_FILE"; set +a
-  if [ -f "$APP_DIR/node_modules/node-pg-migrate/bin/node-pg-migrate.js" ]; then
-    node "$APP_DIR/node_modules/node-pg-migrate/bin/node-pg-migrate.js" up \
-      -m "$APP_DIR/db/migrations/*.js" --use-glob
+  # 迁移工具在 apps/api 的生产依赖里（npm ci --workspace apps/api 会装它）。
+  # 万一缺失则退到全局安装 —— 迁移是部署的硬前提，不能跳过。
+  MIGRATE_BIN="$APP_DIR/apps/api/node_modules/node-pg-migrate/bin/node-pg-migrate.js"
+  if [ ! -f "$MIGRATE_BIN" ]; then
+    log "迁移工具不在包里，全局安装"
+    npm i -g node-pg-migrate >/dev/null 2>&1 || true
+    MIGRATE_BIN="$(command -v node-pg-migrate 2>/dev/null || true)"
+  fi
+  if [ -n "$MIGRATE_BIN" ] && [ -f "$MIGRATE_BIN" ]; then
+    node "$MIGRATE_BIN" up -m "$APP_DIR/db/migrations/*.js" --use-glob
+  elif command -v node-pg-migrate >/dev/null 2>&1; then
+    node-pg-migrate up -m "$APP_DIR/db/migrations/*.js" --use-glob
   else
-    warn "node-pg-migrate 不在发布包里，跳过迁移（请在开发机跑 npm run migrate 后手动执行）"
+    # ⚠️ 迁移是硬前提 —— 跳过它继续启动，后面全是「表不存在」的玄学错误。
+    die "迁移工具不可用（既不在 apps/api/node_modules，全局安装也失败）。请手动执行迁移后重跑"
   fi
 fi
 

@@ -72,9 +72,11 @@ export async function registerTaskRoutes(app: FastifyInstance): Promise<void> {
     const actor = await requireActiveSession(req);
     const q = listQuerySchema.safeParse(req.query);
     if (!q.success) throw badRequest('查询参数不合法');
-    // 普通用户强制只看自己；管理员可带 userId
-    const userId = actor.user.role === 'admin' ? q.data.userId : actor.user.id;
-    return ok(reply, await listTasks({ ...q.data, userId }));
+    // ⚠️ 口径必须与 /api/stats/* 一致：
+    // 管理员**不传 userId 时看全员**（否则看板显示 0、统计显示 7，同页自相矛盾）；
+    // 普通用户强制只看自己。传了 userId 就按它过滤（管理员可自查某人）。
+    const scopeUserId = actor.user.role === 'admin' ? q.data.userId : actor.user.id;
+    return ok(reply, await listTasks({ ...q.data, userId: scopeUserId }));
   });
 
   // 21 POST /api/tasks

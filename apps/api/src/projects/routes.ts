@@ -53,6 +53,7 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
     const actor = await requireActiveSession(req);
     const q = listQuerySchema.safeParse(req.query);
     if (!q.success) throw badRequest('查询参数不合法');
+    // ⚠️ 口径必须与 /api/stats/* 一致：管理员不传 userId 时看全员；普通用户只看自己。
     const userId = actor.user.role === 'admin' ? q.data.userId : actor.user.id;
     return ok(reply, await listProjects({ ...q.data, userId }));
   });

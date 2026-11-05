@@ -329,4 +329,42 @@ describe('任务与项目', () => {
     const leaf = await leafOrgId();
     expect(leaf).toBeGreaterThan(0);
   });
+
+  it('D9 列表与统计口径一致：admin 看全员，普通用户只看自己', async () => {
+    // ⚠️ 回归测试：昨天给 tasks 加筛选参数时，把路由里的 userId 无条件覆盖成了
+    // 当前用户 → 管理员在看板看到 0 条、统计却显示 7 条，同一页自相矛盾。
+    // 这里锁死「列表口径 == 统计口径」。
+    const admin = await loginSeedAdmin();
+    await admin.post('/api/tasks').send({ title: '口径任务A' });
+    await admin.post('/api/tasks').send({ title: '口径任务B' });
+
+    await ensureUser('scopeuser01');
+    const user = await loginAs('scopeuser01');
+    await user.post('/api/tasks').send({ title: '口径任务C' });
+
+    // 1) 管理员列表 = 全部 3 条
+    const list = await admin.get('/api/tasks?pageSize=100');
+    expect(list.status).toBe(200);
+    expect(list.body.data.total).toBe(3);
+
+    // 2) 管理员统计之和必须等于列表总数
+    const stats = await admin.get('/api/stats/tasks');
+    expect(stats.status).toBe(200);
+    const s = stats.body.data;
+    expect(s.todo + s.doing + s.done).toBe(list.body.data.total);
+
+    // 3) 管理员可显式按 userId 过滤
+    const me = await admin.get('/api/auth/me');
+    const adminId = me.body.data.user.id;
+    const filtered = await admin.get(`/api/tasks?pageSize=100&userId=${adminId}`);
+    expect(filtered.body.data.total).toBe(2);
+
+    // 4) 普通用户只看自己的 1 条（强制隔离，不因 admin 改动而放宽）
+    const userList = await user.get('/api/tasks?pageSize=100');
+    expect(userList.body.data.total).toBe(1);
+
+    // 5) 项目列表同口径
+    const projects = await admin.get('/api/projects?pageSize=100');
+    expect(projects.status).toBe(200);
+  });
 });

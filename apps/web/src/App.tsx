@@ -8,8 +8,8 @@ import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { OverviewPage } from './pages/OverviewPage';
-import { Placeholder } from './pages/Placeholder';
 import { KanbanPage } from './pages/KanbanPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { ProgressPage } from './pages/ProgressPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
@@ -118,7 +118,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'settings/profile',
-                element: <Placeholder title="个人资料" subtitle="姓名与所属组织信息正在迭代。" />,
+                element: <ProfilePage />,
               },
               { path: 'settings/password', element: <ChangePasswordPage /> },
               {

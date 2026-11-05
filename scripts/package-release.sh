@@ -98,6 +98,11 @@ tar -czf "$TARBALL" -C "$OUT_DIR" "workbench-release-$STAMP"
 
 SIZE="$(du -h "$TARBALL" | cut -f1)"
 echo ""
+# ⚠️ 写一个「本次产物」标记 —— build 失败时脚本会中止，
+#    此时 dist-release/ 里可能还留着**上一次的旧包**，后续 `ls -t` 会误取它。
+#    只有带这个标记文件时才算本次成功产出。
+echo "$TARBALL" > "$OUT_DIR/LATEST"
+
 echo "✅ 发布包已生成：$TARBALL （$SIZE）"
 echo ""
 echo "下一步："

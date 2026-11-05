@@ -15,7 +15,7 @@ interface SettingsNavItem {
  * 设置页左侧子导航 —— pages.md §App Shell：个人资料、修改密码；
  * 管理员追加账号管理、组织架构、工作台模板。
  * Phase 2 起「账号管理」「组织架构」是真实页面；Phase 3 起「工作台模板」也是真实页面；
- * 「个人资料」仍是迭代中。
+ * 「个人资料」自 2026-11-05 起也是真实页面（可改姓名，其余只读）。
  */
 export function SettingsLayout() {
   const { isAdmin } = useAuth();
@@ -24,7 +24,8 @@ export function SettingsLayout() {
 
   const items = useMemo<SettingsNavItem[]>(() => {
     const list: SettingsNavItem[] = [
-      { key: '/settings/profile', label: '个人资料', disabled: true },
+      // 个人资料已做成真实页面（2026-11-05）—— 不再是占位
+      { key: '/settings/profile', label: '个人资料' },
       { key: '/settings/password', label: '修改密码' },
     ];
     // 普通用户不显示管理入口
