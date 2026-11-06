@@ -89,3 +89,34 @@ export async function clearMustChange(): Promise<void> {
     );
   });
 }
+
+/**
+ * 准备一个**普通用户**（role=user，不需改密），用于验「普通用户看不到管理功能」。
+ *
+ * 为什么不复用 seed 的 user01~user07：它们的口令来自 `SEED_USER_PASSWORD`，
+ * CI/本地不一定注入；而且它们 must_change_password=true，登录会被强制弹去改密页，
+ * 根本到不了要验的页面。这里直接建一个确定口令的账号，跑完由 cleanTestData 清掉
+ * （它按 `account <> 'admin' AND account NOT LIKE 'user0%'` 删，e2e- 前缀会被删）。
+ */
+export async function ensurePlainUser(account: string, password: string): Promise<void> {
+  const hash = await bcrypt.hash(password, 12);
+  await withPool(async (pool) => {
+    const org = await pool.query<{ id: string }>(
+      "SELECT id FROM org WHERE name = '示例小组' LIMIT 1",
+    );
+    const orgId = Number(org.rows[0]?.id);
+    if (!orgId) throw new Error("种子组织「示例小组」不存在，先跑 npm run seed");
+    await pool.query(
+      `INSERT INTO app_user
+         (account, password_hash, name, org_id, role, is_super, status, must_change_password)
+       VALUES ($1, $2, $3, $4, 'user', false, 'active', false)
+       ON CONFLICT (account) DO UPDATE
+         SET password_hash = EXCLUDED.password_hash,
+             must_change_password = false,
+             status = 'active',
+             failed_attempts = 0,
+             locked_until = NULL`,
+      [account, hash, '验收测试用户', orgId],
+    );
+  });
+}
