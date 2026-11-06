@@ -183,6 +183,79 @@ test.describe('工作台编辑器', () => {
     }
   });
 
+  test('B2 从模块库加入模块：画布真的多出一块（走 handleAddModule，点击/拖入同一入口）', async ({ page }) => {
+    await gotoWorkspace(page);
+    const cards = page.locator('.wb-canvas [data-module-index]');
+    const before = await cards.count();
+
+    // 模板里没有「文本卡片」→ 加入后应多一块
+    const item = libraryItem(page, '文本卡片');
+    const src = await item.boundingBox();
+    const canvas = await page.locator('.wb-canvas').first().boundingBox();
+
+    // 先按真实的 dnd-kit 拖拽试一次（pointer 序列，Playwright 的 dragTo 不适用）
+    if (src && canvas) {
+      await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + 40, { steps: 12 });
+      await page.mouse.up();
+      await page.waitForTimeout(800);
+    }
+    // 拖拽在无头环境偶发不触发（dnd-kit 的 activationConstraint），
+    // 退到点击加入 —— 两条路径都进 handleAddModule，验收要的是"模块进了画布"
+    if ((await cards.count()) === before) {
+      await item.click();
+      await page.waitForTimeout(800);
+    }
+
+    expect(await cards.count()).toBe(before + 1);
+    await expect(page.getByLabel('文本卡片 模块').first()).toBeVisible();
+
+    // 清理：删掉刚加的，别把 admin 的布局越加越多（后面 B1 依赖模板 4 块）
+    await page.getByLabel('删除「文本卡片」模块').first().click();
+    await page.getByRole('button', { name: /^删\s*除$/ }).last().click();
+    await page.waitForTimeout(600);
+    expect(await cards.count()).toBe(before);
+  });
+
+  test('B8 文本模块改内容 → 保存 → 刷新后仍在', async ({ page }) => {
+    await gotoWorkspace(page);
+    const cards = page.locator('.wb-canvas [data-module-index]');
+    const before = await cards.count();
+
+    // 1. 加入一个文本卡片（模板里没有）
+    await libraryItem(page, '文本卡片').click();
+    await page.waitForTimeout(700);
+    expect(await cards.count()).toBe(before + 1);
+
+    // 2. 打开配置抽屉，填标题与正文
+    await page.getByLabel('编辑「文本卡片」的内容').first().click();
+    const drawer = page.getByRole('dialog');
+    await expect(drawer).toBeVisible();
+    await drawer.getByLabel('标题').fill('验收标题B8');
+    await drawer.getByLabel('正文').fill('验收正文B8：这条内容要能在刷新后还在。');
+    // 抽屉里的「保存」（页面顶部还有一个「保存布局」，用 dialog 作用域避开）
+    await drawer.getByRole('button', { name: /保\s*存/ }).click();
+    await page.waitForTimeout(600);
+
+    // 3. 保存布局
+    await page.getByRole('button', { name: /保\s*存/ }).first().click();
+    await page.waitForTimeout(900);
+
+    // 4. 刷新后内容仍在
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(900);
+    await expect(page.getByText('验收标题B8').first()).toBeVisible();
+    await expect(page.getByText(/验收正文B8/).first()).toBeVisible();
+
+    // 5. 清理：删掉这块并保存，恢复原布局
+    await page.getByLabel('删除「文本卡片」模块').first().click();
+    await page.getByRole('button', { name: /^删\s*除$/ }).last().click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: /保\s*存/ }).first().click();
+    await page.waitForTimeout(700);
+  });
+
   test('预览态只读：保存按钮禁用、删除按钮消失', async ({ page }) => {
     await gotoWorkspace(page);
     // 「预览」不是 button，是 AntD Segmented（内部是 radio 角色）

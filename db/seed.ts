@@ -200,6 +200,22 @@ async function main(): Promise<void> {
       printed.push({ account: 'admin', password: adminPassword });
     }
 
+    // 2.5 管理员（非超管）—— 验收 G4 要求 9 个账号：7 普通 + 1 管理员 + 1 超管。
+    //     只种超管的话，「管理员不能授予管理员」「只有超管能建管理员」这类用例
+    //     在验收环境里没有可用的管理员身份去复现。
+    await findOrCreateUser(
+      client,
+      'manager',
+      '部门管理员',
+      leafOrgId,
+      'admin',
+      false,
+      adminHash,
+    );
+    if (process.env.SEED_ADMIN_PASSWORD === undefined) {
+      printed.push({ account: 'manager', password: adminPassword });
+    }
+
     // 3. 7 个普通用户
     const userIds: number[] = [];
     for (let i = 1; i <= 7; i += 1) {
