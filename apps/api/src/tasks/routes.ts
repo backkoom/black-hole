@@ -9,7 +9,7 @@ import {
   updateTaskStatus,
 } from './service.js';
 import { badRequest } from '../lib/errors.js';
-import { PAGINATION } from '@workbench/shared/errors';
+import { PAGINATION } from '@blackhole/shared/errors';
 
 /**
  * 任务路由 —— 执行包 §6.4 的 20~24 号接口。

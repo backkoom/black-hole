@@ -234,7 +234,7 @@ JSON 解析失败、路由不存在、未捕获异常同理，不接管就会漏
 | 本项目开发实例 | **15432** | 我新建 | 本项目开发与实测 |
 
 - 数据目录：`D:\workspace\pg-dev\data`（独立，不与老6 的库混）
-- 库/账号：`workbench_dev` / `workbench`（仅本地开发用，口令写在 `.env.example` 占位）
+- 库/账号：`blackhole_dev` / `blackhole`（仅本地开发用，口令写在 `.env.example` 占位）
 - **未改老6 已装的 PG 任何配置**（5432/5433 端口是他那个服务在监听，我第一次撞端口才发现）
 
 ---
@@ -245,7 +245,7 @@ JSON 解析失败、路由不存在、未捕获异常同理，不接管就会漏
 
 | 项 | 决定 |
 |---|---|
-| 本地仓库 | `D:\workspace\workbench-app\`（符合「新建的一律放 D:\workspace」的规矩；`node_modules` + `pgdata` 都在 D 盘，C 盘不动） |
+| 本地仓库 | `D:\workspace\blackhole-app\`（符合「新建的一律放 D:\workspace」的规矩；`node_modules` + `pgdata` 都在 D 盘，C 盘不动） |
 | 版本管理 | git，本地仓库，已初始化并提交（3 次提交，工作区干净） |
 | **远端** | **不推 github.com 公共仓库**。这系统装的是公司真实组织架构与 7 名员工姓名，v2 明确「纯内网」。若要用 GitHub，必须 private + 人员用占位名；更推荐内网 Gitea/GitLab |
 
@@ -295,12 +295,12 @@ v2 §0.1/§1.3 的前提是纯内网部署。代码泄露的组织架构与人�
 
 1. **建私有仓库**（GitHub Desktop 里操作，浏览器授权也在这步完成）
    - 打开 GitHub Desktop → 登录 → File → New repository
-   - 仓库名：`workbench-app`；**Visibility 必须选 Private**
+   - 仓库名：`blackhole-app`；**Visibility 必须选 Private**
    - ⚠️ 必须 Private：仓库里有 `示例集团` / `示例研究院` / `示例部门` 这类真实组织名（openapi.yaml 示例与种子约定里）
 
 2. **生成一个最小权限 token，写进文件（不要贴在聊天里）**
    - GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate
-   - Resource owner：你的账号；Repository access：**Only select repositories → workbench-app**（第 1 步建好后才选得到）
+   - Resource owner：你的账号；Repository access：**Only select repositories → blackhole-app**（第 1 步建好后才选得到）
    - Repository permissions：**Contents → Read and write**（够 push 即可，其余一律不给）
    - 把 token 写进文件：`D:\workspace\_install\gh\token.txt`（纯文本，一行），然后只告诉我**文件路径**
 
@@ -308,7 +308,7 @@ v2 §0.1/§1.3 的前提是纯内网部署。代码泄露的组织架构与人�
 `git push -u origin master` → 回读仓库文件清单核对。全程 token 不进对话记录、不打日志。
 
 **备选（不想生成 token 的话）**：老6 在 GitHub Desktop 里 Add local repository →
-选 `D:\workspace\workbench-app` → Push repository。首次 push 就完成了；
+选 `D:\workspace\blackhole-app` → Push repository。首次 push 就完成了；
 代价是以后每次同步要老6 点一下（或再给 token 让我走 API）。
 
 **分支名**：当前是 `master`（git 默认）。要改成 `main` 我在推之前 `git branch -m main`，一句话即可。
@@ -582,7 +582,7 @@ reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把�
    而用户真正每天用的 10 个页面（总览/看板/任务清单/日程/进度/团队/文件/风险/统计/个人资料）
    **一条 E2E 都没有** —— 公开仓库后别人改坏前端，没有任何测试能拦住。
 2. **`deploy/README.md` 与脚本实际行为对不上** —— 手册写的冒烟脚本路径
-   `/data/workbench/scripts/smoke.sh` 在服务器上**根本不存在**（`install.sh` 只复制 `deploy/`）；
+   `/data/blackhole/scripts/smoke.sh` 在服务器上**根本不存在**（`install.sh` 只复制 `deploy/`）；
    脚本支持的 `--direct` / `--origin=` / `SMOKE_ACCOUNT` / `SEED_ADMIN_PASSWORD_FILE`
    四个参数手册一个字没提；「普通账号跑时管理员接口 403 属预期」这条也没写 ——
    运维照手册跑会误判成故障。
@@ -651,19 +651,19 @@ reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把�
 
 | # | 手册原来写的 | 实际行为 | 处理 |
 |---|---|---|---|
-| 1 | 冒烟脚本在 `/data/workbench/scripts/smoke.sh` | `install.sh` 只复制 `deploy/` → 服务器上是 **`/data/workbench/deploy/smoke.sh`**；`scripts/` 只是发布包里的副本 | 改正路径，并加「找不到文件」的排障条目 |
+| 1 | 冒烟脚本在 `/data/blackhole/scripts/smoke.sh` | `install.sh` 只复制 `deploy/` → 服务器上是 **`/data/blackhole/deploy/smoke.sh`**；`scripts/` 只是发布包里的副本 | 改正路径，并加「找不到文件」的排障条目 |
 | 2 | 未提 `--direct` | 跳过首页/前端静态资源/SPA 回退/安全头 4 项，只查接口 | 补参数说明 |
 | 3 | 未提 `--origin=` | 写请求的 `Origin` 头，默认取基地址。**直连 API 时必须显式指定**，否则登录就被 403「请求来源不被信任」拦掉（实测） | 补参数说明 + 排障条目 |
 | 4 | 未提 `SMOKE_ACCOUNT` | 登录账号，默认 `admin` | 补环境变量表 |
-| 5 | 未提 `SEED_ADMIN_PASSWORD_FILE` | 口令来源之一（**指向文件路径**，脚本读该文件第一行）；另有 `SEED_ADMIN_PASSWORD` 与 `/etc/workbench/api.env` 两个来源 | 补三个来源的优先级 + 「口令不要写命令行」提醒 |
+| 5 | 未提 `SEED_ADMIN_PASSWORD_FILE` | 口令来源之一（**指向文件路径**，脚本读该文件第一行）；另有 `SEED_ADMIN_PASSWORD` 与 `/etc/blackhole/api.env` 两个来源 | 补三个来源的优先级 + 「口令不要写命令行」提醒 |
 | 6 | 未写普通账号的 403 预期 | 脚本对 `/api/users*` 与 `/api/org/tree` 的 403 **显式豁免**并计为通过（实测：普通账号跑，17 项全过） | 补「403 属预期，不是故障」专节 |
 | 7 | 「迁移」当作 `install.sh` 的一步 | `node-pg-migrate` 是**仓库根的 devDependency**，生产装依赖用 `npm ci --omit=dev` → 发布包里**没有**迁移工具 → `install.sh` 会打印「跳过迁移」**继续执行**，表其实没建 | 单开 §4.1「先建表」，给开发机迁移 + 手工迁移两种做法，并加排障条目 |
 | 8 | 未提 `--use-glob` 的必要性 | `-m` 给的是 glob，**少 `--use-glob` 会把 `.sql` 也当迁移跑一遍，DDL 跑两遍** | 在迁移小节明确标注 |
 | 9 | 播种账号写作 `user01` + `user02`~`user07` | `db/seed.ts` 实际造的是 **`user01`~`user07`**（`user${i}` 补零），现有库里的 `user01` 是被导入改过名的历史数据 | 按脚本改正，并说明播种幂等、账号名以库里为准 |
 | 10 | 播种口令来源未说明 | 优先 `SEED_ADMIN_PASSWORD` / `SEED_USER_PASSWORD`；**没给就随机生成 12 位且只打印一次** | 补口径 |
 | 11 | 未提种子口令变量名对不上 | 模板里是 `SEED_RAQE_HYRLYHYI`，而 `db/seed.ts` 读的是 **`SEED_USER_PASSWORD`** → 7 个普通用户的固定口令目前设不进去 | 写明差异 + 给绕过办法（播种前显式 export） |
-| 12 | 回滚只写 `cp -r` | `cp -r 备份/apps /data/workbench/` 会**拷进已有目录**（变成 `apps/apps/...`），旧文件也留着 → 等于没回滚。`install.sh` 自己也是先 `rm -rf` 再拷 | 回滚步骤补 `rm -rf`，并说明备份只含 `apps/` 与 `db/` |
-| 13 | 开机自启只提 API | `install.sh` 只 enable 了 `workbench-api`；**nginx 与 postgresql 要自己 enable**（`one-shot.sh` 才做） | 新增 §6.1「开机自启的三个服务」表 |
+| 12 | 回滚只写 `cp -r` | `cp -r 备份/apps /data/blackhole/` 会**拷进已有目录**（变成 `apps/apps/...`），旧文件也留着 → 等于没回滚。`install.sh` 自己也是先 `rm -rf` 再拷 | 回滚步骤补 `rm -rf`，并说明备份只含 `apps/` 与 `db/` |
+| 13 | 开机自启只提 API | `install.sh` 只 enable 了 `blackhole-api`；**nginx 与 postgresql 要自己 enable**（`one-shot.sh` 才做） | 新增 §6.1「开机自启的三个服务」表 |
 | 14 | Node 20+ / PG 16+ | `package.json` 的 `engines` 要求 **Node ≥ 22**；PG 已定统一 **18**（D-08 / U-5） | 改正版本号，并说明 `install.sh` 自己只查 Node ≥ 20 但仓库要求 ≥ 22 |
 | 15 | 未提 `install.sh` 的其它参数 | 实际支持 `--tarball`（必填）/ `--env-file` / `--dir` / `--skip-migrate` | 补参数表 |
 
@@ -724,7 +724,7 @@ reminderAt / parentId / subtaskCount / startAt`——但共享类型 `Task` 把�
 | 日期 | 变更 | 影响 |
 |---|---|---|
 | 2026-11-06 | **D-17：组织可建根节点 + 日历农历/节假日** —— ① `POST /api/org` 的 `parentId` 允许为 null：仅在**组织树为空**时新增根节点（level 固定 1、path=/id/），已有根再传 null 一律 422，保持「根节点只有一个」的契约不变；前端在空树时把「新增下级」换成「新增根节点」。② 日历页补齐农历、二十四节气、传统/公历节日，以及法定节假日「休 / 班」角标；节假日数据内置 2026 年（国办发明电〔2025〕7号，含 7 段放假区间与 6 个调休上班日），界面上标注数据年份与文号 | ① 后端 `createOrg` 签名 `parentId: number \| null`，`routes.ts` 的 zod 改 `nullable().optional()`；前端 `CreateOrgInput.parentId` 放宽、`OrgFormModal` 传 null、`OrgPage` 空态给入口。② 新增依赖 `solarlunar`（~15KB，纯计算、离线可用，替代手抄 1900–2100 农历表）；新增 `apps/web/src/utils/lunar.ts`、`apps/web/src/data/holidays.ts`、`types/solarlunar.d.ts`；月历格高 56→70px。验证：104 单测 / 25 E2E / 冒烟 21 项全过，`/calendar` 10 月实测 1–7 日「休」、10 日「班」、国庆节/寒露/霜降/重阳节标红 |
-| 2026-11-05 | **D-16：上线收口三件套（备份恢复 / 两种 nginx 形态 / HTTPS 切换）** —— 新增 `deploy/backup.sh`（库 dump + 前端产物 + `api.env` + manifest，按时间戳目录保留 14 份）、`deploy/restore.sh`（默认只允许恢复到演练库，覆盖生产必须 `--force`）、`workbench-backup.{service,timer}`（每天 02:30，Persistent 补跑）、`deploy/nginx-integrate.conf.snippet`（形态 B：贴进已有 nginx 的 location 片段）、`deploy/gen-selfsigned-cert.sh`（内网自签，SAN 自动按 IP/DNS 生成）；`nginx.conf.example` 从 `http2 on;` 改回 `listen 443 ssl http2;`（后者要 nginx ≥1.25.1，Ubuntu 24.04 是 1.24 会报 unknown directive 起不来）；手册补「两种形态 / HTTPS 三条路 / 切 HTTPS 必改 4 处 / 升级后逐项确认」 | **零业务代码改动**（只动 `deploy/`、`scripts/package-release.sh` 去重两条重复 cp 并补 backup/restore 进包）。实测：`backup.sh` 在 192.168.102.102 跑通（189 个对象 / web 2.4M / manifest 含 SHA256 与 18 张表行数）；`restore.sh --to workbench_drill` 恢复后 app_user 8 / org 6 / project 3 / task 17 与生产一致，演练库已删；不带 `--force` 覆盖生产被拒绝（退出码 2）；自签证书 SAN=IP:192.168.102.102 有效期至 2029-02-07 |
+| 2026-11-05 | **D-16：上线收口三件套（备份恢复 / 两种 nginx 形态 / HTTPS 切换）** —— 新增 `deploy/backup.sh`（库 dump + 前端产物 + `api.env` + manifest，按时间戳目录保留 14 份）、`deploy/restore.sh`（默认只允许恢复到演练库，覆盖生产必须 `--force`）、`blackhole-backup.{service,timer}`（每天 02:30，Persistent 补跑）、`deploy/nginx-integrate.conf.snippet`（形态 B：贴进已有 nginx 的 location 片段）、`deploy/gen-selfsigned-cert.sh`（内网自签，SAN 自动按 IP/DNS 生成）；`nginx.conf.example` 从 `http2 on;` 改回 `listen 443 ssl http2;`（后者要 nginx ≥1.25.1，Ubuntu 24.04 是 1.24 会报 unknown directive 起不来）；手册补「两种形态 / HTTPS 三条路 / 切 HTTPS 必改 4 处 / 升级后逐项确认」 | **零业务代码改动**（只动 `deploy/`、`scripts/package-release.sh` 去重两条重复 cp 并补 backup/restore 进包）。实测：`backup.sh` 在 192.168.102.102 跑通（189 个对象 / web 2.4M / manifest 含 SHA256 与 18 张表行数）；`restore.sh --to blackhole_drill` 恢复后 app_user 8 / org 6 / project 3 / task 17 与生产一致，演练库已删；不带 `--force` 覆盖生产被拒绝（退出码 2）；自签证书 SAN=IP:192.168.102.102 有效期至 2029-02-07 |
 | 2026-11-05 | **D-15：用户端 10 页 E2E 冒烟补齐 + 部署手册与脚本对齐** —— 新增 `e2e/user-pages.spec.ts`（**12 条**）覆盖总览/看板/任务清单/日程/进度/团队/文件/风险/统计/个人资料 10 个路由：数据**全部走真实接口**造（`beforeAll` POST / `afterAll` DELETE，前缀 `e2e-user-`），断言一律「页面数字 === 接口数字」（指标卡、看板 4 列计数、任务表格行数与 total、月历 42 格、今天有圆点、面板标题与数据区非空），每条用例 `afterEach` 断言无 `console.error` / `pageerror` / 4xx-5xx 接口响应（**显式豁免** `GET /api/auth/me` 的 401 与 `GET /api/users*` 的 403 两处预期行为）；口令从 `process.env.SEED_ADMIN_PASSWORD` 读（`playwright.config.ts` 新增 env 注入），复用 `helpers.ts` 的 `clearMustChange()` / `resetAdmin()`。同时把 `deploy/README.md` 与 `deploy/*.sh` 的实际行为逐条对齐（改正冒烟脚本路径为 `deploy/smoke.sh`、补 `--direct` / `--origin=` / `SMOKE_ACCOUNT` / `SEED_ADMIN_PASSWORD_FILE`、补普通账号 403 属预期、点明发布包无迁移工具所以 `install.sh` 会跳过建表、补回滚必须先 `rm -rf`、补 nginx+postgresql 开机自启、改正 Node ≥ 22 / PG 18 / 种子账号 `user01`~`user07`） | **不改任何前端页面、后端接口、共享类型**，用户端 10 页源码一行没动；只新增 `e2e/user-pages.spec.ts`、改 `playwright.config.ts`（加 env 注入）与 `deploy/README.md`；**不改 `deploy/*.sh`**（本条记录的是文档向脚本对齐）。实测 `npx playwright test` **25 条全绿**（原 13 + 新 12），跑完开发库无 `e2e-user-` 残留 |
 | 2026-11-05 | **D-14：OpenAPI 契约对齐实际实现** —— 路径 24 → **40**、操作 34 → **57**，补齐用户端批次 2/3 的 16 条路径（统计聚合 / 风险 / 文件 / 里程碑 / 会议）与任务·项目的新增字段、筛选参数；并修正 16 处与代码不一致的原有描述（401/404/400/422 归属、account 长度、`info.version` → 2.1.0） | **只改 `docs/contracts/openapi.yaml` + 本决策记录，零代码改动**。路径集合经脚本比对差异为 0；发现 `GET /api/projects/{id}` 的任务数组缺批次 2 扩展字段（代码侧问题，已在契约里如实标注，未改代码） |
 | 2026-11-02 | Phase 0 建立本文件；D-01~D-09 定稿；组织层级改为上限 4 级 + 人员挂末级 | DDL 1 处、类型 1 处、应用层 3 处、验收措辞 4 条、接口描述若干 |

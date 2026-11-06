@@ -1,7 +1,7 @@
 import { type MutableRefObject } from 'react';
 import { Empty } from 'antd';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import type { LayoutItem } from '@workbench/shared/types';
+import type { LayoutItem } from '@blackhole/shared/types';
 import { ModuleCard } from './ModuleCard';
 import type { EditorItem } from './layoutEditor';
 

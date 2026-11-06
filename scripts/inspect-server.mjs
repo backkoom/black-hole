@@ -24,7 +24,7 @@ const ACCOUNT = process.argv[3] ?? 'smoke_test';
 const PW = process.env.SMOKE_PW ?? '';
 
 if (!PW) {
-  console.error('需要 SMOKE_PW 环境变量（从服务器 /etc/workbench/.smoke_pw 取）');
+  console.error('需要 SMOKE_PW 环境变量（从服务器 /etc/blackhole/.smoke_pw 取）');
   process.exit(1);
 }
 

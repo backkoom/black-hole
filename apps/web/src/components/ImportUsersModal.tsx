@@ -13,7 +13,7 @@ import {
   Upload,
 } from 'antd';
 import type { UploadFile } from 'antd';
-import type { ImportResult } from '@workbench/shared/types';
+import type { ImportResult } from '@blackhole/shared/types';
 import { CopyOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { downloadImportTemplate, importUsers, usersKeys } from '../api/users';

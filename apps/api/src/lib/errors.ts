@@ -1,4 +1,4 @@
-import { ERROR_CODES, ERROR_MESSAGES } from '@workbench/shared/errors';
+import { ERROR_CODES, ERROR_MESSAGES } from '@blackhole/shared/errors';
 
 /**
  * 业务错误 —— 执行包 §6.3「权限与错误映射」。

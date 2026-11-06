@@ -3,7 +3,7 @@ import { App as AntdApp, Button, Card, Empty, Popconfirm, Skeleton, Space } from
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Task, TaskStatus } from '@workbench/shared/types';
+import type { Task, TaskStatus } from '@blackhole/shared/types';
 import { deleteProject, getProjectDetail, projectsKeys } from '../api/projects';
 import { deleteTask, tasksKeys, updateTaskStatus } from '../api/tasks';
 import { errorStatus, errorText } from '../api/messages';

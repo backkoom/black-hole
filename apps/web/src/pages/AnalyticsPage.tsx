@@ -6,7 +6,7 @@ import {
   FolderOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 import { useUserProjects } from '../hooks/useUserData';
 import {
   useStatsDistribution,

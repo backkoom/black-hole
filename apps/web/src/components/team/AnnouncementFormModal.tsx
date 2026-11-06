@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, App as AntdApp, Checkbox, Form, Input, Modal, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Announcement, Project } from '@workbench/shared/types';
+import type { Announcement, Project } from '@blackhole/shared/types';
 import { createAnnouncement, teamKeys, updateAnnouncement } from '../../api/team';
 import { errorText } from '../../api/messages';
 

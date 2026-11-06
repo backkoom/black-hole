@@ -72,9 +72,9 @@ export function LoginPage() {
       <Card className="wb-login-card">
         <div className="wb-brand wb-login-brand">
           <span className="wb-brand-mark" aria-hidden="true">
-            工
+            B
           </span>
-          <span className="wb-brand-name">工作台</span>
+          <span className="wb-brand-name">Black Hole</span>
         </div>
 
         {error ? (

@@ -28,7 +28,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { FileAsset, FileKind } from '@workbench/shared/types';
+import type { FileAsset, FileKind } from '@blackhole/shared/types';
 import {
   createFolder,
   deleteFile,

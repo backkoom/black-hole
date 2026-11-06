@@ -4,13 +4,13 @@
 #
 # 用法：
 #   # ① 恢复演练（推荐每次都先这么跑一遍）
-#   sudo bash deploy/restore.sh --dump /data/backups/workbench/20261105-023000 \
-#                               --to workbench_drill
+#   sudo bash deploy/restore.sh --dump /data/backups/blackhole/20261105-023000 \
+#                               --to blackhole_drill
 #   # 跑完核对：https://<host>/api/... 或下面脚本打印的行数
 #
 #   # ② 真回滚（会停服务）
-#   sudo bash deploy/restore.sh --dump /data/backups/workbench/20261105-023000 \
-#                               --to workbench --force
+#   sudo bash deploy/restore.sh --dump /data/backups/blackhole/20261105-023000 \
+#                               --to blackhole --force
 #
 # 为什么默认不允许覆盖生产：pg_restore --clean 会先 DROP 再建，
 # 打错库名就是一次真实数据丢失，不给「手滑」留机会。
@@ -19,9 +19,9 @@
 # ==============================================================================
 set -euo pipefail
 
-ENV_FILE=${ENV_FILE:-/etc/workbench/api.env}
-APP_DIR=${APP_DIR:-/data/workbench}
-SERVICE=${SERVICE:-workbench-api}
+ENV_FILE=${ENV_FILE:-/etc/blackhole/api.env}
+APP_DIR=${APP_DIR:-/data/blackhole}
+SERVICE=${SERVICE:-blackhole-api}
 
 DUMP_DIR=""
 TARGET=""
@@ -116,7 +116,7 @@ psql "$TARGET_URL" -At -F' ' -c "
 if [[ $TARGET == "$APP_DB" && -f $DUMP_DIR/web.tar.gz ]]; then
   log "同步前端产物…"
   tar -xzf "$DUMP_DIR/web.tar.gz" -C "$APP_DIR"
-  chown -R workbench:workbench "$APP_DIR/apps/web/dist" 2>/dev/null || true
+  chown -R blackhole:blackhole "$APP_DIR/apps/web/dist" 2>/dev/null || true
 fi
 
 if [[ $TARGET == "$APP_DB" ]]; then

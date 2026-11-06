@@ -1,4 +1,4 @@
-import type { Paged, Priority, Task, TaskStatus } from '@workbench/shared/types';
+import type { Paged, Priority, Task, TaskStatus } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
 
 /**

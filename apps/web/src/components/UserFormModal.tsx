@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, App as AntdApp, Form, Input, Modal, Radio, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Role, User, UserListItem, UserStatus } from '@workbench/shared/types';
+import type { Role, User, UserListItem, UserStatus } from '@blackhole/shared/types';
 import { apiPost, apiPut } from '../api/client';
 import { errorText } from '../api/messages';
 import { orgKeys } from '../api/org';

@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# workbench-api —— systemd unit 模板
+# blackhole-api —— systemd unit 模板
 #
 # 安装：
-#   sudo cp deploy/workbench-api.service /etc/systemd/system/
+#   sudo cp deploy/blackhole-api.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
-#   sudo systemctl enable --now workbench-api
+#   sudo systemctl enable --now blackhole-api
 #
 # ⚠️ 改完 EnvironmentFile 的路径要同步改这里。
-# ⚠️ 不要把 DATABASE_URL / 口令直接写进本文件 —— 全部走 /etc/workbench/api.env，
+# ⚠️ 不要把 DATABASE_URL / 口令直接写进本文件 —— 全部走 /etc/blackhole/api.env，
 #    权限设 600，属主 root。
 # ==============================================================================
 
 [Unit]
-Description=工作台与组织架构 API (Fastify)
-Documentation=file:///data/workbench/deploy/README.md
+Description=Black Hole API (Fastify)
+Documentation=file:///data/blackhole/deploy/README.md
 After=network-online.target postgresql.service
 Wants=network-online.target
 # ⚠️ StartLimit* 属于 [Unit] 段 —— 放 [Service] 会被 systemd 忽略
@@ -23,14 +23,14 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
-User=workbench
-Group=workbench
+User=blackhole
+Group=blackhole
 
 # 环境变量集中放这一个文件（不进仓库）
-EnvironmentFile=/etc/workbench/api.env
+EnvironmentFile=/etc/blackhole/api.env
 
-WorkingDirectory=/data/workbench/apps/api
-ExecStart=/usr/bin/node /data/workbench/apps/api/dist/server.js
+WorkingDirectory=/data/blackhole/apps/api
+ExecStart=/usr/bin/node /data/blackhole/apps/api/dist/server.js
 
 # 重启策略：崩了自动拉起，但 5 分钟内最多 3 次（避免疯狂重启刷日志）
 Restart=always
@@ -39,7 +39,7 @@ RestartSec=5
 # 日志走 journald
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=workbench-api
+SyslogIdentifier=blackhole-api
 
 # ---- 安全加固 ----
 NoNewPrivileges=true
@@ -47,7 +47,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 # 需要写的位置：node_modules 缓存目录（若用 npm ci 一般不需要写）留给 /tmp
-ReadWritePaths=/data/workbench/logs
+ReadWritePaths=/data/blackhole/logs
 ProtectKernelTunables=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true

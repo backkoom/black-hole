@@ -5,7 +5,7 @@ import type {
   User,
   UserListItem,
   UserStatus,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { apiBlob, apiGet, apiPost, apiPostForm, apiPut } from './client';
 
 /**

@@ -1,4 +1,4 @@
-import type { LayoutItem } from '@workbench/shared/types';
+import type { LayoutItem } from '@blackhole/shared/types';
 import { CalendarModule } from './CalendarModule';
 import { DataChartModule } from './DataChartModule';
 import { DividerModule } from './DividerModule';

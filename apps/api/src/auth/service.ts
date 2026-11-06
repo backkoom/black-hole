@@ -1,4 +1,4 @@
-import type { Role, User } from '@workbench/shared/types';
+import type { Role, User } from '@blackhole/shared/types';
 import { query, queryOne, withTransaction } from '../db.js';
 import { formatTimestamp } from '../lib/serialize.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';

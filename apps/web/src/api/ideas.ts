@@ -1,4 +1,4 @@
-import type { Idea, Paged } from '@workbench/shared/types';
+import type { Idea, Paged } from '@blackhole/shared/types';
 import { apiGet, apiPost } from './client';
 
 /**

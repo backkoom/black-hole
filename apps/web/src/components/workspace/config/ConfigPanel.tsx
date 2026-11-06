@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, Form, Input, InputNumber, Select, Space } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { MODULE_BY_KEY } from '@workbench/shared/modules';
+import { MODULE_BY_KEY } from '@blackhole/shared/modules';
 import { isHttpUrl, isHttpsUrl, isQuickEntryUrl } from '../../../utils/urlRules';
 import { validateConfig } from './validateConfig';
 

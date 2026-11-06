@@ -24,7 +24,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { Priority, Project, Task } from '@workbench/shared/types';
+import type { Priority, Project, Task } from '@blackhole/shared/types';
 import { createTask, listTasks, updateTaskStatus } from '../api/tasks';
 import { fetchTaskStats, statsKeys } from '../api/stats';
 import { errorText } from '../api/messages';

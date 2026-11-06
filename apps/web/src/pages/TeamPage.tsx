@@ -12,7 +12,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import type { Role, UserListItem } from '@workbench/shared/types';
+import type { Role, UserListItem } from '@blackhole/shared/types';
 import { listUsers } from '../api/users';
 import { listMeetings } from '../api/schedule';
 import { listAllDiscussions, listAnnouncements, teamKeys } from '../api/team';

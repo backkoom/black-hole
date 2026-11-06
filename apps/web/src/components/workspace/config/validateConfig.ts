@@ -1,4 +1,4 @@
-import { validateModuleConfig } from '@workbench/shared/modules';
+import { validateModuleConfig } from '@blackhole/shared/modules';
 
 /**
  * config 校验 —— 以共享包的 `validateModuleConfig` 为**唯一权威**（§7.3）。

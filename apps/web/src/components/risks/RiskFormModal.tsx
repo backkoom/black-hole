@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, App as AntdApp, DatePicker, Form, Input, Modal, Radio, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Risk, RiskLevel } from '@workbench/shared/types';
+import type { Risk, RiskLevel } from '@blackhole/shared/types';
 import type { RiskKind } from '../../api/risks';
 import { createRisk, riskKeys, updateRisk } from '../../api/risks';
 import { errorText } from '../../api/messages';
 import { parseDateOnly, toDateOnly } from '../../utils/datetime';
 import { toProjectOptions } from '../../hooks/useProjectOptions';
-import type { Project, UserListItem } from '@workbench/shared/types';
+import type { Project, UserListItem } from '@blackhole/shared/types';
 
 /**
  * 风险 / 问题表单弹窗 —— 用户端「风险问题管理」页（稿子图8）。

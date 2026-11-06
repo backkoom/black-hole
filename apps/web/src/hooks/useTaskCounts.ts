@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import type { Task, TaskStatus } from '@workbench/shared/types';
+import type { Task, TaskStatus } from '@blackhole/shared/types';
 import { listTasks } from '../api/tasks';
 import { useUserProjects } from './useUserData';
 

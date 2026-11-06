@@ -10,8 +10,8 @@
 |---|---|
 | Node | v22.22.2 ✅ |
 | 依赖 | 13/13 已装（fastify、@fastify/cookie、@fastify/multipart、pg、zod、pino、bcryptjs、csv-parse、dotenv、node-pg-migrate、tsx、vitest、supertest）✅ |
-| PostgreSQL | 18.6 原生实例，`127.0.0.1:15432`，库 `workbench_dev` ✅ |
-| 迁移基线 | `001_init.sql` 已应用，`workbench_dev` 现有 8 张表 ✅ |
+| PostgreSQL | 18.6 原生实例，`127.0.0.1:15432`，库 `blackhole_dev` ✅ |
+| 迁移基线 | `001_init.sql` 已应用，`blackhole_dev` 现有 8 张表 ✅ |
 | `.env` | 未创建（**不提交仓库**，Phase 1 第一步从 `.env.example` 复制） |
 | 迁移包装器 | `db/migrations/001_init.js` 待建（D-10 决策，Phase 1 第一件活） |
 

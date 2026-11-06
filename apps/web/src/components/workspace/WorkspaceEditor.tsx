@@ -13,9 +13,9 @@ import {
 } from '@dnd-kit/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBlocker } from 'react-router-dom';
-import { canAddModule, moveItem, reindex } from '@workbench/shared';
-import { DEFAULT_MODULE_CONFIGS, MODULE_BY_KEY } from '@workbench/shared/modules';
-import type { LayoutItem, Workspace } from '@workbench/shared/types';
+import { canAddModule, moveItem, reindex } from '@blackhole/shared';
+import { DEFAULT_MODULE_CONFIGS, MODULE_BY_KEY } from '@blackhole/shared/modules';
+import type { LayoutItem, Workspace } from '@blackhole/shared/types';
 import {
   fetchMyWorkspace,
   fetchWorkspaceTemplate,

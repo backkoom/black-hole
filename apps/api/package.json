@@ -1,5 +1,5 @@
 {
-  "name": "@workbench/api",
+  "name": "@blackhole/api",
   "version": "2.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/multipart": "^9.0.1",
-    "@workbench/shared": "*",
+    "@blackhole/shared": "*",
     "bcryptjs": "^2.4.3",
     "csv-parse": "^5.5.6",
     "dotenv": "^16.4.7",

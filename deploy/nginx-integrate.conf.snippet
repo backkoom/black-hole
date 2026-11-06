@@ -5,7 +5,7 @@
 #
 # 贴之前先确认三件事：
 #   1. 域名根路径 / 有没有被别的站点占用。工作台必须挂在**根路径**，
-#      不支持 /workbench/ 这种子路径（前端路由是绝对路径，做子路径要改 basename，
+#      不支持 /blackhole/ 这种子路径（前端路由是绝对路径，做子路径要改 basename，
 #      属于另一件事）。如果 / 已被占用 → 给工作台单独一个子域名 server{}，
 #      然后用 deploy/nginx.conf.example（形态 A）。
 #   2. `add_header` 在 nginx 里是**覆盖**不是合并：某个 location 里写了 add_header，
@@ -15,7 +15,7 @@
 
     # --- ① 前端静态文件 ---
     # 换成你的实际安装目录
-    root /data/workbench/apps/web/dist;
+    root /data/blackhole/apps/web/dist;
     index index.html;
 
     client_max_body_size 4m;
@@ -59,8 +59,8 @@
 # ==============================================================================
 # 验证与生效：
 #   sudo nginx -t && sudo systemctl reload nginx
-#   bash /data/workbench/deploy/smoke.sh https://<你的域名>
+#   bash /data/blackhole/deploy/smoke.sh https://<你的域名>
 #
-# 如果 smokes 报 403「请求来源不被信任」：/etc/workbench/api.env 里的 APP_ORIGIN
+# 如果 smokes 报 403「请求来源不被信任」：/etc/blackhole/api.env 里的 APP_ORIGIN
 # 必须与浏览器地址栏的协议+域名端口**完全一致**（含 https 与端口）。
 # ==============================================================================

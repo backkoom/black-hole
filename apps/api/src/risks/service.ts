@@ -1,4 +1,4 @@
-import type { Risk, RiskLevel, RiskStats, RiskStatus } from '@workbench/shared/types';
+import type { Risk, RiskLevel, RiskStats, RiskStatus } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatDate, formatTimestamp } from '../lib/serialize.js';

@@ -1,4 +1,4 @@
-import type { Risk, RiskLevel, RiskStats, RiskStatus } from '@workbench/shared/types';
+import type { Risk, RiskLevel, RiskStats, RiskStatus } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
 
 /**
@@ -21,7 +21,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
  * - 普通用户强制只看自己创建的风险与问题，管理员不传 userId 即看全员；
  * - dueDate 是**日历日**（YYYY-MM-DD），创建 / 修改时只能传 YYYY-MM-DD。
  *
- * 类型直接复用 @workbench/shared/types，不在这里另写一份。
+ * 类型直接复用 @blackhole/shared/types，不在这里另写一份。
  */
 
 /** 风险 / 问题类型 */

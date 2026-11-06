@@ -1,10 +1,10 @@
-import type { LayoutItem, Workspace } from '@workbench/shared/types';
+import type { LayoutItem, Workspace } from '@blackhole/shared/types';
 import {
   ACTIVE_MODULE_KEYS,
   LAYOUT_RULES,
   MODULE_BY_KEY,
   validateModuleConfig,
-} from '@workbench/shared/modules';
+} from '@blackhole/shared/modules';
 import { query, queryOne, withTransaction } from '../db.js';
 import { conflict, notFound, unprocessable } from '../lib/errors.js';
 

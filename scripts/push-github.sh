@@ -10,7 +10,7 @@
 # ==============================================================================
 set -euo pipefail
 
-REPO_NAME="${REPO_NAME:-workbench-app}"
+REPO_NAME="${REPO_NAME:-blackhole-app}"
 DESCRIPTION="${DESCRIPTION:-内网项目管理系统：用户端 10 页固定界面 + 管理员端（工作台编排/账号/组织架构/模板）}"
 VISIBILITY="${VISIBILITY:-public}"
 

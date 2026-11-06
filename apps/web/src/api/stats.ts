@@ -1,4 +1,4 @@
-import type { Overview, TaskStats } from '@workbench/shared/types';
+import type { Overview, TaskStats } from '@blackhole/shared/types';
 import { apiGet } from './client';
 
 /**

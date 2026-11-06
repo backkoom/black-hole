@@ -1,4 +1,4 @@
-import type { Project, ProjectDetail, Task } from '@workbench/shared/types';
+import type { Project, ProjectDetail, Task } from '@blackhole/shared/types';
 import { query, queryOne, withTransaction } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp, formatDate } from '../lib/serialize.js';

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { Dayjs } from 'dayjs';
-import type { Milestone, Project } from '@workbench/shared/types';
+import type { Milestone, Project } from '@blackhole/shared/types';
 import { designVars } from '../../styles/theme';
 import { formatDateOnly, parseDateOnly, todayShanghaiDate } from '../../utils/datetime';
 import { categoryTone, projectColor } from '../user/visuals';

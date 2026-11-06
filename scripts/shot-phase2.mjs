@@ -11,7 +11,7 @@ import { Pool } from 'pg';
  * 输出：docs/screenshots/
  *
  * 管理接口要 must_change=false 才能访问，所以脚本会临时清掉 admin 的该标记，
- * **跑完恢复为 true**。为安全起见，只允许对开发库（库名含 workbench_dev）执行。
+ * **跑完恢复为 true**。为安全起见，只允许对开发库（库名含 blackhole_dev）执行。
  */
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -23,8 +23,8 @@ const adminPw =
   (/^\s*SEED_ADMIN_PASSWORD\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').replace(/^["']|["']$/g, '');
 const databaseUrl = (/^\s*DATABASE_URL\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').trim();
 
-if (!databaseUrl.includes('workbench_dev')) {
-  console.error('拒绝执行：DATABASE_URL 不是开发库（workbench_dev）');
+if (!databaseUrl.includes('blackhole_dev')) {
+  console.error('拒绝执行：DATABASE_URL 不是开发库（blackhole_dev）');
   process.exit(1);
 }
 

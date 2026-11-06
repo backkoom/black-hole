@@ -2,8 +2,8 @@ import { useRef, type MutableRefObject, type PointerEvent as ReactPointerEvent }
 import { Button, Popconfirm, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined, HolderOutlined } from '@ant-design/icons';
 import { useSortable } from '@dnd-kit/sortable';
-import { isFixedSize } from '@workbench/shared';
-import { MODULE_BY_KEY } from '@workbench/shared/modules';
+import { isFixedSize } from '@blackhole/shared';
+import { MODULE_BY_KEY } from '@blackhole/shared/modules';
 import { moduleVisual } from './moduleVisuals';
 import { ModuleContent } from './modules/ModuleContent';
 import {

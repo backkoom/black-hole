@@ -1,4 +1,4 @@
-import { ERROR_MESSAGES } from '@workbench/shared/errors';
+import { ERROR_MESSAGES } from '@blackhole/shared/errors';
 import { ApiError } from './client';
 
 /**

@@ -4,7 +4,7 @@ import { ok, requireActiveSession, requireAdmin } from '../auth/middleware.js';
 import { createUser, listUsers, resetPassword, updateUser } from './service.js';
 import { importTemplateCsv, importUsers, parseImportCsv } from './import.js';
 import { badRequest, forbidden, unprocessable } from '../lib/errors.js';
-import { PAGINATION } from '@workbench/shared/errors';
+import { PAGINATION } from '@blackhole/shared/errors';
 
 /**
  * 账号管理路由 —— 执行包 §6.4 的 9~14 号接口。

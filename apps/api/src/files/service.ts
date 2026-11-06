@@ -1,4 +1,4 @@
-import type { FileAsset, FileFolder, FileKind, FileStats } from '@workbench/shared/types';
+import type { FileAsset, FileFolder, FileKind, FileStats } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp } from '../lib/serialize.js';

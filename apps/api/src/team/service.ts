@@ -4,7 +4,7 @@ import type {
   ApprovalStatus,
   Discussion,
   DiscussionTargetType,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp } from '../lib/serialize.js';

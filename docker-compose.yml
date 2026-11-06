@@ -5,9 +5,9 @@ services:
   db:
     image: postgres:18
     environment:
-      POSTGRES_USER: workbench
-      POSTGRES_PASSWORD: workbench
-      POSTGRES_DB: workbench
+      POSTGRES_USER: blackhole
+      POSTGRES_PASSWORD: blackhole
+      POSTGRES_DB: blackhole
     ports:
       - "5432:5432"
     volumes:

@@ -1,5 +1,5 @@
 import { Tag } from 'antd';
-import type { Priority } from '@workbench/shared/types';
+import type { Priority } from '@blackhole/shared/types';
 
 /**
  * 优先级标签 —— pages.md §3 表格的「优先级」列。

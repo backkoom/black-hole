@@ -3,12 +3,12 @@
 # 备份 —— 数据库 + 前端产物 + 环境变量 + 清单
 #
 # 用法：
-#   sudo bash deploy/backup.sh                 # 备份到 /data/backups/workbench
+#   sudo bash deploy/backup.sh                 # 备份到 /data/backups/blackhole
 #   sudo bash deploy/backup.sh /mnt/nas/wb     # 备份到别的盘（推荐异地/另一块盘）
 #
 # 环境变量：
-#   ENV_FILE=/etc/workbench/api.env   服务环境变量（里面有 DATABASE_URL 与种子口令）
-#   APP_DIR=/data/workbench           安装目录
+#   ENV_FILE=/etc/blackhole/api.env   服务环境变量（里面有 DATABASE_URL 与种子口令）
+#   APP_DIR=/data/blackhole           安装目录
 #   KEEP=14                           保留最近多少份
 #
 # 产出（同一次备份共用一个时间戳）：
@@ -21,11 +21,11 @@
 # ==============================================================================
 set -euo pipefail
 
-ENV_FILE=${ENV_FILE:-/etc/workbench/api.env}
-APP_DIR=${APP_DIR:-/data/workbench}
+ENV_FILE=${ENV_FILE:-/etc/blackhole/api.env}
+APP_DIR=${APP_DIR:-/data/blackhole}
 # 目标目录优先级：第 1 个参数 > 环境变量 DEST（systemd 的 Environment= 用这个） > 默认
 # ⚠️ 2026-11-06 之前只认参数，README 里写的 `Environment=DEST=...` 其实不生效。
-DEST=${1:-${DEST:-/data/backups/workbench}}
+DEST=${1:-${DEST:-/data/backups/blackhole}}
 KEEP=${KEEP:-14}
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }

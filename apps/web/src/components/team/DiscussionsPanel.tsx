@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { App as AntdApp, Button, Input, Select } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DeleteOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons';
-import type { Discussion, DiscussionTargetType, Project, Task } from '@workbench/shared/types';
+import type { Discussion, DiscussionTargetType, Project, Task } from '@blackhole/shared/types';
 import { createDiscussion, deleteDiscussion, listAllDiscussions, teamKeys } from '../../api/team';
 import { errorText } from '../../api/messages';
 import { useAuth } from '../../auth/AuthContext';

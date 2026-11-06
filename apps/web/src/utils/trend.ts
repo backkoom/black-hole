@@ -1,4 +1,4 @@
-import type { Task } from '@workbench/shared/types';
+import type { Task } from '@blackhole/shared/types';
 import { recentShanghaiDates, toCalendarDate } from './datetime';
 
 /**

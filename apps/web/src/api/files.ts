@@ -1,4 +1,4 @@
-import type { FileAsset, FileFolder, FileKind, FileStats } from '@workbench/shared/types';
+import type { FileAsset, FileFolder, FileKind, FileStats } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPost } from './client';
 
 /**
@@ -21,7 +21,7 @@ import { apiDelete, apiGet, apiPost } from './client';
  * - 普通用户强制只看自己名下的文件与文件夹，管理员不传 userId 即看全员；
  * - 删除是软删（deleted_at）。
  *
- * 类型直接复用 @workbench/shared/types，不在这里另写一份。
+ * 类型直接复用 @blackhole/shared/types，不在这里另写一份。
  */
 
 /** 文件类型 */

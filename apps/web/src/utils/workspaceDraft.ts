@@ -1,4 +1,4 @@
-import type { LayoutItem } from '@workbench/shared/types';
+import type { LayoutItem } from '@blackhole/shared/types';
 
 /**
  * 工作台草稿（localStorage）—— 只存本地，不发服务器。

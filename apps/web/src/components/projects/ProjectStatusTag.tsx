@@ -1,5 +1,5 @@
 import { Tag } from 'antd';
-import type { ProjectStatus } from '@workbench/shared/types';
+import type { ProjectStatus } from '@blackhole/shared/types';
 
 /**
  * 项目状态标签 —— 进行中 / 已完成（pages.md §4「状态标签」）。

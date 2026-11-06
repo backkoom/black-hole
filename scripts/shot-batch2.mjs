@@ -20,8 +20,8 @@ const adminPw =
   (/^\s*SEED_ADMIN_PASSWORD\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').replace(/^["']|["']$/g, '');
 const databaseUrl = (/^\s*DATABASE_URL\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').trim();
 
-if (!databaseUrl.includes('workbench_dev')) {
-  console.error('拒绝执行：DATABASE_URL 不是开发库（workbench_dev）');
+if (!databaseUrl.includes('blackhole_dev')) {
+  console.error('拒绝执行：DATABASE_URL 不是开发库（blackhole_dev）');
   process.exit(1);
 }
 

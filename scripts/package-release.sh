@@ -7,7 +7,7 @@
 #   bash scripts/package-release.sh --skip-test # 跳过测试（不建议）
 #
 # 产出：
-#   dist-release/workbench-release-<时间戳>.tar.gz
+#   dist-release/blackhole-release-<时间戳>.tar.gz
 #     ├── apps/api/dist/        后端编译产物
 #     ├── apps/web/dist/        前端静态产物
 #     ├── db/migrations/         数据库迁移
@@ -62,7 +62,7 @@ OUT_DIR="$ROOT/dist-release"
 # ⚠️ 先清掉「本次产物」标记 —— build 失败时脚本会中止，但旧包还在目录里。
 #    没有标记的话，后续读 LATEST 会拿到**旧包**而不知情（实测踩过）。
 rm -f "$OUT_DIR/LATEST"
-PKG_DIR="$OUT_DIR/workbench-release-$STAMP"
+PKG_DIR="$OUT_DIR/blackhole-release-$STAMP"
 # ⚠️ 不用 rm -rf 清理（会触发删除拦截）；时间戳目录天然唯一，旧的保留即可
 mkdir -p "$PKG_DIR"/{apps/api,apps/web,db,deploy,scripts,packages/shared}
 
@@ -71,7 +71,7 @@ cp -r apps/api/dist        "$PKG_DIR/apps/api/"
 cp    apps/api/package.json "$PKG_DIR/apps/api/"
 cp -r apps/web/dist        "$PKG_DIR/apps/web/"
 cp    apps/web/package.json "$PKG_DIR/apps/web/"
-# ⚠️ @workbench/shared 是 workspace 外部依赖，编译产物不会被 bundle，必须一起带
+# ⚠️ @blackhole/shared 是 workspace 外部依赖，编译产物不会被 bundle，必须一起带
 cp    packages/shared/package.json "$PKG_DIR/packages/shared/"
 cp -r packages/shared/dist       "$PKG_DIR/packages/shared/" 2>/dev/null || true
 cp -r db/migrations        "$PKG_DIR/db/"
@@ -96,12 +96,12 @@ Node：$(node -v)
 EOF
 
 cat > "$PKG_DIR/scripts/package.json" <<'EOF'
-{ "name": "workbench-release", "private": true, "type": "module" }
+{ "name": "blackhole-release", "private": true, "type": "module" }
 EOF
 
 echo "==> 5/5 打包"
-TARBALL="$OUT_DIR/workbench-release-$STAMP.tar.gz"
-tar -czf "$TARBALL" -C "$OUT_DIR" "workbench-release-$STAMP"
+TARBALL="$OUT_DIR/blackhole-release-$STAMP.tar.gz"
+tar -czf "$TARBALL" -C "$OUT_DIR" "blackhole-release-$STAMP"
 
 SIZE="$(du -h "$TARBALL" | cut -f1)"
 echo ""

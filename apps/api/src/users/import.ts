@@ -1,5 +1,5 @@
 import { parse } from 'csv-parse/sync';
-import type { Role } from '@workbench/shared/types';
+import type { Role } from '@blackhole/shared/types';
 import { query, withTransaction } from '../db.js';
 import { forbidden, unprocessable } from '../lib/errors.js';
 import { generateInitialPassword, hashPassword } from '../lib/password.js';

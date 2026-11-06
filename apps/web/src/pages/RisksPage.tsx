@@ -12,7 +12,7 @@ import {
   WarningOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Risk, RiskLevel, RiskStatus } from '@workbench/shared/types';
+import type { Risk, RiskLevel, RiskStatus } from '@blackhole/shared/types';
 import type { RiskKind } from '../api/risks';
 import {
   deleteRisk,

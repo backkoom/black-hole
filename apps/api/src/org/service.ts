@@ -1,4 +1,4 @@
-import type { OrgNode } from '@workbench/shared/types';
+import type { OrgNode } from '@blackhole/shared/types';
 import { query, queryOne, withTransaction } from '../db.js';
 import { getConfig } from '../config.js';
 import { unprocessable, notFound } from '../lib/errors.js';

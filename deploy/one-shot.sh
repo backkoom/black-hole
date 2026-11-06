@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# 工作台与组织架构 —— 一键部署（**在服务器上跑**）
+# Black Hole —— 一键部署（**在服务器上跑**）
 #
 # 用法（在服务器终端执行）：
 #   bash /tmp/one-shot.sh
@@ -13,18 +13,18 @@
 # ==============================================================================
 set -euo pipefail
 
-APP_DIR="/data/workbench"
-ENV_DIR="/etc/workbench"
+APP_DIR="/data/blackhole"
+ENV_DIR="/etc/blackhole"
 ENV_FILE="$ENV_DIR/api.env"
-TARBALL="/tmp/workbench-release.tar.gz"
+TARBALL="/tmp/blackhole-release.tar.gz"
 # ⚠️ 默认用占位值 —— 公开仓库里不写死任何内网 IP
 PKG_URL="${PKG_URL:-http://pkg-host.internal:8899/wb-pkg.tar.gz}"
-SERVICE="workbench-api"
+SERVICE="blackhole-api"
 # ⚠️ 默认用占位值 —— 用 ORIGIN=... 覆盖
-ORIGIN="${ORIGIN:-http://workbench.example.internal}"
-DB_NAME="workbench"
-DB_USER="workbench"
-SVC_USER="workbench"
+ORIGIN="${ORIGIN:-http://blackhole.example.internal}"
+DB_NAME="blackhole"
+DB_USER="blackhole"
+SVC_USER="blackhole"
 
 log()  { echo -e "\033[0;36m[部署]\033[0m $*"; }
 warn() { echo -e "\033[0;33m[注意]\033[0m $*"; }
@@ -165,7 +165,7 @@ fi
 # 7. systemd
 # ---------------------------------------------------------------------------
 log "7/9 systemd"
-cp "$APP_DIR/deploy/workbench-api.service" /etc/systemd/system/$SERVICE.service
+cp "$APP_DIR/deploy/blackhole-api.service" /etc/systemd/system/$SERVICE.service
 systemctl daemon-reload
 systemctl enable $SERVICE >/dev/null 2>&1 || true
 systemctl restart $SERVICE
@@ -183,7 +183,7 @@ ss -lntp 2>/dev/null | grep ':3000' | head -2
 # 8. nginx
 # ---------------------------------------------------------------------------
 log "8/9 nginx"
-cat > /etc/nginx/conf.d/workbench.conf <<'EOF'
+cat > /etc/nginx/conf.d/blackhole.conf <<'EOF'
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -202,7 +202,7 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Referrer-Policy "same-origin" always;
 
-    root /data/workbench/apps/web/dist;
+    root /data/blackhole/apps/web/dist;
     index index.html;
 
     location /assets/ {
@@ -265,7 +265,7 @@ echo " ⚠️ 首次登录必须改密。改完再跑一次冒烟才是完整验
 echo "    bash $APP_DIR/scripts/smoke.sh $ORIGIN"
 echo ""
 echo " 常用命令："
-echo "   systemctl status workbench-api"
-echo "   journalctl -u workbench-api -f"
+echo "   systemctl status blackhole-api"
+echo "   journalctl -u blackhole-api -f"
 echo "   nginx -t && systemctl reload nginx"
 echo "=============================================="

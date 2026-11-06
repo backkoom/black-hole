@@ -4,11 +4,11 @@
 #
 # 用法：
 #   sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102
-#   sudo bash deploy/gen-selfsigned-cert.sh workbench.corp.local
+#   sudo bash deploy/gen-selfsigned-cert.sh blackhole.corp.local
 #   sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102 --days 3650
 #
-# 产出：/etc/nginx/ssl/workbench.crt（含私钥的证书链不用，纯自签）
-#       /etc/nginx/ssl/workbench.key（600）
+# 产出：/etc/nginx/ssl/blackhole.crt（含私钥的证书链不用，纯自签）
+#       /etc/nginx/ssl/blackhole.key（600）
 #
 # ⚠️ 自签证书浏览器会报「不安全」，用户要点「继续访问」。这是内网过渡方案，
 #    正式验收前应换成企业 CA 或正式域名证书（换法见 README §3.4）。
@@ -47,22 +47,22 @@ chmod 700 "$SSL_DIR"
 echo "生成自签证书：CN=$CN  SAN=$SAN  有效期 ${DAYS} 天"
 openssl req -x509 -nodes -newkey rsa:2048 -sha256 \
   -days "$DAYS" \
-  -keyout "$SSL_DIR/workbench.key" \
-  -out    "$SSL_DIR/workbench.crt" \
-  -subj   "/C=CN/O=Workbench/CN=$CN" \
+  -keyout "$SSL_DIR/blackhole.key" \
+  -out    "$SSL_DIR/blackhole.crt" \
+  -subj   "/C=CN/O=Blackhole/CN=$CN" \
   -addext "subjectAltName=$SAN" \
   -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
   -addext "extendedKeyUsage=serverAuth" \
   2>/dev/null
 
-chmod 600 "$SSL_DIR/workbench.key"
-chmod 644 "$SSL_DIR/workbench.crt"
+chmod 600 "$SSL_DIR/blackhole.key"
+chmod 644 "$SSL_DIR/blackhole.crt"
 
 echo "完成："
-openssl x509 -in "$SSL_DIR/workbench.crt" -noout -subject -dates -ext subjectAltName
+openssl x509 -in "$SSL_DIR/blackhole.crt" -noout -subject -dates -ext subjectAltName
 echo
 echo "接下来："
-echo "  1) 确认 /etc/nginx/conf.d/workbench.conf 里 ssl_certificate 指向 $SSL_DIR/workbench.crt"
+echo "  1) 确认 /etc/nginx/conf.d/blackhole.conf 里 ssl_certificate 指向 $SSL_DIR/blackhole.crt"
 echo "  2) sudo nginx -t && sudo systemctl reload nginx"
-echo "  3) /etc/workbench/api.env 里把 APP_ORIGIN 改成 https://$HOST、COOKIE_SECURE=true"
-echo "  4) sudo systemctl restart workbench-api && bash /data/workbench/deploy/smoke.sh https://$HOST"
+echo "  3) /etc/blackhole/api.env 里把 APP_ORIGIN 改成 https://$HOST、COOKIE_SECURE=true"
+echo "  4) sudo systemctl restart blackhole-api && bash /data/blackhole/deploy/smoke.sh https://$HOST"

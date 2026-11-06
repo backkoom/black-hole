@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Paged, Project, Task, User, UserListItem } from '@workbench/shared/types';
+import type { Paged, Project, Task, User, UserListItem } from '@blackhole/shared/types';
 import { listProjects } from '../api/projects';
 import { listTasks } from '../api/tasks';
 import { listUsers } from '../api/users';

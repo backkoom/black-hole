@@ -4,7 +4,7 @@ import type {
   ApprovalStatus,
   Discussion,
   DiscussionTargetType,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPost, apiPut } from './client';
 
 /**
@@ -27,7 +27,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from './client';
  *   不传 scope 时管理员看全部、普通用户看指派给自己的；
  *   决策（通过 / 驳回）限审批人本人或管理员，且不能审批自己提交的申请。
  *
- * 类型直接复用 @workbench/shared/types，不在这里另写一份。
+ * 类型直接复用 @blackhole/shared/types，不在这里另写一份。
  */
 
 /** 列表响应 —— 这三个接口只返回 items 与 total（没有 page / pageSize） */

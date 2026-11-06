@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { OrgNode } from '@workbench/shared/types';
+import type { OrgNode } from '@blackhole/shared/types';
 import { fetchOrgTree, orgKeys } from '../api/org';
 
 /**

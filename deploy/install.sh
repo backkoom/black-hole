@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# workbench-api —— 安装脚本（**在服务器上跑**）
+# blackhole-api —— 安装脚本（**在服务器上跑**）
 #
 # 用法：
-#   sudo bash install.sh --tarball /tmp/workbench-release-20261104-120000.tar.gz
+#   sudo bash install.sh --tarball /tmp/blackhole-release-20261104-120000.tar.gz
 #   sudo bash install.sh --tarball xxx.tar.gz --skip-migrate
 #
 # 幂等：重复执行安全。升级流程 = 解包新包 → 跑迁移 → 重启 → 冒烟。
 #
-# 备份：每次安装前把当前版本存到 /data/workbench/.releases/<时间戳>/，
+# 备份：每次安装前把当前版本存到 /data/blackhole/.releases/<时间戳>/，
 #       出问题可按 deploy/README.md 的回滚步骤切回。
 # ==============================================================================
 set -euo pipefail
 
-APP_DIR="/data/workbench"
+APP_DIR="/data/blackhole"
 RELEASE_DIR="$APP_DIR/.releases"
 TARBALL=""
 SKIP_MIGRATE=0
-ENV_FILE="/etc/workbench/api.env"
-SERVICE="workbench-api"
+ENV_FILE="/etc/blackhole/api.env"
+SERVICE="blackhole-api"
 
 log()  { echo -e "\033[0;36m[install]\033[0m $*"; }
 warn() { echo -e "\033[0;33m[warn]\033[0m $*"; }
@@ -82,7 +82,7 @@ if [ -f "$SRC/package-lock.json" ]; then
 else
   warn "发布包里没有 package-lock.json —— 后面 npm ci 会失败"
 fi
-# packages/shared 是 apps/api 的运行时依赖（node_modules/@workbench/shared 软链指向它）
+# packages/shared 是 apps/api 的运行时依赖（node_modules/@blackhole/shared 软链指向它）
 if [ -d "$SRC/packages" ]; then
   rm -rf "$APP_DIR/packages"
   cp -r "$SRC/packages" "$APP_DIR/packages"
@@ -152,7 +152,7 @@ fi
 # ---------------------------------------------------------------------------
 if command -v systemctl >/dev/null; then
   log "安装 systemd unit"
-  cp "$APP_DIR/deploy/workbench-api.service" /etc/systemd/system/$SERVICE.service
+  cp "$APP_DIR/deploy/blackhole-api.service" /etc/systemd/system/$SERVICE.service
   systemctl daemon-reload
   systemctl enable $SERVICE >/dev/null 2>&1 || true
   systemctl restart $SERVICE
@@ -170,15 +170,15 @@ fi
 # ---------------------------------------------------------------------------
 # 7. 文件权限
 # ---------------------------------------------------------------------------
-if id workbench >/dev/null 2>&1; then
-  chown -R workbench:workbench "$APP_DIR"
+if id blackhole >/dev/null 2>&1; then
+  chown -R blackhole:blackhole "$APP_DIR"
 fi
 mkdir -p "$APP_DIR/logs" && chmod 755 "$APP_DIR/logs"
 
 log "✅ 安装完成"
 echo ""
 echo "下一步："
-echo "  1) 配 nginx：cp $APP_DIR/deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf"
+echo "  1) 配 nginx：cp $APP_DIR/deploy/nginx.conf.example /etc/nginx/conf.d/blackhole.conf"
 echo "  2) 改里面的域名/证书路径，nginx -t && systemctl reload nginx"
 echo "  3) 冒烟验证：bash $APP_DIR/scripts/smoke.sh https://<你的域名>"
 echo "  4) 首次播种：cd $APP_DIR && node --env-file=$ENV_FILE node_modules/.bin/tsx db/seed.ts"

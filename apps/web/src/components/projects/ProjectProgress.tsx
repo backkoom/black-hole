@@ -1,5 +1,5 @@
 import { Progress } from 'antd';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 
 /**
  * 项目进度条 —— pages.md §4 / §5 的「进度条 + 百分比」。

@@ -3,7 +3,7 @@
 # 服务器数据重置 —— 清掉全部业务数据，用脱敏后的示例组织重新播种 + 造演示数据
 #
 # 用法（服务器上）：
-#   bash /data/workbench/scripts/reset-and-demo.sh
+#   bash /data/blackhole/scripts/reset-and-demo.sh
 #
 # 做四件事：
 #   1. 清空全部业务数据（含账号与组织树）
@@ -15,8 +15,8 @@
 # ==============================================================================
 set -euo pipefail
 
-APP_DIR="/data/workbench"
-ENV_FILE="/etc/workbench/api.env"
+APP_DIR="/data/blackhole"
+ENV_FILE="/etc/blackhole/api.env"
 BASE="${BASE:-http://127.0.0.1:3000}"
 
 log() { echo -e "\033[0;36m[reset]\033[0m $*"; }

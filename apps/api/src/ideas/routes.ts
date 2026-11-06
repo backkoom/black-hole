@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ok, requireActiveSession } from '../auth/middleware.js';
 import { createIdea, deleteIdea, listIdeas } from './service.js';
 import { badRequest } from '../lib/errors.js';
-import { PAGINATION } from '@workbench/shared/errors';
+import { PAGINATION } from '@blackhole/shared/errors';
 
 /**
  * 灵感路由 —— 执行包 §6.4 的 30~32 号接口。

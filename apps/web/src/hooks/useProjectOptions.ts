@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 import { listProjects } from '../api/projects';
 
 /**

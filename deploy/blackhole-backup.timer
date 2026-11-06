@@ -1,6 +1,6 @@
 [Unit]
 Description=每天 02:30 备份工作台
-Documentation=file:///data/workbench/deploy/README.md
+Documentation=file:///data/blackhole/deploy/README.md
 
 [Timer]
 # 业务低峰跑；RandomizedDelaySec 避免多台机器同一秒打同一块存储
@@ -8,7 +8,7 @@ OnCalendar=*-*-* 02:30:00
 RandomizedDelaySec=300
 # 机器关机错过时间点，开机后补跑一次
 Persistent=true
-Unit=workbench-backup.service
+Unit=blackhole-backup.service
 
 [Install]
 WantedBy=timers.target

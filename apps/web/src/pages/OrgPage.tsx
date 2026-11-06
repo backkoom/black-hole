@@ -25,7 +25,7 @@ import {
   UserAddOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { OrgNode, User, UserListItem } from '@workbench/shared/types';
+import type { OrgNode, User, UserListItem } from '@blackhole/shared/types';
 import { PageHeader } from '../components/PageHeader';
 import { deleteOrg, orgKeys } from '../api/org';
 import { listUsers } from '../api/users';

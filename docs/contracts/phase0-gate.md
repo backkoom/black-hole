@@ -40,8 +40,8 @@ console.log('securitySchemes =',Object.keys(d.components.securitySchemes));
 
 ```bash
 psql -h 127.0.0.1 -p 15432 -U postgres -c "CREATE DATABASE gate_check;"
-psql -h 127.0.0.1 -p 15432 -U postgres -d gate_check -c "GRANT ALL ON SCHEMA public TO workbench;"
-PGPASSWORD=*** psql -h 127.0.0.1 -p 15432 -U workbench -d gate_check \
+psql -h 127.0.0.1 -p 15432 -U postgres -d gate_check -c "GRANT ALL ON SCHEMA public TO blackhole;"
+PGPASSWORD=*** psql -h 127.0.0.1 -p 15432 -U blackhole -d gate_check \
   -v ON_ERROR_STOP=1 -f db/migrations/001_init.sql
 psql ... -c "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';"
 ```

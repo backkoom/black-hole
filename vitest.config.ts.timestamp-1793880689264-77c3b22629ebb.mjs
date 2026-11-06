@@ -1,5 +1,5 @@
 // vitest.config.ts
-import { defineConfig } from "file:///D:/workspace/workbench-app/node_modules/vitest/dist/config.js";
+import { defineConfig } from "file:///D:/workspace/blackhole-app/node_modules/vitest/dist/config.js";
 var vitest_config_default = defineConfig({
   test: {
     environment: "node",

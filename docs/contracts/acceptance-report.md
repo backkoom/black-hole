@@ -27,7 +27,7 @@
 | **B2** | 只有「重复模块被拒」负例 | 补正向：从模块库**加入**「文本卡片」→ 画布多一块 → 删掉复原。先真实走 dnd-kit pointer 拖拽，无头环境偶发不触发时退回点击加入（两者都进 `handleAddModule`） | `e2e/workspace.spec.ts` B2 通过 |
 | **B8** | 只有 config schema 单测 | 补 UI 整链：加入文本卡片 → 打开配置抽屉 → 填标题/正文 → 保存 → 保存布局 → **刷新后内容仍在** → 删掉复原 | `e2e/workspace.spec.ts` B8 通过 |
 | **G4** | 8 个账号，缺非超管管理员 | 种子与线上各补一个 `manager`（部门管理员，`role=admin`、`is_super=false`、`must_change=true`）。现为 **9 个**（7 普通 + 1 管理员 + 1 超管） | `db/seed.ts` + 线上 `app_user` 实查 9 行 |
-| **G2** | 脚本跑通过但没定时 | 装 `workbench-backup.{service,timer}`、`enable --now`，并立即跑一次：**备份完成，当前保留 2 份（上限 14）**；下次触发 `2026-11-07 02:34 CST` | `systemctl list-timers` + `journalctl -u workbench-backup` |
+| **G2** | 脚本跑通过但没定时 | 装 `blackhole-backup.{service,timer}`、`enable --now`，并立即跑一次：**备份完成，当前保留 2 份（上限 14）**；下次触发 `2026-11-07 02:34 CST` | `systemctl list-timers` + `journalctl -u blackhole-backup` |
 | **G3** | 只有 API 逻辑用例，环境没核对 | 实测三处时区后改齐：系统 `Etc/UTC → Asia/Shanghai`、PG `timezone/log_timezone → Asia/Shanghai`、API 进程本来就是 `TZ=Asia/Shanghai`。再按契约造边界任务：建「今天」「明天」各一条 → `GET /api/tasks?due=today` **只返回今天那条** | `timedatectl` / `SHOW timezone` / 接口实测输出 |
 
 ---

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { App as AntdApp, Button, Modal, Input, Select } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import type { Approval, ApprovalStatus } from '@workbench/shared/types';
+import type { Approval, ApprovalStatus } from '@blackhole/shared/types';
 import { decideApproval, listApprovals, teamKeys } from '../../api/team';
 import { errorText } from '../../api/messages';
 import { useAuth } from '../../auth/AuthContext';

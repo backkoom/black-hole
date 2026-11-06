@@ -1,4 +1,4 @@
-import type { Paged, Project, ProjectDetail } from '@workbench/shared/types';
+import type { Paged, Project, ProjectDetail } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPost, apiPut } from './client';
 
 /**

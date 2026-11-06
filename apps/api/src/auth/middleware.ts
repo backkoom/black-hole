@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ApiError, forbidden, unauthorized } from '../lib/errors.js';
-import { ERROR_MESSAGES } from '@workbench/shared/errors';
+import { ERROR_MESSAGES } from '@blackhole/shared/errors';
 import { parseCookieHeader, hashSessionToken } from '../lib/session.js';
 import { resolveSession, type SessionContext } from './service.js';
 import { getConfig } from '../config.js';

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { App as AntdApp, Button, Pagination, Popconfirm, Tooltip } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DeleteOutlined, EditOutlined, PlusOutlined, PushpinFilled } from '@ant-design/icons';
-import type { Announcement, Project } from '@workbench/shared/types';
+import type { Announcement, Project } from '@blackhole/shared/types';
 import { deleteAnnouncement, listAnnouncements, teamKeys } from '../../api/team';
 import { errorText } from '../../api/messages';
 import { useAuth } from '../../auth/AuthContext';

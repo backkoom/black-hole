@@ -9,7 +9,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import type { Meeting, Milestone, Priority, Task } from '@workbench/shared/types';
+import type { Meeting, Milestone, Priority, Task } from '@blackhole/shared/types';
 import { listMeetings, listMilestones, scheduleKeys } from '../api/schedule';
 import { useAllTasks } from '../hooks/useAllTasks';
 import { useUserProjects } from '../hooks/useUserData';

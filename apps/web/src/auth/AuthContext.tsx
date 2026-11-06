@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ERROR_CODES } from '@workbench/shared/errors';
-import type { User } from '@workbench/shared/types';
+import { ERROR_CODES } from '@blackhole/shared/errors';
+import type { User } from '@blackhole/shared/types';
 import { apiGet, apiPost, ApiError } from '../api/client';
 
 /**

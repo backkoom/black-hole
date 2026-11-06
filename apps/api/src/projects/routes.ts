@@ -9,7 +9,7 @@ import {
   updateProject,
 } from './service.js';
 import { badRequest, notFound } from '../lib/errors.js';
-import { PAGINATION } from '@workbench/shared/errors';
+import { PAGINATION } from '@blackhole/shared/errors';
 
 /**
  * 项目路由 —— 执行包 §6.4 的 25~29 号接口。

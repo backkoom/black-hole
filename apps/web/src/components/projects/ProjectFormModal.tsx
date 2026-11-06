@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, App as AntdApp, DatePicker, Form, Input, Modal } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 import { createProject, projectsKeys, updateProject } from '../../api/projects';
 import { errorText } from '../../api/messages';
 import { parseDateOnly, toDateOnly } from '../../utils/datetime';

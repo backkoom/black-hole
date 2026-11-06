@@ -2,7 +2,7 @@ import { Button, Popconfirm, Space, Table } from 'antd';
 import type { TableColumnsType, TableProps } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
-import type { Task, TaskStatus } from '@workbench/shared/types';
+import type { Task, TaskStatus } from '@blackhole/shared/types';
 import { formatDateOnly, formatDateTime } from '../../utils/datetime';
 import { TaskPriorityTag } from './TaskPriorityTag';
 import { TaskStatusTag } from './TaskStatusTag';

@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import type { Project, Task } from '@workbench/shared/types';
+import type { Project, Task } from '@blackhole/shared/types';
 import { updateTaskStatus } from '../api/tasks';
 import { errorText } from '../api/messages';
 import { useAssigneeOptions, useUserProjects, useUserTasks } from '../hooks/useUserData';

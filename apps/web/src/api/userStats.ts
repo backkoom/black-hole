@@ -2,7 +2,7 @@ import type {
   DistributionResult,
   TeamWorkloadResult,
   TrendResult,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { apiGet } from './client';
 
 /**

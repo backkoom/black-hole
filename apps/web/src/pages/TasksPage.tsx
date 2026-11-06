@@ -22,7 +22,7 @@ import {
   ScheduleOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Priority, TaskStatus } from '@workbench/shared/types';
+import type { Priority, TaskStatus } from '@blackhole/shared/types';
 import { deleteTask, listTasks, tasksKeys, updateTaskStatus } from '../api/tasks';
 import { errorText } from '../api/messages';
 import { useAssigneeOptions, useUserProjects } from '../hooks/useUserData';

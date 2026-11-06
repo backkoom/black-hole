@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
-import { MODULES, MODULE_CATEGORIES } from '@workbench/shared/modules';
+import { MODULES, MODULE_CATEGORIES } from '@blackhole/shared/modules';
 import { moduleVisual } from './moduleVisuals';
 
 /**

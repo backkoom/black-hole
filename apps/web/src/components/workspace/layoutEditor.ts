@@ -1,6 +1,6 @@
-import { ALLOWED_WIDTHS, clampHeight, computeInsertIndex, snapWidth } from '@workbench/shared';
-import { MODULE_BY_KEY } from '@workbench/shared/modules';
-import type { LayoutItem } from '@workbench/shared/types';
+import { ALLOWED_WIDTHS, clampHeight, computeInsertIndex, snapWidth } from '@blackhole/shared';
+import { MODULE_BY_KEY } from '@blackhole/shared/modules';
+import type { LayoutItem } from '@blackhole/shared/types';
 
 /**
  * 编辑器算法辅助 —— 画布 12 列的度量、插入位置计算与尺寸吸附。

@@ -6,7 +6,7 @@
  * - userCount 只统计直接挂在该节点的用户（含 disabled），不递归；
  * - children 为空即「末级节点」，人员只能挂在末级节点上。
  */
-import type { OrgNode } from '@workbench/shared/types';
+import type { OrgNode } from '@blackhole/shared/types';
 
 export interface OrgFlatNode {
   node: OrgNode;

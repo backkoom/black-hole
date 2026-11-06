@@ -3,7 +3,7 @@ import { Avatar, Button, Dropdown, Popconfirm, Table, Tooltip } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { DeleteOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
-import type { Task, TaskStatus } from '@workbench/shared/types';
+import type { Task, TaskStatus } from '@blackhole/shared/types';
 import { formatDateOnly, formatDateTime } from '../../utils/datetime';
 import { STATUS_TONE, ToneTag } from '../ui';
 import { categoryTone } from '../user/visuals';

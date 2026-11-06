@@ -2,7 +2,7 @@
 # 形态 A：项目自带 nginx（这个 server 独占 80/443）—— 完整配置文件
 #
 # 用法：
-#   sudo cp deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
+#   sudo cp deploy/nginx.conf.example /etc/nginx/conf.d/blackhole.conf
 #   sudo nginx -t && sudo systemctl reload nginx
 #
 # 如果服务器上**已经跑着别的站点**，别用这个文件，改用
@@ -20,7 +20,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name workbench.example.internal;
+    server_name blackhole.example.internal;
 
     # certbot 续期用；没有证书就把下面两行留空
     location /.well-known/acme-challenge/ {
@@ -41,11 +41,11 @@ server {
     #    1.25+ 上这种写法只会有一条 deprecated 警告，不影响运行。
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name workbench.example.internal;
+    server_name blackhole.example.internal;
 
     # --- 证书 ---
-    ssl_certificate     /etc/nginx/ssl/workbench.crt;
-    ssl_certificate_key /etc/nginx/ssl/workbench.key;
+    ssl_certificate     /etc/nginx/ssl/blackhole.crt;
+    ssl_certificate_key /etc/nginx/ssl/blackhole.key;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_session_cache   shared:SSL:10m;
@@ -69,7 +69,7 @@ server {
                application/x-javascript text/xml application/xml image/svg+xml;
 
     # --- 静态资源（带 hash，可以长缓存）---
-    root /data/workbench/apps/web/dist;
+    root /data/blackhole/apps/web/dist;
     index index.html;
 
     location /assets/ {

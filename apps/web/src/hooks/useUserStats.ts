@@ -4,7 +4,7 @@ import type {
   TaskStats,
   TeamWorkloadResult,
   TrendResult,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { fetchTaskStats, statsKeys } from '../api/stats';
 import {
   fetchStatsDistribution,

@@ -7,7 +7,7 @@ import {
   ScheduleOutlined,
 } from '@ant-design/icons';
 import { Select } from 'antd';
-import type { Project, Task } from '@workbench/shared/types';
+import type { Project, Task } from '@blackhole/shared/types';
 import { useAllTasks } from '../hooks/useAllTasks';
 import { useUserProjects } from '../hooks/useUserData';
 import { useStatsTaskCounts } from '../hooks/useUserStats';

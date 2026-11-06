@@ -1,5 +1,5 @@
 import type { Dayjs } from 'dayjs';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 import { parseDateOnly } from '../../utils/datetime';
 
 /**

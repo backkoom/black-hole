@@ -1,4 +1,4 @@
-import type { Meeting, Milestone } from '@workbench/shared/types';
+import type { Meeting, Milestone } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatDate, formatTimestamp } from '../lib/serialize.js';

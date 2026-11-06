@@ -1,4 +1,4 @@
-import type { Priority, Task, TaskStatus } from '@workbench/shared/types';
+import type { Priority, Task, TaskStatus } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatDate, formatTimestamp, thisWeekRange, todayString } from '../lib/serialize.js';

@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import type { Milestone } from '@workbench/shared/types';
+import type { Milestone } from '@blackhole/shared/types';
 import { listMilestones, scheduleKeys } from '../../api/schedule';
 
 /**

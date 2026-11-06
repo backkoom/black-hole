@@ -9,7 +9,7 @@ import { Pool } from 'pg';
  *
  * 跑法：先 `npm run dev`，再 `node scripts/shot-user.mjs`。
  * 会造一批演示数据（项目 + 任务，带负责人/分类/日期），截完清理。
- * 只允许对开发库（库名含 workbench_dev）执行。
+ * 只允许对开发库（库名含 blackhole_dev）执行。
  */
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -21,8 +21,8 @@ const adminPw =
   (/^\s*SEED_ADMIN_PASSWORD\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').replace(/^["']|["']$/g, '');
 const databaseUrl = (/^\s*DATABASE_URL\s*=\s*(.*)\s*$/m.exec(env)?.[1] ?? '').trim();
 
-if (!databaseUrl.includes('workbench_dev')) {
-  console.error('拒绝执行：DATABASE_URL 不是开发库（workbench_dev）');
+if (!databaseUrl.includes('blackhole_dev')) {
+  console.error('拒绝执行：DATABASE_URL 不是开发库（blackhole_dev）');
   process.exit(1);
 }
 

@@ -1,6 +1,6 @@
 import { Card } from 'antd';
 import { ArrowRightOutlined } from '@ant-design/icons';
-import type { Project } from '@workbench/shared/types';
+import type { Project } from '@blackhole/shared/types';
 import { formatDateOnly } from '../../utils/datetime';
 import { ProjectProgress } from './ProjectProgress';
 import { ProjectStatusTag } from './ProjectStatusTag';

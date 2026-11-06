@@ -21,7 +21,7 @@ import { designVars } from '../../styles/theme';
 /**
  * 模块图标与配色 —— 前端展示层映射。
  *
- * 模块本身的名字、分类、尺寸、emptyState 等一律来自 @workbench/shared/modules，
+ * 模块本身的名字、分类、尺寸、emptyState 等一律来自 @blackhole/shared/modules，
  * 这里只补「用哪个图标、什么底色」这种纯展示信息（shared 里没有这两个字段）。
  * 配色取 AntD token 对应的 designVars，不另写一套色板。
  */

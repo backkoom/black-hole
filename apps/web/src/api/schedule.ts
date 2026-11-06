@@ -1,4 +1,4 @@
-import type { Meeting, Milestone } from '@workbench/shared/types';
+import type { Meeting, Milestone } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPatch, apiPost } from './client';
 
 /**
@@ -20,7 +20,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from './client';
  * - meetings 的 from / to 按 start_at 过滤（timestamptz），所以要传完整 ISO，
  *   不能只传 YYYY-MM-DD（那样 to 会落在当天 00:00，当天后面的会议会被漏掉）。
  *
- * 类型直接复用 @workbench/shared/types，不在这里另写一份。
+ * 类型直接复用 @blackhole/shared/types，不在这里另写一份。
  */
 
 /** 里程碑状态 */

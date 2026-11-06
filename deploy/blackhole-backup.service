@@ -1,15 +1,15 @@
 [Unit]
 Description=工作台备份（数据库 + 前端产物 + 环境变量）
-Documentation=file:///data/workbench/deploy/README.md
+Documentation=file:///data/blackhole/deploy/README.md
 After=postgresql.service
 Requires=postgresql.service
 
 [Service]
 Type=oneshot
 # 备份脚本自带保留策略（KEEP），失败会返回非 0 → systemctl --failed 能看到
-ExecStart=/bin/bash /data/workbench/deploy/backup.sh
+ExecStart=/bin/bash /data/blackhole/deploy/backup.sh
 # 别和业务抢 IO
 Nice=10
 IOSchedulingClass=idle
 # 备份目录建议另挂一块盘或 NAS，改这一行即可
-# Environment=DEST=/mnt/backup/workbench
+# Environment=DEST=/mnt/backup/blackhole

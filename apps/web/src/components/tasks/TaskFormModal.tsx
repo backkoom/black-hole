@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, App as AntdApp, DatePicker, Form, Input, Modal, Radio, Select } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Priority, Project, Task } from '@workbench/shared/types';
+import type { Priority, Project, Task } from '@blackhole/shared/types';
 import { createTask, tasksKeys, updateTask } from '../../api/tasks';
 import { errorText } from '../../api/messages';
 import { parseDateOnly, toDateOnly } from '../../utils/datetime';

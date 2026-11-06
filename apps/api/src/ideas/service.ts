@@ -1,4 +1,4 @@
-import type { Idea } from '@workbench/shared/types';
+import type { Idea } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp } from '../lib/serialize.js';

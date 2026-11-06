@@ -1,4 +1,4 @@
-import type { Role, User, UserListItem } from '@workbench/shared/types';
+import type { Role, User, UserListItem } from '@blackhole/shared/types';
 import { query, queryOne, withTransaction } from '../db.js';
 import { forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { generateInitialPassword, hashPassword } from '../lib/password.js';

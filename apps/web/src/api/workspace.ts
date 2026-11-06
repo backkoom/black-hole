@@ -1,4 +1,4 @@
-import type { LayoutItem, Workspace } from '@workbench/shared/types';
+import type { LayoutItem, Workspace } from '@blackhole/shared/types';
 import { ApiError, apiGet, apiPut } from './client';
 
 /**

@@ -15,7 +15,7 @@ import {
 import type { TableColumnsType } from 'antd';
 import { ImportOutlined, KeyOutlined, PlusOutlined, StopOutlined, UserOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Role, User, UserListItem, UserStatus } from '@workbench/shared/types';
+import type { Role, User, UserListItem, UserStatus } from '@blackhole/shared/types';
 import { listUsers, resetUserPassword, setUserStatus, usersKeys } from '../api/users';
 import { orgKeys } from '../api/org';
 import { errorStatus, errorText } from '../api/messages';

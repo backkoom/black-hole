@@ -1,6 +1,6 @@
 import { Dropdown, Tag } from 'antd';
 import type { MenuProps } from 'antd';
-import type { TaskStatus } from '@workbench/shared/types';
+import type { TaskStatus } from '@blackhole/shared/types';
 
 /**
  * 任务状态标签 —— pages.md §3 的 StatusTag（行内改状态）。

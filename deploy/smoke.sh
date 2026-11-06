@@ -3,7 +3,7 @@
 # 部署后冒烟验证 —— 逐项检查，输出明确的通过/失败
 #
 # 用法：
-#   bash scripts/smoke.sh https://workbench.example.internal
+#   bash scripts/smoke.sh https://blackhole.example.internal
 #   bash scripts/smoke.sh http://127.0.0.1:3000 --direct   # 直连 API，不走 nginx
 #
 # 退出码：0 = 全通过；1 = 有失败项
@@ -46,7 +46,7 @@ info() { echo -e "  \033[0;90m·\033[0m $*"; }
 warn() { echo -e "  \033[0;33m!\033[0m $*"; }
 
 echo "=============================================="
-echo " 工作台与组织架构 —— 部署冒烟验证"
+echo " Black Hole —— 部署冒烟验证"
 echo " 目标：$BASE"
 echo " Origin：$ORIGIN"
 echo "=============================================="
@@ -80,11 +80,11 @@ ACCOUNT="${SMOKE_ACCOUNT:-admin}"
 if [ -z "$ADMIN_PW" ] && [ -n "${SEED_ADMIN_PASSWORD_FILE:-}" ] && [ -f "$SEED_ADMIN_PASSWORD_FILE" ]; then
   ADMIN_PW="$(head -1 "$SEED_ADMIN_PASSWORD_FILE")"
 fi
-if [ -z "$ADMIN_PW" ] && [ -f /etc/workbench/api.env ]; then
-  ADMIN_PW="$(sed -n 's/^SEED_ADMIN_PASSWORD=//p' /etc/workbench/api.env | head -1)"
+if [ -z "$ADMIN_PW" ] && [ -f /etc/blackhole/api.env ]; then
+  ADMIN_PW="$(sed -n 's/^SEED_ADMIN_PASSWORD=//p' /etc/blackhole/api.env | head -1)"
 fi
 if [ -z "$ADMIN_PW" ]; then
-  bad "未提供 SEED_ADMIN_PASSWORD（或 SEED_ADMIN_PASSWORD_FILE / /etc/workbench/api.env），跳过登录相关检查"
+  bad "未提供 SEED_ADMIN_PASSWORD（或 SEED_ADMIN_PASSWORD_FILE / /etc/blackhole/api.env），跳过登录相关检查"
 else
   code="$(curl -sS $TLS -c "$TMP/ck.txt" -o "$TMP/login.json" -w '%{http_code}' --max-time 15 \
     -X POST "$BASE/api/auth/login" \

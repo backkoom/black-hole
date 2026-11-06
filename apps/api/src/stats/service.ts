@@ -3,7 +3,7 @@ import type {
   TaskStats,
   TrendPoint,
   TrendResult,
-} from '@workbench/shared/types';
+} from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { thisWeekRange, todayString } from '../lib/serialize.js';
 

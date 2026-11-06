@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, App as AntdApp, Form, Modal, Select } from 'antd';
-import type { OrgNode } from '@workbench/shared/types';
+import type { OrgNode } from '@blackhole/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { orgKeys, updateOrg } from '../api/org';
 import { errorText } from '../api/messages';

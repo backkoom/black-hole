@@ -162,9 +162,9 @@ export function AppShell() {
       <Sider width={designVars.siderWidth} className="wb-sider" theme="light">
         <div className="wb-brand">
           <span className="wb-brand-mark" aria-hidden="true">
-            项
+            B
           </span>
-          <span className="wb-brand-name">项目管理</span>
+          <span className="wb-brand-name">Black Hole</span>
         </div>
 
         <Menu

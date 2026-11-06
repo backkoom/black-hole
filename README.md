@@ -1,4 +1,4 @@
-# 工作台与组织架构（workbench-app）
+# Black Hole
 
 内网项目管理系统：用户端 10 页固定界面 + 管理员端（工作台编排 / 账号 / 组织架构 / 模板）。
 
@@ -50,7 +50,7 @@ TypeScript 5（strict）· Node 22 · npm workspaces · React 18 + Vite 5 + Ant 
 ## 目录
 
 ```
-workbench-app/
+blackhole-app/
   apps/api/          Fastify 后端（路由 / 服务 / 认证 / 测试）
   apps/web/          React 前端（页面 / 组件 / 主题）
   packages/shared/   跨端共享类型与纯函数
@@ -98,15 +98,15 @@ npm run test:e2e   # Playwright（需先起 dev server）
 ```bash
 # 开发机打包（先跑 verify）
 bash scripts/package-release.sh
-# 产物：dist-release/workbench-release-<时间戳>.tar.gz
+# 产物：dist-release/blackhole-release-<时间戳>.tar.gz
 
 # 上传后，在服务器上
-sudo bash install.sh --tarball /tmp/workbench-release-*.tar.gz
+sudo bash install.sh --tarball /tmp/blackhole-release-*.tar.gz
 ```
 
 详见 **[deploy/README.md](deploy/README.md)**（前置准备 / nginx / 播种 / 验收 / 升级 / 回滚 / 排障速查表）。
 
-部署形态：nginx 托管静态资源并把 `/api` 同源反代到 Fastify；API **只监听回环地址**；systemd 托管；环境变量集中在 `/etc/workbench/api.env`（`chmod 600`）。
+部署形态：nginx 托管静态资源并把 `/api` 同源反代到 Fastify；API **只监听回环地址**；systemd 托管；环境变量集中在 `/etc/blackhole/api.env`（`chmod 600`）。
 
 > ⚠️ 内网无 HTTPS 证书时用 `NODE_ENV=staging`（允许 http）；`production` 强制 https + `COOKIE_SECURE=true`。
 
