@@ -72,6 +72,21 @@ mkdir -p "$(dirname "$APP_DIR")" "$APP_DIR"
 rm -rf "$APP_DIR/apps" "$APP_DIR/db"
 cp -r "$SRC/apps" "$APP_DIR/"
 cp -r "$SRC/db"    "$APP_DIR/"
+# ⚠️ package.json / package-lock.json / packages 必须跟 apps 一起换。
+#    2026-11-06 踩过：只换 apps/ 时，新依赖（solarlunar）写进了 apps/web/package.json，
+#    但根目录 lock 还是旧的 → `npm ci` 直接报 "Missing: solarlunar@3.1.0 from lock file"
+#    并中止安装（set -euo pipefail 生效，不会静默继续）。
+cp "$SRC/package.json" "$APP_DIR/package.json"
+if [ -f "$SRC/package-lock.json" ]; then
+  cp "$SRC/package-lock.json" "$APP_DIR/package-lock.json"
+else
+  warn "发布包里没有 package-lock.json —— 后面 npm ci 会失败"
+fi
+# packages/shared 是 apps/api 的运行时依赖（node_modules/@workbench/shared 软链指向它）
+if [ -d "$SRC/packages" ]; then
+  rm -rf "$APP_DIR/packages"
+  cp -r "$SRC/packages" "$APP_DIR/packages"
+fi
 mkdir -p "$APP_DIR/deploy"
 cp -r "$SRC/deploy/." "$APP_DIR/deploy/" 2>/dev/null || true
 cp "$SRC/RELEASE.txt" "$APP_DIR/RELEASE.txt" 2>/dev/null || true

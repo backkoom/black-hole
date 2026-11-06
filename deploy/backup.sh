@@ -23,7 +23,9 @@ set -euo pipefail
 
 ENV_FILE=${ENV_FILE:-/etc/workbench/api.env}
 APP_DIR=${APP_DIR:-/data/workbench}
-DEST=${1:-/data/backups/workbench}
+# 目标目录优先级：第 1 个参数 > 环境变量 DEST（systemd 的 Environment= 用这个） > 默认
+# ⚠️ 2026-11-06 之前只认参数，README 里写的 `Environment=DEST=...` 其实不生效。
+DEST=${1:-${DEST:-/data/backups/workbench}}
 KEEP=${KEEP:-14}
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }

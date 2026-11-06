@@ -31,6 +31,19 @@
 
 **关键点：前端只写相对路径 `/api`，不做跨域，所以必须同源反代。**
 
+## 0.1 本项目按「独立标准部署」交付（2026-11-06 定）
+
+| | 结论 |
+|---|---|
+| **nginx** | **必须由本项目自带**（不依赖客户已有的 nginx）。`deploy/nginx-https.conf` 是标准配置 |
+| **HTTPS** | **标准配置就带 HTTPS**：80 一律 301 → 443；证书放 `/etc/nginx/ssl/` |
+| **接入客户已有 nginx** | 降为**可选**形态，见 §3.2 的 `nginx-integrate.conf.snippet`；不走它不影响交付 |
+| 证书来源 | 内网无 CA 时先用自签（`gen-selfsigned-cert.sh`），换正式证书只改两行路径 |
+
+> 现网实测（2026-11-06）：`https://192.168.102.102`，自签证书 `SAN=IP:192.168.102.102`，
+> 80→301 跳转、页面 0 处 `http://` 混合内容、冒烟 21/21 通过。
+
+
 ---
 
 ## 1. 服务器前置准备
@@ -150,13 +163,22 @@ sudo bash /tmp/workbench-release-*/scripts/install.sh --tarball /tmp/workbench-r
 > ⚠️ 形态 B 只支持挂在**域名根路径 `/`**。想挂 `/workbench/` 这种子路径要改前端 router 的
 > `basename`，属于代码改动，不在这套配置能力范围内——需要子路径就单独说。
 
-### 3.1 形态 A：项目自带 nginx
+### 3.1 形态 A：项目自带 nginx（**标准形态**）
+
+两个模板，按有没有域名挑一个：
+
+| 场景 | 用哪个 | 说明 |
+|---|---|---|
+| 内网 IP 访问（现网就是这种） | `deploy/nginx-https.conf` | `server_name _`，80→301→443，自签证书，不含 HSTS |
+| 有正式域名/证书 | `deploy/nginx.conf.example` | 带 `server_name`、HSTS、ACME 落点，按注释改域名与证书路径 |
 
 ```bash
-sudo cp /data/workbench/deploy/nginx.conf.example /etc/nginx/conf.d/workbench.conf
-sudo vi /etc/nginx/conf.d/workbench.conf      # 改 server_name / 证书路径
+sudo cp /data/workbench/deploy/nginx-https.conf /etc/nginx/conf.d/workbench.conf
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+> 自签阶段**故意不开 HSTS**：一旦浏览器记住"只走 https"，换证书或临时退回 http 会很麻烦。
+> 换正式证书时再把 HSTS 打开。
 
 ### 3.2 形态 B：接入已有 nginx
 
@@ -185,7 +207,7 @@ sudo nginx -t && sudo systemctl reload nginx
 | 情况 | 怎么做 |
 |---|---|
 | 有企业 CA / 正式域名证书 | 把 `.crt`/`.key` 放 `/etc/nginx/ssl/`，改模板里两行路径即可 |
-| 什么都没有，先把 HTTPS 跑起来 | `sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102`（自签，浏览器提示不安全，点继续访问） |
+| 什么都没有，先把 HTTPS 跑起来 | `sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102`（自签，浏览器提示不安全，点继续访问）。**现网就是这么跑的** |
 | 有公网域名 | 装 certbot 走 ACME，模板里已留 `/.well-known/acme-challenge/` 落点 |
 
 **切 HTTPS 必须同时改 4 处，少一处就登不上或起不来：**
@@ -318,6 +340,7 @@ bash /data/workbench/deploy/smoke.sh https://<你的域名>
 | `<url>`（第 1 个位置参数） | 被检查的基地址。**默认 `http://127.0.0.1:3000`**（不传参数就跑直连） |
 | `--direct` | 直连 API 模式：**跳过**首页可达、前端静态资源、SPA 回退、安全响应头这 4 项，只查接口 |
 | `--origin=<url>` | 请求头 `Origin` 的值，**默认取基地址**。直连 API 时要用它覆盖成 `APP_ORIGIN`，否则写请求会被 403「请求来源不被信任」拦掉 |
+| `--insecure` | 自签证书环境必带：curl 遇到不受信任的证书会直接失败（exit 60）。**正式证书环境不要带**，那等于关掉 TLS 校验 |
 | `SMOKE_ACCOUNT` | 登录账号，**默认 `admin`** |
 | `SEED_ADMIN_PASSWORD` | 登录口令。也可用 `SEED_ADMIN_PASSWORD_FILE`（**指向文件路径**，脚本读该文件第一行） |
 | `/etc/workbench/api.env` | 口令的第三来源：脚本会在 `SEED_ADMIN_PASSWORD` 与 `SEED_ADMIN_PASSWORD_FILE` 都没有时，从这里读 `SEED_ADMIN_PASSWORD` |
@@ -329,6 +352,9 @@ bash /data/workbench/deploy/smoke.sh http://127.0.0.1:3000 --direct --origin=htt
 # 用普通账号验收（不改 admin 的初始改密状态）
 SMOKE_ACCOUNT=user01 SEED_ADMIN_PASSWORD_FILE=/root/.smoke_pw \
   bash /data/workbench/deploy/smoke.sh https://<你的域名>
+
+# 自签证书环境（现网就是自签）——必须带 --insecure，否则所有请求都因证书不受信任失败
+bash /data/workbench/deploy/smoke.sh https://192.168.102.102 --insecure
 ```
 
 > ⚠️ **口令不要写在命令行里** —— 会进 shell 历史，也可能被中间层过滤成随机串。
@@ -435,6 +461,14 @@ bash /data/workbench/deploy/smoke.sh https://<域名>
 
 > ⚠️ 升级**不会**自动跑迁移（见 §2.3：发布包里没有迁移工具）。
 > 这次版本带了新迁移的话，先在开发机 `npm run migrate` 并把库导过去，或在服务器上手工执行。
+
+> ⚠️ **`install.sh` 会把 `package.json` / `package-lock.json` / `packages/` 一起替换**（2026-11-06 修）。
+> 之前只换 `apps/`、`db/`，只要新版加了依赖（例如 `solarlunar`），服务器上的 lock 还是旧的，
+> `npm ci` 会报 `Missing: xxx from lock file` 并中止安装（`set -euo pipefail` 生效，不会静默成功）。
+> 排查口诀：**看 `/data/workbench/package-lock.json` 里有没有新依赖**。
+
+**升级演练实测（2026-11-06，192.168.102.102）**：打包 2.6M → scp → `install.sh` → 迁移无变更 →
+服务自动重启 → 冒烟 21/21 → `RELEASE.txt` 的 Git 提交与 `index.html` 资源 hash 磁盘/线上一致。
 
 **升级后要逐项确认（缺一项都可能"升级成功但页面是旧的"）：**
 
