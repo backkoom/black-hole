@@ -14,7 +14,9 @@ const idParamSchema = z.object({
 });
 
 const createSchema = z.object({
-  parentId: z.number().int().positive(),
+  // null = 新增根节点（2026-11-06）。之前 parentId 必填正整数，
+  // 组织树为空时界面上根本建不了第一个节点（"新增下级"永远禁用），只能导库。
+  parentId: z.number().int().positive().nullable().optional(),
   name: z.string().min(1).max(64),
 });
 
@@ -45,7 +47,7 @@ export async function registerOrgRoutes(app: FastifyInstance): Promise<void> {
     if (!body.success) throw badRequest('参数不合法');
     const name = body.data.name.trim();
     if (!name) throw badRequest('名称不能为空');
-    return ok(reply, { node: await createOrg(body.data.parentId, name) });
+    return ok(reply, { node: await createOrg(body.data.parentId ?? null, name) });
   });
 
   // 7 PUT /api/org/:id

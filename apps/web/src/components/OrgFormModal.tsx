@@ -37,14 +37,16 @@ export function OrgFormModal({ open, mode, parent, node, onClose }: OrgFormModal
   const mutation = useMutation({
     mutationFn: async (name: string) => {
       if (mode === 'create') {
-        // 兜底 0 会得到服务端 400「参数不合法」
-        return createOrg({ parentId: parent?.id ?? 0, name });
+        // parent 为 null = 新增根节点（组织树为空时的起点）
+        return createOrg({ parentId: parent?.id ?? null, name });
       }
       return updateOrg(node?.id ?? 0, { name });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: orgKeys.tree });
-      void message.success(mode === 'create' ? '已新增下级' : '已重命名');
+      void message.success(
+        mode === 'create' ? (parent ? '已新增下级' : '已新增根节点') : '已重命名',
+      );
       onClose();
     },
     onError: (err) => {
@@ -72,7 +74,7 @@ export function OrgFormModal({ open, mode, parent, node, onClose }: OrgFormModal
   return (
     <Modal
       open={open}
-      title={mode === 'create' ? '新增下级' : '重命名'}
+      title={mode === 'create' ? (parent ? '新增下级' : '新增根节点') : '重命名'}
       onCancel={onClose}
       onOk={handleOk}
       confirmLoading={mutation.isPending}
@@ -108,6 +110,9 @@ export function OrgFormModal({ open, mode, parent, node, onClose }: OrgFormModal
 
         {mode === 'create' && parent ? (
           <div className="wb-form-hint">上级节点：{parent.name}</div>
+        ) : null}
+        {mode === 'create' && !parent ? (
+          <div className="wb-form-hint">这是根节点（顶级组织），建好后再在它下面加下级。</div>
         ) : null}
       </Form>
     </Modal>

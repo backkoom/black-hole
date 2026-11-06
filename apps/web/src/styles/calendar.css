@@ -55,17 +55,77 @@
 .wb-cal-cell {
   display: flex;
   min-width: 0;
-  height: 56px;
+  /* 56 → 70：多了一行农历/节气小字（2026-11-06） */
+  height: 70px;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
-  padding: 6px 2px 4px;
+  gap: 2px;
+  padding: 6px 4px 4px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: #f8fafd;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+}
+
+/* 日期行：左边公历日，右边「休 / 班」角标 */
+.wb-cal-day-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 0 1px;
+}
+
+/* 休 / 班 角标 */
+.wb-cal-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.wb-cal-badge.is-off {
+  background: var(--soft-red);
+  color: var(--red);
+}
+
+.wb-cal-badge.is-work {
+  background: var(--soft-gray);
+  color: var(--text-2);
+}
+
+/* 农历 / 节气 / 节日 小字 */
+.wb-cal-lunar {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wb-cal-lunar.is-festival {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* 节假日格子淡底，调休上班日更浅一档 */
+.wb-cal-cell.is-holiday {
+  background: #fff7f7;
+}
+
+.wb-cal-cell.is-makeup {
+  background: #f6f7f9;
 }
 
 .wb-cal-cell:hover {
@@ -99,6 +159,18 @@
 .wb-cal-cell.is-selected .wb-cal-day {
   color: #fff;
   font-weight: 700;
+}
+
+/* 选中态整格变主色 —— 农历小字和角标也要跟着反白，否则看不清 */
+.wb-cal-cell.is-selected .wb-cal-lunar,
+.wb-cal-cell.is-selected .wb-cal-lunar.is-festival {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.wb-cal-cell.is-selected .wb-cal-badge.is-off,
+.wb-cal-cell.is-selected .wb-cal-badge.is-work {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
 /* 日期数字 */
@@ -135,6 +207,19 @@
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid #f2f5f9;
+}
+
+.wb-cal-legend-note {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 选中日面板标题旁的农历 */
+.wb-cal-timeline-lunar {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .wb-cal-legend-item {

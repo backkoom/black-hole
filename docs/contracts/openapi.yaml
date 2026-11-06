@@ -323,7 +323,8 @@ paths:
         （业务上限由服务端 MAX_ORG_LEVEL 控制，默认 32；客户交付后可自行建到 6 级、10 级）。
         path = 父 path + id + /。同一 parent 下 name 唯一（重复 422）。
         sort 取同级 max+1（空同级为 0）。
-        根节点只有一个，不能通过 API 新增第二个根。
+        根节点只有一个：`parentId` 传 null（或不传）表示新增**根节点**，仅在组织树为空时允许
+        （2026-11-06 放开，否则空库建不了第一个节点）；已有根再传 null 一律 422。
         新增子节点时，若父节点已挂人员，父节点必须先被清空人员——否则父节点不再是末级，422。
       tags: [组织]
       x-permission: 管理员
@@ -334,9 +335,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [parentId, name]
+              required: [name]
               properties:
-                parentId: { type: integer, description: '父节点 id；根节点不可通过 API 新增' }
+                parentId:
+                  type: integer
+                  nullable: true
+                  description: '父节点 id；null 或不传 = 新增根节点（仅当组织树为空时允许）'
                 name: { type: string, minLength: 1, maxLength: 64, description: '去首尾空格' }
             example: { parentId: 3, name: 信息科 }
       responses:

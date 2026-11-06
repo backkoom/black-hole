@@ -247,17 +247,30 @@ export function OrgPage() {
         subtitle="左侧选择节点，右侧查看该节点下的人员；人员只能挂在末级节点上。"
         extra={
           <>
-            <Button icon={<PlusOutlined />} disabled={!selected} onClick={() => setCreateOpen(true)}>
-              新增下级
-            </Button>
-            <Button
-              type="primary"
-              icon={<UserAddOutlined />}
-              disabled={!selected}
-              onClick={() => setUserOpen(true)}
-            >
-              新增人员
-            </Button>
+            {flat.length === 0 ? (
+              // 树为空时唯一的入口：先建根节点（2026-11-06 后端已支持 parentId=null）
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                新增根节点
+              </Button>
+            ) : (
+              <>
+                <Button
+                  icon={<PlusOutlined />}
+                  disabled={!selected}
+                  onClick={() => setCreateOpen(true)}
+                >
+                  新增下级
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<UserAddOutlined />}
+                  disabled={!selected}
+                  onClick={() => setUserOpen(true)}
+                >
+                  新增人员
+                </Button>
+              </>
+            )}
           </>
         }
       />
@@ -294,13 +307,15 @@ export function OrgPage() {
               }}
             />
           ) : (
-            // ⚠️ 空组织时界面**建不了根节点**：POST /api/org 要求必须带 parentId
-            //    （routes.ts: z.number().int().positive()）。这里如实告诉用户，
-            //    别给一个点了会 400 的"新建"按钮。
             <StateBlock
               isEmpty
               emptyText="还没有组织节点"
-              emptyHint="组织结构需要由管理员初始化后，才能在这里增删节点与挂人员。"
+              emptyHint="从根节点开始建：点右上角「新增根节点」，再逐级往下加部门与班组。"
+              emptyAction={
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                  新增根节点
+                </Button>
+              }
             />
           )}
         </Card>

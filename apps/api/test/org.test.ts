@@ -66,6 +66,18 @@ describe('组织架构', () => {
     expect(cur.userCount).toBe(8);
   });
 
+  it('新增根节点：已有根时拒绝（契约要求根节点只能有一个）', async () => {
+    const agent = await adminLogin();
+    // 种子数据里已经有「示例集团」这个根节点 → 再传 parentId:null 必须 422。
+    // 空树时建根的正常路径没法在种子库上造，靠这条守「只能有一个根」的底线。
+    const res = await agent.post('/api/org').send({ parentId: null, name: '第二个根' });
+    expect(res.status).toBe(422);
+
+    // 不带 parentId（undefined）按"新增根节点"处理，同样被拒
+    const res2 = await agent.post('/api/org').send({ name: '第三个根' });
+    expect(res2.status).toBe(422);
+  });
+
   it('新增节点：level = 父+1，同级重名 422', async () => {
     const agent = await adminLogin();
     // 挂在「示例部门」这一层（无人），而不是末级「示例小组」（挂着 8 个人）

@@ -41,6 +41,8 @@ import { AvatarGroup, MetricCard, Panel, STATUS_TONE, ToneTag } from '../compone
 import type { TagTone } from '../components/ui';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
+import { getLunarInfo, lunarText } from '../utils/lunar';
+import { HOLIDAY_SOURCES, getHoliday } from '../data/holidays';
 import '../styles/calendar.css';
 
 /**
@@ -470,11 +472,15 @@ export function CalendarPage() {
               <div className="wb-cal-grid">
                 {cells.map((cell) => {
                   const dayTasks = tasksByDay.get(cell.date) ?? [];
+                  const lunar = getLunarInfo(cell.date);
+                  const holiday = getHoliday(cell.date);
                   const cellClass = [
                     'wb-cal-cell',
                     cell.inMonth ? '' : 'is-outside',
                     cell.date === today ? 'is-today' : '',
                     cell.date === selectedDate ? 'is-selected' : '',
+                    holiday?.kind === 'off' ? 'is-holiday' : '',
+                    holiday?.kind === 'work' ? 'is-makeup' : '',
                   ]
                     .filter(Boolean)
                     .join(' ');
@@ -484,13 +490,26 @@ export function CalendarPage() {
                       key={cell.date}
                       className={cellClass}
                       onClick={() => selectDate(cell.date)}
+                      title={`${cell.date} ${lunarText(cell.date)}${lunar.term ? ` · ${lunar.term}` : ''}${
+                        holiday ? ` · ${holiday.name}${holiday.kind === 'off' ? '放假' : '调休上班'}` : ''
+                      }`}
                       aria-label={
                         dayTasks.length > 0
-                          ? `${cell.date} · ${dayTasks.length} 项任务`
-                          : `${cell.date} · 暂无任务`
+                          ? `${cell.date} ${lunar.label} · ${dayTasks.length} 项任务`
+                          : `${cell.date} ${lunar.label} · 暂无任务`
                       }
                     >
-                      <span className="wb-cal-day">{cell.day}</span>
+                      <span className="wb-cal-day-row">
+                        <span className="wb-cal-day">{cell.day}</span>
+                        {holiday ? (
+                          <span className={`wb-cal-badge is-${holiday.kind}`}>
+                            {holiday.kind === 'off' ? '休' : '班'}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={`wb-cal-lunar${lunar.highlight ? ' is-festival' : ''}`}>
+                        {lunar.label}
+                      </span>
                       {dayTasks.length > 0 ? (
                         <span className="wb-cal-dots">
                           {dayTasks.slice(0, 4).map((task) => (
@@ -523,6 +542,19 @@ export function CalendarPage() {
                   <i className="wb-cal-dot" style={{ background: designVars.red }} />
                   逾期
                 </span>
+                <span className="wb-cal-legend-item">
+                  <i className="wb-cal-badge is-off">休</i>
+                  节假日
+                </span>
+                <span className="wb-cal-legend-item">
+                  <i className="wb-cal-badge is-work">班</i>
+                  调休上班
+                </span>
+              </div>
+              <div className="wb-cal-legend-note">
+                {HOLIDAY_SOURCES[Number(monthKey.slice(0, 4))]
+                  ? `节假日数据：${monthKey.slice(0, 4)} 年（${HOLIDAY_SOURCES[Number(monthKey.slice(0, 4))]}）`
+                  : `${monthKey.slice(0, 4)} 年节假日安排尚未发布，仅显示农历与节日`}
               </div>
             </div>
           </Panel>
@@ -631,6 +663,7 @@ export function CalendarPage() {
                 />
                 <span className="wb-cal-timeline-date">
                   {formatChineseDateWithWeekday(selectedDate)}
+                  <span className="wb-cal-timeline-lunar">{lunarText(selectedDate)}</span>
                 </span>
                 <Button
                   type="text"

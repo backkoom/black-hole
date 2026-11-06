@@ -102,21 +102,38 @@ async function siblingNameExists(
   return Number(row?.n ?? 0) > 0;
 }
 
-/** 新增节点 */
-export async function createOrg(parentId: number, name: string): Promise<OrgNode> {
+/**
+ * 新增节点。
+ *
+ * `parentId = null` 表示新增**根节点**（level 固定 1，path = /id/）——
+ * 组织树为空时只能靠它起步，否则界面上没有任何入口。
+ *
+ * ⚠️ 契约（pages.md §7.1）写的是「根节点只有一个」，所以这里**只允许在树为空时**
+ *    建根；已经有根了再传 null 一律 422，不是放开成多根。
+ */
+export async function createOrg(parentId: number | null, name: string): Promise<OrgNode> {
   const cfg = getConfig();
-  const parent = await findOrg(parentId);
-  if (!parent) throw notFound('上级节点不存在');
+  const parent = parentId === null ? null : await findOrg(parentId);
+  if (parentId !== null && !parent) throw notFound('上级节点不存在');
 
-  const level = Number(parent.level) + 1;
+  if (parentId === null) {
+    const rootRow = await queryOne<{ n: string }>(
+      'SELECT count(*)::text AS n FROM org WHERE parent_id IS NULL',
+    );
+    if (Number(rootRow?.n ?? 0) > 0) {
+      throw unprocessable('已存在根节点，不能新增第二个根');
+    }
+  }
+
+  const level = parent ? Number(parent.level) + 1 : 1;
   if (level > cfg.MAX_ORG_LEVEL) {
     throw unprocessable(`层级不能超过 ${cfg.MAX_ORG_LEVEL} 级`);
   }
   if (await siblingNameExists(parentId, name)) {
-    throw unprocessable('同一上级下已存在同名节点');
+    throw unprocessable(parentId === null ? '已存在同名根节点' : '同一上级下已存在同名节点');
   }
-  // 末级约束：父节点挂了人员 → 加子节点后父节点不再是末级
-  if (await hasUsers(parentId)) {
+  // 末级约束：父节点挂了人员 → 加子节点后父节点不再是末级（根节点没有父节点，跳过）
+  if (parentId !== null && (await hasUsers(parentId))) {
     throw unprocessable('该节点下仍有人员，请先把人员移到新的末级节点');
   }
 
@@ -133,7 +150,8 @@ export async function createOrg(parentId: number, name: string): Promise<OrgNode
       [parentId, level, name, sort],
     );
     const id = Number(ins.rows[0]?.id);
-    const path = `${parent.path}${id}/`;
+    // 根节点没有父 path，自己是树的起点
+    const path = parent ? `${parent.path}${id}/` : `/${id}/`;
     await client.query('UPDATE org SET path = $2 WHERE id = $1', [id, path]);
     const node = await client.query<OrgRow>(`SELECT ${ORG_COLUMNS} FROM org WHERE id = $1`, [id]);
     const r = node.rows[0] as OrgRow;

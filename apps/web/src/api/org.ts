@@ -13,7 +13,8 @@ export interface OrgTreeResponse {
 }
 
 export interface CreateOrgInput {
-  parentId: number;
+  /** null = 新增根节点（组织树为空时唯一入口） */
+  parentId: number | null;
   name: string;
 }
 
@@ -34,7 +35,7 @@ export async function fetchOrgTree(): Promise<OrgNode[]> {
   return data.nodes;
 }
 
-/** 新增下级：level 由父节点推导，path = 父 path + id + / */
+/** 新增节点：parentId 为空表示建根节点（level 固定 1），否则 level = 父 + 1 */
 export async function createOrg(input: CreateOrgInput): Promise<OrgNode> {
   const data = await apiPost<{ node: OrgNode }>('/org', input);
   return data.node;
