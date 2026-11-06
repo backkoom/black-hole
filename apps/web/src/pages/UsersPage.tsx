@@ -20,6 +20,7 @@ import { listUsers, resetUserPassword, setUserStatus, usersKeys } from '../api/u
 import { orgKeys } from '../api/org';
 import { errorStatus, errorText } from '../api/messages';
 import { useAuth } from '../auth/AuthContext';
+import { PageHeader } from '../components/PageHeader';
 import { useOrgTree } from '../hooks/useOrgTree';
 import { flattenOrgTree } from '../utils/orgTree';
 import { formatDateTime } from '../utils/datetime';
@@ -296,32 +297,32 @@ export function UsersPage() {
 
   return (
     <div className="wb-page">
-      <div className="wb-page-head">
-        <div>
-          <h1 className="wb-page-title">账号管理</h1>
-          <p className="wb-page-sub">账号、角色、状态与批量导入；初始密码只在创建或重置时显示一次。</p>
-        </div>
-        <div className="wb-page-head-actions">
-          <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>
-            批量导入
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            新增账号
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="账号管理"
+        subtitle="账号、角色、状态与批量导入；初始密码只在创建或重置时显示一次。"
+        extra={
+          <>
+            <Button icon={<ImportOutlined />} onClick={() => setImportOpen(true)}>
+              批量导入
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              新增账号
+            </Button>
+          </>
+        }
+      />
 
       <Card className="wb-card-flat">
         <div className="wb-filter-bar">
           <Input.Search
-            className="wb-filter-item"
+            className="wb-filter-search"
             value={keywordInput}
             allowClear
             placeholder="搜索账号或姓名"
@@ -362,7 +363,9 @@ export function UsersPage() {
               { value: 'disabled', label: '已停用' },
             ]}
           />
-          <Button onClick={resetFilters}>重置</Button>
+          <div className="wb-filter-actions">
+            <Button onClick={resetFilters}>重置</Button>
+          </div>
         </div>
 
         {orgQuery.isError ? (

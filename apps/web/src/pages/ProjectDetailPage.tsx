@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { App as AntdApp, Button, Card, Empty, Popconfirm, Skeleton, Space } from 'antd';
-import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Task, TaskStatus } from '@workbench/shared/types';
@@ -10,6 +10,7 @@ import { errorStatus, errorText } from '../api/messages';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateOnly } from '../utils/datetime';
 import { ErrorResult } from '../components/ErrorResult';
+import { PageHeader } from '../components/PageHeader';
 import { TaskFormModal } from '../components/tasks/TaskFormModal';
 import { TaskTable } from '../components/tasks/TaskTable';
 import { ProjectFormModal } from '../components/projects/ProjectFormModal';
@@ -129,54 +130,43 @@ export function ProjectDetailPage() {
 
   return (
     <div className="wb-page">
-      <div className="wb-page-head">
-        <div>
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowLeftOutlined />}
-            className="wb-back-button"
-            onClick={() => void navigate('/projects')}
-          >
-            返回项目列表
-          </Button>
-          <h1 className="wb-page-title">{project?.name ?? '项目详情'}</h1>
-        </div>
-        <div className="wb-page-head-actions">
-          {canAddTask ? (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditingTask(null);
-                setTaskFormOpen(true);
+      <PageHeader
+        title={project?.name ?? '项目详情'}
+        subtitle="项目基本信息、任务与进度"
+        back={{ label: '返回项目档案', to: '/projects' }}
+        extra={
+          <>
+            {canAddTask ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEditingTask(null);
+                  setTaskFormOpen(true);
+                }}
+              >
+                新增任务
+              </Button>
+            ) : null}
+            <Button icon={<EditOutlined />} disabled={!project} onClick={() => setProjectFormOpen(true)}>
+              编辑项目
+            </Button>
+            <Popconfirm
+              title={`删除项目「${project?.name ?? ''}」？`}
+              description="项目下的任务会保留，但不再归属该项目"
+              okText="删除"
+              cancelText="取消"
+              onConfirm={() => {
+                if (project) deleteProjectMutation.mutate(project.id);
               }}
             >
-              新增任务
-            </Button>
-          ) : null}
-          <Button
-            icon={<EditOutlined />}
-            disabled={!project}
-            onClick={() => setProjectFormOpen(true)}
-          >
-            编辑项目
-          </Button>
-          <Popconfirm
-            title={`删除项目「${project?.name ?? ''}」？`}
-            description="项目下的任务会保留，但不再归属该项目"
-            okText="删除"
-            cancelText="取消"
-            onConfirm={() => {
-              if (project) deleteProjectMutation.mutate(project.id);
-            }}
-          >
-            <Button danger icon={<DeleteOutlined />} disabled={!project}>
-              删除项目
-            </Button>
-          </Popconfirm>
-        </div>
-      </div>
+              <Button danger icon={<DeleteOutlined />} disabled={!project}>
+                删除项目
+              </Button>
+            </Popconfirm>
+          </>
+        }
+      />
 
       <Card className="wb-card-flat">
         {detailQuery.isPending || !project ? (

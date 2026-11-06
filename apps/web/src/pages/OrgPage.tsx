@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OrgNode, User, UserListItem } from '@workbench/shared/types';
+import { PageHeader } from '../components/PageHeader';
 import { deleteOrg, orgKeys } from '../api/org';
 import { listUsers } from '../api/users';
 import { errorStatus, errorText } from '../api/messages';
@@ -37,6 +38,7 @@ import { OrgFormModal } from '../components/OrgFormModal';
 import { MoveOrgModal } from '../components/MoveOrgModal';
 import { UserFormModal } from '../components/UserFormModal';
 import { OneTimePasswordModal } from '../components/OneTimePasswordModal';
+import { StateBlock } from '../components/user/StateBlock';
 
 /**
  * 组织架构页 —— pages.md §9。
@@ -240,29 +242,25 @@ export function OrgPage() {
 
   return (
     <div className="wb-page">
-      <div className="wb-page-head">
-        <div>
-          <h1 className="wb-page-title">组织架构</h1>
-          <p className="wb-page-sub">左侧选择节点，右侧查看该节点下的人员；人员只能挂在末级节点上。</p>
-        </div>
-        <div className="wb-page-head-actions">
-          <Button
-            icon={<PlusOutlined />}
-            disabled={!selected}
-            onClick={() => setCreateOpen(true)}
-          >
-            新增下级
-          </Button>
-          <Button
-            type="primary"
-            icon={<UserAddOutlined />}
-            disabled={!selected}
-            onClick={() => setUserOpen(true)}
-          >
-            新增人员
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="组织架构"
+        subtitle="左侧选择节点，右侧查看该节点下的人员；人员只能挂在末级节点上。"
+        extra={
+          <>
+            <Button icon={<PlusOutlined />} disabled={!selected} onClick={() => setCreateOpen(true)}>
+              新增下级
+            </Button>
+            <Button
+              type="primary"
+              icon={<UserAddOutlined />}
+              disabled={!selected}
+              onClick={() => setUserOpen(true)}
+            >
+              新增人员
+            </Button>
+          </>
+        }
+      />
 
       <div className="wb-org-grid">
         <Card
@@ -296,7 +294,14 @@ export function OrgPage() {
               }}
             />
           ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有组织节点" />
+            // ⚠️ 空组织时界面**建不了根节点**：POST /api/org 要求必须带 parentId
+            //    （routes.ts: z.number().int().positive()）。这里如实告诉用户，
+            //    别给一个点了会 400 的"新建"按钮。
+            <StateBlock
+              isEmpty
+              emptyText="还没有组织节点"
+              emptyHint="组织结构需要由管理员初始化后，才能在这里增删节点与挂人员。"
+            />
           )}
         </Card>
 
@@ -359,7 +364,7 @@ export function OrgPage() {
                         <Empty
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                           styles={{ image: { height: 48 } }}
-                          description="该节点下暂无人员"
+                          description="该节点下还没有人员"
                         />
                       ),
                     }}

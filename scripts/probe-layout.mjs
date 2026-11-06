@@ -64,7 +64,10 @@ const probe = () => {
   const contentScroll = content ? content.scrollHeight - content.clientHeight : 0;
 
   // 横向溢出：元素自身可滚且内容更宽
+  // 排除 AntD Progress 内部结构 —— 它的 .ant-progress-bg 带一层"光标"元素，
+  // scrollWidth 天生大于自身宽度（视觉上完全正常），算进来会一直误报。
   const hOverflow = [...document.querySelectorAll('.wb-content *')]
+    .filter((el) => !el.closest('.ant-progress'))
     .filter((el) => el.scrollWidth > el.clientWidth + 1)
     .filter((el) => {
       const st = getComputedStyle(el);

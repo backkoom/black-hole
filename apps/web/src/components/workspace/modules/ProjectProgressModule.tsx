@@ -31,7 +31,7 @@ export function ProjectProgressModule() {
           </span>
           <Progress
             percent={project.progress}
-            size={[-1, 7]}
+            size={['100%', 7]}
             showInfo={false}
             strokeColor="var(--primary)"
             trailColor="#eef1f6"

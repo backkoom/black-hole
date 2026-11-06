@@ -253,21 +253,6 @@ body {
   max-width: 100%;
 }
 
-/* 页面标题 20px / 700（visual-baseline §1.5） */
-.wb-page-title {
-  margin: 0 0 4px;
-  color: var(--text);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-.wb-page-sub {
-  margin-bottom: 14px;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
 /* 内容卡片 */
 .wb-card {
   max-width: 560px;
@@ -314,6 +299,51 @@ body {
   font-size: 10px;
 }
 
+/* 设置类页面：只读信息行（标签 / 值 / 右侧操作）——
+ * 比 Descriptions 更紧凑，标签列固定宽度，多行对齐。 */
+.wb-setting-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+
+.wb-setting-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+}
+
+.wb-setting-row + .wb-setting-row {
+  border-top: 1px solid #f2f5f9;
+}
+
+.wb-setting-label {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.wb-setting-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+}
+
+/* 工作台 / 工作台模板 顶部的关系说明（虚线提示条） */
+.wb-workspace-hint {
+  padding: 9px 14px;
+  margin-bottom: 14px;
+  border: 1px dashed #cdd8ea;
+  border-radius: 10px;
+  background: #fbfcff;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
 /* 占位页 */
 .wb-placeholder-body {
   padding: 40px 16px;
@@ -355,21 +385,6 @@ body {
 }
 
 /* ================= Phase 2：组织架构页 / 账号管理页 ================= */
-
-/* 页面头：标题 + 右侧主操作 */
-.wb-page-head {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.wb-page-head-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-left: auto;
-}
 
 /* 全宽内容卡片（区别于表单用的 .wb-card 窄版） */
 .wb-card-flat {
@@ -477,17 +492,50 @@ body {
   background: #fafcff;
 }
 
-/* 筛选栏 */
+/* 筛选栏 —— 用栅格（auto-fill）而不是 flex-wrap：
+ * 之前是 flex + justify-content:flex-end，换行后"最后一行被推到右边、上一行左对齐"，
+ * 控件宽度还各不相同（搜索 300 / 下拉 150 / 日期 240），窄屏一眼就参差。
+ * 现在每列等宽、换行从左边开始，宽度由容器决定。 */
 .wb-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   align-items: center;
   margin-bottom: 14px;
 }
 
+/* 搜索框与日期区间给两列宽 */
+.wb-filter-search,
+.wb-filter-date {
+  grid-column: span 2;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 单个控件不再写死宽度，交给栅格分配 */
+.wb-filter-select,
 .wb-filter-item {
-  width: 220px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 右侧按钮组（更多筛选 / 重置）：**永远独占一行并靠右**。
+ * 试过让它跟控件同排：轨道数凑不齐时会掉到下一行左边，按钮孤零零贴在左边很难看；
+ * 独占一行至少在任何宽度下都稳定。 */
+.wb-filter-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+/* 窄屏只有一两列时，span 2 会撑出隐式轨道 → 退成一列 */
+@media (max-width: 900px) {
+  .wb-filter-search,
+  .wb-filter-date {
+    grid-column: span 1;
+  }
 }
 
 /* 表单补充说明 */
@@ -545,33 +593,6 @@ body {
 }
 
 /* ================= Phase 5：工作台编辑器 / 12 个模块 / 配置面板 ================= */
-
-/* 页头标题行：标题 + 重命名按钮 */
-.wb-page-title-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.wb-page-title-row .wb-page-title {
-  margin-bottom: 0;
-}
-
-.wb-page-title-row .ant-btn {
-  color: var(--muted);
-}
-
-.wb-page-title-row .ant-btn:hover {
-  color: var(--primary);
-}
-
-/* 页头右侧操作区（编辑/预览切换 + 保存） */
-.wb-page-head-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-left: auto;
-}
 
 /* 指标卡行（一行 4 个） */
 .wb-metrics {
@@ -1327,18 +1348,6 @@ body {
   font-weight: 700;
 }
 
-/* 返回按钮（项目详情页） */
-.wb-back-button {
-  margin-bottom: 2px;
-  padding-inline-start: 0;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-.wb-back-button:hover {
-  color: var(--primary);
-}
-
 /* 项目卡片网格 */
 .wb-project-grid {
   display: grid;
@@ -1455,17 +1464,55 @@ body {
   margin-bottom: 18px;
 }
 
+/* 二级页（项目详情）的返回入口：放在标题上方，字号比副标题还小一档 */
+.wb-back-link {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0;
+  margin-bottom: 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.wb-back-link:hover {
+  color: var(--primary);
+}
+
 .wb-user-head-text {
   min-width: 0;
 }
 
 .wb-user-title {
-  margin: 0 0 5px;
+  margin: 0;
   color: var(--text);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.3px;
   line-height: 1.25;
+}
+
+/* 标题行：标题 + 行内小按钮（自定义工作台的改名铅笔） */
+.wb-user-title-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.wb-user-title-row .wb-user-title {
+  margin: 0;
+}
+
+.wb-user-title-row .ant-btn {
+  color: var(--muted);
+}
+
+.wb-user-title-row .ant-btn:hover {
+  color: var(--primary);
 }
 
 .wb-user-subtitle {
@@ -1836,19 +1883,6 @@ body {
 /* 任务筛选面板 */
 .wb-filter-panel .ant-card-body {
   padding: 14px 16px;
-}
-
-.wb-filter-search {
-  width: 300px;
-  max-width: 100%;
-}
-
-.wb-filter-select {
-  width: 150px;
-}
-
-.wb-filter-date {
-  width: 240px;
 }
 
 /* 任务表：负责人列的圆形头像 */

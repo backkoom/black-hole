@@ -659,7 +659,11 @@ test.describe('用户端 10 页', () => {
     await expect(page.getByRole('heading', { level: 1, name: '个人资料' })).toBeVisible();
     // 个人资料页已从占位做成真实页面（2026-11-05）：断言真实内容
     await expect(page.getByLabel('姓名')).toBeVisible();
-    await expect(page.getByLabel('账号')).toBeDisabled();
+    // 2026-11-06 重构：账号从「disabled 输入框」改成只读文本行（不再重复渲染一遍），
+    // 所以这里断言"能看到账号值 + 页面上没有账号输入框"。
+    const accountRow = page.locator('.wb-setting-row').filter({ hasText: '账号' }).first();
+    await expect(accountRow).toContainText('admin');
+    await expect(page.getByRole('textbox', { name: '账号' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '保存' })).toBeVisible();
   });
 });

@@ -31,6 +31,7 @@ import { ErrorResult } from '../ErrorResult';
 import { ConfigPanel } from './config/ConfigPanel';
 import { GridCanvas } from './GridCanvas';
 import { MetricsRow } from './MetricsRow';
+import { PageHeader } from '../PageHeader';
 import { ModuleLibraryDrawer } from './ModuleLibraryDrawer';
 import { VersionConflictModal } from './VersionConflictModal';
 import { WorkspaceMetaModal } from './WorkspaceMetaModal';
@@ -535,44 +536,53 @@ export function WorkspaceEditor({ mode }: { mode: WorkspaceEditorMode }) {
 
   return (
     <div className="wb-page">
-      <div className="wb-page-head">
-        <div>
-          <div className="wb-page-title-row">
-            <h1 className="wb-page-title">{title}</h1>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              aria-label="编辑名称与副标题"
-              disabled={preview}
-              onClick={() => setMetaOpen(true)}
-            />
-          </div>
-          {subtitle ? <p className="wb-page-sub">{subtitle}</p> : null}
-        </div>
-        <div className="wb-page-head-actions">
-          <Segmented
-            value={preview ? 'preview' : 'edit'}
-            onChange={(value) => setPreview(value === 'preview')}
-            options={[
-              { label: '编辑', value: 'edit' },
-              { label: '预览', value: 'preview' },
-            ]}
+      <PageHeader
+        title={title}
+        subtitle={subtitle || '拖拽模块、调整尺寸，保存后就是你的专属首页。'}
+        titleExtra={
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            aria-label="编辑名称与副标题"
+            disabled={preview}
+            onClick={() => setMetaOpen(true)}
           />
-          <Tooltip title={preview ? '预览模式下不可保存' : undefined}>
-            <span>
-              <Button
-                type="primary"
-                icon={<SaveOutlined />}
-                loading={layoutMutation.isPending}
-                disabled={preview || !state}
-                onClick={handleSaveLayout}
-              >
-                保存
-              </Button>
-            </span>
-          </Tooltip>
-        </div>
+        }
+        extra={
+          <>
+            <Segmented
+              value={preview ? 'preview' : 'edit'}
+              onChange={(value) => setPreview(value === 'preview')}
+              options={[
+                { label: '编辑', value: 'edit' },
+                { label: '预览', value: 'preview' },
+              ]}
+            />
+            <Tooltip title={preview ? '预览模式下不可保存' : undefined}>
+              <span>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={layoutMutation.isPending}
+                  disabled={preview || !state}
+                  onClick={handleSaveLayout}
+                >
+                  保存
+                </Button>
+              </span>
+            </Tooltip>
+          </>
+        }
+      />
+
+      {/* 说清「工作台模板」和「自定义工作台」的关系 —— 两者共用同一个编辑器，
+          但一个是"给新账号的默认值"、一个是"我自己的"。不写这一句，
+          管理员改完模板会以为改动了所有人。 */}
+      <div className="wb-workspace-hint">
+        {isTemplate
+          ? '这里是「工作台模板」：新账号首次进入时拿到的默认布局。改模板不会影响已有用户——他们仍然用自己保存过的布局。'
+          : '这是你自己的「自定义工作台」。首次进入时的布局来自管理员设置的「工作台模板」，之后你在这里的改动只影响自己。'}
       </div>
 
       <MetricsRow />

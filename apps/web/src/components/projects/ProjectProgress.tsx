@@ -23,7 +23,7 @@ export function ProjectProgress({ project, size = 'small' }: ProjectProgressProp
       <Progress
         percent={project.progress}
         // line 型 Progress 用 size=[宽, 高] 控高度（strokeWidth 已废弃）
-        size={[-1, size === 'large' ? 14 : 7]}
+        size={['100%', size === 'large' ? 14 : 7]}
         strokeColor={isDone ? 'var(--green)' : 'var(--primary)'}
         trailColor="#eef1f6"
         format={(percent) => <span className="wb-progress-percent">{percent}%</span>}

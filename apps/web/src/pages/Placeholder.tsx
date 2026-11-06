@@ -6,32 +6,19 @@ interface PlaceholderProps {
   title: string;
   /** 副标题 */
   subtitle?: string;
-  /**
-   * 页头样式：
-   * - 'user'：用户端大标题 + 日期/日历按钮（用户端 10 个页面用这个）
-   * - 'plain'：管理员端的小标题（设置页里的占位页用这个）
-   */
-  headerStyle?: 'user' | 'plain';
 }
 
 /**
  * 占位页 —— 还没做的页面指向这里。
  * 按 pages.md §4.8 / §8.4：空状态写「功能迭代中」并显示「迭代」角标。
+ *
+ * 2026-11-06：原来这里还留了一套 `headerStyle='plain'`（20px 小标题），
+ * 和用户端页头两套样式并存。现在全站只有 PageHeader 一种页头，这套分支删掉了。
  */
-export function Placeholder({ title, subtitle, headerStyle = 'plain' }: PlaceholderProps) {
-  const header =
-    headerStyle === 'user' ? (
-      <PageHeader title={title} subtitle={subtitle ?? '该功能正在迭代，敬请期待。'} />
-    ) : (
-      <>
-        <h1 className="wb-page-title">{title}</h1>
-        {subtitle ? <p className="wb-page-sub">{subtitle}</p> : null}
-      </>
-    );
-
+export function Placeholder({ title, subtitle }: PlaceholderProps) {
   return (
     <div className="wb-page">
-      {header}
+      <PageHeader title={title} subtitle={subtitle ?? '该功能正在迭代，敬请期待。'} />
       <div className="wb-placeholder-body">
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}

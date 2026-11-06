@@ -5,7 +5,6 @@ import {
   Card,
   DatePicker,
   Dropdown,
-  Empty,
   Input,
   Pagination,
   Select,
@@ -148,6 +147,19 @@ export function TasksPage() {
     setSelectedRowKeys([]);
   };
 
+  // 空态要分两种：真没数据 / 筛选后没结果。文案和按钮都不一样，
+  // 否则"没有符合条件的任务"会让人以为库里空了。
+  const hasActiveFilter = Boolean(
+    filters.keyword ||
+      filters.projectId ||
+      filters.status ||
+      filters.priority ||
+      filters.assigneeId ||
+      filters.category ||
+      filters.from ||
+      filters.to,
+  );
+
 
   const projectOptions = useMemo(
     () =>
@@ -239,15 +251,7 @@ export function TasksPage() {
 
       {/* 任务筛选 */}
       <Card className="wb-card-flat wb-filter-panel" style={{ marginBottom: 18 }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            flexWrap: 'wrap',
-          }}
-        >
+        <div className="wb-filter-bar">
           <Input.Search
             className="wb-filter-search"
             value={keywordInput}
@@ -335,13 +339,14 @@ export function TasksPage() {
             }}
           />
 
-          <Tooltip title="更多筛选条件">
-            <Button icon={<DownOutlined />} onClick={() => setMoreOpen((prev) => !prev)}>
-              更多筛选
-            </Button>
-          </Tooltip>
-
-          <Button onClick={resetFilters}>重置</Button>
+          <div className="wb-filter-actions">
+            <Tooltip title="更多筛选条件">
+              <Button icon={<DownOutlined />} onClick={() => setMoreOpen((prev) => !prev)}>
+                更多筛选
+              </Button>
+            </Tooltip>
+            <Button onClick={resetFilters}>重置</Button>
+          </div>
         </div>
 
         {moreOpen ? (
@@ -437,7 +442,16 @@ export function TasksPage() {
           error={listQuery.isError ? listQuery.error : undefined}
           onRetry={() => void listQuery.refetch()}
           isEmpty={rows.length === 0}
-          emptyText="没有符合条件的任务"
+          emptyText={hasActiveFilter ? '没有符合条件的任务' : '还没有任务'}
+          emptyHint={
+            hasActiveFilter
+              ? '换个条件试试，或点下面的「清除筛选」回到全部任务。'
+              : '点右上角「新建任务」创建第一条，或在看板里拖动任务改状态。'
+          }
+          emptyAction={
+            hasActiveFilter ? <Button onClick={resetFilters}>清除筛选</Button> : undefined
+          }
+          skeletonMinHeight={320}
         >
           <TaskListTable
             tasks={rows}
@@ -451,13 +465,6 @@ export function TasksPage() {
               onChange: setSelectedRowKeys,
             }}
             pagination={false}
-            emptyText={
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                styles={{ image: { height: 48 } }}
-                description="没有符合条件的任务"
-              />
-            }
           />
 
           <div

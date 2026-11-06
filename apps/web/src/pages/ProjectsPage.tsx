@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Button, Card, Empty, Pagination, Skeleton } from 'antd';
+import { Button, Card, Pagination, Skeleton } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { listProjects, projectsKeys } from '../api/projects';
+import { PageHeader } from '../components/PageHeader';
 import { errorStatus, errorText } from '../api/messages';
 import { ErrorResult } from '../components/ErrorResult';
 import { ProjectCard } from '../components/projects/ProjectCard';
 import { ProjectFormModal } from '../components/projects/ProjectFormModal';
+import { StateBlock } from '../components/user/StateBlock';
 
 /**
  * 项目管理页 —— pages.md §4 `/projects`。
@@ -38,17 +40,15 @@ export function ProjectsPage() {
 
   return (
     <div className="wb-page">
-      <div className="wb-page-head">
-        <div>
-          <h1 className="wb-page-title">项目档案</h1>
-          <p className="wb-page-sub">项目进度按任务实时计算；点击卡片查看项目详情与任务。</p>
-        </div>
-        <div className="wb-page-head-actions">
+      <PageHeader
+        title="项目档案"
+        subtitle="项目进度按任务实时计算；点击卡片查看项目详情与任务。"
+        extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
             新建项目
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {listQuery.isError ? (
         <ErrorResult
@@ -66,15 +66,16 @@ export function ProjectsPage() {
         </div>
       ) : (listQuery.data?.items.length ?? 0) === 0 ? (
         <Card className="wb-card-flat">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            styles={{ image: { height: 64 } }}
-            description="还没有项目"
-          >
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-              新建项目
-            </Button>
-          </Empty>
+          <StateBlock
+            isEmpty
+            emptyText="还没有项目"
+            emptyHint="新建一个项目，总览、看板、进度追踪里就会跟着出现。"
+            emptyAction={
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
+                新建项目
+              </Button>
+            }
+          />
         </Card>
       ) : (
         <>

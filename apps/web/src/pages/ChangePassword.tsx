@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { readRedirectTarget } from '../auth/redirect';
 import { apiPut, ApiError } from '../api/client';
 import { MUST_CHANGE_PASSWORD, REQUEST_FAILED } from '../api/messages';
+import { PageHeader } from '../components/PageHeader';
 
 interface ChangePasswordValues {
   oldPassword: string;
@@ -62,12 +63,15 @@ export function ChangePasswordPage() {
 
   return (
     <div className="wb-page">
-      <h1 className="wb-page-title">修改密码</h1>
-      <p className="wb-page-sub">
-        {mustChangePassword
-          ? '当前账号需要先修改初始密码，修改完成后才能使用其他功能。'
-          : '修改成功后，其他设备上的登录会话会失效。'}
-      </p>
+      <PageHeader
+        title="修改密码"
+        subtitle={
+          mustChangePassword
+            ? '当前账号需要先修改初始密码，修改完成后才能使用其他功能。'
+            : '修改成功后，其他设备上的登录会话会失效。'
+        }
+        showMeta={false}
+      />
 
       <div className="wb-card">
         <Form<ChangePasswordValues> form={form} layout="vertical" requiredMark onFinish={onFinish}>

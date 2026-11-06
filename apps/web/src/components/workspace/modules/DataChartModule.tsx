@@ -40,7 +40,7 @@ export function DataChartModule() {
           />
           <Progress
             percent={Math.round((row.value / total) * 100)}
-            size={[-1, 7]}
+            size={['100%', 7]}
             showInfo={false}
             strokeColor={row.color}
             trailColor="#eef1f6"

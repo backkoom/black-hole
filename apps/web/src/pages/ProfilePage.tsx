@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, App, Button, Descriptions, Form, Input, Space, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Space, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '../components/PageHeader';
@@ -82,7 +82,7 @@ export function ProfilePage() {
       ) : null}
 
       <Panel
-        title="基本信息"
+        title="基本资料"
         extra={
           <Space>
             <Button onClick={() => setName(user.name)} disabled={!dirty}>
@@ -100,7 +100,11 @@ export function ProfilePage() {
         }
       >
         <Form layout="vertical" style={{ maxWidth: 460 }}>
-          <Form.Item label="姓名">
+          <Form.Item
+            label="姓名"
+            extra="姓名会显示在成员列表、任务负责人和审批记录里。"
+            style={{ marginBottom: 8 }}
+          >
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -110,67 +114,51 @@ export function ProfilePage() {
               aria-label="姓名"
             />
           </Form.Item>
-          <Form.Item label="账号">
-            <Input value={user.account} disabled aria-label="账号" />
-          </Form.Item>
-          <Form.Item label="角色" style={{ marginBottom: 0 }}>
-            <Space>
+        </Form>
+
+        {/* 只读信息：之前「基本信息」和「账号与权限」把账号/角色各写了一遍，
+            这块合并成一张「只看不改」的列表，一屏看完 */}
+        <div className="wb-setting-list">
+          <div className="wb-setting-row">
+            <span className="wb-setting-label">账号</span>
+            <span className="wb-setting-value">{user.account}</span>
+          </div>
+          <div className="wb-setting-row">
+            <span className="wb-setting-label">角色</span>
+            <span className="wb-setting-value">
               <Tag color={user.role === 'admin' ? 'blue' : 'default'}>
                 {ROLE_LABEL[user.role] ?? user.role}
               </Tag>
               {user.isSuper ? <Tag color="purple">超级管理员</Tag> : null}
-            </Space>
-          </Form.Item>
-        </Form>
-      </Panel>
-
-      <div style={{ height: 16 }} />
-
-      <Panel title="账号与权限">
-        <Descriptions
-          column={1}
-          size="small"
-          items={[
-            { key: 'account', label: '账号', children: user.account },
-            { key: 'name', label: '姓名', children: user.name },
-            {
-              key: 'role',
-              label: '角色',
-              children: ROLE_LABEL[user.role] ?? user.role,
-            },
-            {
-              key: 'org',
-              label: '所属组织',
-              children: orgText || '—',
-            },
-            {
-              key: 'mustChange',
-              label: '初始密码',
-              children: user.mustChangePassword ? (
-                <Tag color="orange">待修改</Tag>
-              ) : (
-                <Tag color="green">已修改</Tag>
-              ),
-            },
-          ]}
-        />
+            </span>
+          </div>
+          <div className="wb-setting-row">
+            <span className="wb-setting-label">所属组织</span>
+            <span className="wb-setting-value">{orgText || '—'}</span>
+          </div>
+          <div className="wb-setting-row">
+            <span className="wb-setting-label">初始密码</span>
+            <span className="wb-setting-value">
+              {user.mustChangePassword ? <Tag color="orange">待修改</Tag> : <Tag color="green">已修改</Tag>}
+            </span>
+          </div>
+        </div>
       </Panel>
 
       <div style={{ height: 16 }} />
 
       <Panel title="安全">
-        <Space direction="vertical" size={8} style={{ width: '100%' }}>
-          <Typography.Text type="secondary">
-            登录密码请定期更换；修改密码后会强制刷新会话状态。
-          </Typography.Text>
-          <div>
+        <div className="wb-setting-list">
+          <div className="wb-setting-row">
+            <span className="wb-setting-label">登录密码</span>
+            <span className="wb-setting-value">建议定期更换；修改后其他设备上的会话会失效。</span>
             <Link to="/settings/password">
               <Button style={{ borderColor: designVars.primary, color: designVars.primary }}>
-                修改密码 →
+                修改密码
               </Button>
             </Link>
           </div>
-        </Space>
+        </div>
       </Panel>
     </div>
   );
