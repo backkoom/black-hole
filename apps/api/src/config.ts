@@ -83,6 +83,14 @@ const schema = z.object({
 
   /** 单个文件上传上限（MB）。超过直接 413，不落盘 */
   MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(2048).default(50),
+
+  /**
+   * bcrypt 成本档位（D-13）。
+   * 实测（8 vCPU / Xeon Gold 6530，bcryptjs 纯 JS）：cost 12 = 466ms/次、cost 10 = 141ms/次。
+   * 500 人批量导入会连续算 500 次，默认 12 在弱一点的机器上可能撞反代超时；
+   * 500 人环境建议 10（仍高于 OWASP 的 10 下限），几十人的环境可以用 12。
+   */
+  BCRYPT_COST: z.coerce.number().int().min(8).max(15).default(12),
 });
 
 export type AppConfig = z.infer<typeof schema>;

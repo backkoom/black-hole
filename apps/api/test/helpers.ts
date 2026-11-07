@@ -27,6 +27,9 @@ export async function closeApp(): Promise<void> {
     await appInstance.close();
     appInstance = null;
   }
+  // 线程池里有常驻 worker，不关掉 vitest 会一直挂着不退出
+  const { closePool } = await import('../src/lib/password-pool.js');
+  await closePool();
 }
 
 /** 末级组织节点 id（人员必须挂末级） */

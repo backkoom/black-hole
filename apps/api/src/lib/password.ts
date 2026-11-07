@@ -1,19 +1,24 @@
-import bcrypt from 'bcryptjs';
+import { getConfig } from '../config.js';
+import { hashInPool, verifyInPool } from './password-pool.js';
 
 /**
  * 密码 —— 执行包 §3.3 / §6.5。
- * bcryptjs cost 12（不引入 native bcrypt）。
+ *
+ * 算法仍是 bcrypt（不引入 native 依赖），但做了两件事（D-13 规模验证的结论）：
+ *  1. 计算放进 worker 线程池：bcryptjs 是纯 JS，cost=12 一次约 466ms，
+ *     跑在主线程上会把整个 API 卡住（500 人导入实测 188 秒，期间谁都用不了）；
+ *  2. 成本档位改成环境变量 `BCRYPT_COST`（8~15，默认 12）：
+ *     500 人一次导入的场景可以降到 10（实测 141ms/次），改配置不用改代码。
+ *
  * 策略：8 至 64 位，至少一个字母和一个数字；不要求特殊字符。
  */
 
-const BCRYPT_COST = 12;
-
 export function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, BCRYPT_COST);
+  return hashInPool(plain, getConfig().BCRYPT_COST);
 }
 
 export function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(plain, hash);
+  return verifyInPool(plain, hash);
 }
 
 /** 是否满足密码策略 */
