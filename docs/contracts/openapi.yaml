@@ -13,7 +13,8 @@ info:
     - 一期 §6.4 的 34 个操作（24 条路径）
     - 用户端批次 2/3 新增 23 个操作（16 条路径）：统计聚合、风险问题、文件资料、里程碑与会议
     - D-19 新增 2 个操作（2 条路径）：文件上传、文件下载
-    - 合计 **59 个操作 / 42 条路径**，与代码注册表逐条一致
+    - D-22 新增 2 个操作（1 条路径）：系统设置读 / 改
+    - 合计 **61 个操作 / 43 条路径**，与代码注册表逐条一致
 
     统一约定（§6.1）：
     - 成功 HTTP 200，body `{ code: 0, message: "ok", data: ... }`
@@ -2462,6 +2463,141 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/system/settings:
+    get:
+      operationId: getSystemSettings
+      summary: 系统设置（备份 / 文件存储 / 证书 / 版本）
+      description: |
+        D-22 新增（2026-11-08）。给「设置 → 系统设置」页用。
+
+        - `backup`：目录 / 保留份数 / 是否启用；`source` 表示当前值来自数据库（`db`，页面上改的）
+          还是环境变量兜底（`env`）；
+        - `storage`：实体目录、单文件上限、已用容量与文件数（只读，来自运行配置与数据库统计）；
+        - `tls`：读 `TLS_CERT_PATH`（默认 `/etc/nginx/ssl/blackhole.crt`）解析出的主题/颁发者/
+          有效期/SAN；文件不存在时 `found=false`，不报错；
+        - `version`：Node 版本与 RELEASE.txt 里的构建时间。
+      tags: [系统]
+      x-permission: 管理员
+      x-errors: [401, 403]
+      responses:
+        '200':
+          description: 当前系统设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      backup:
+                        type: object
+                        properties:
+                          dir: { type: string }
+                          keep: { type: integer }
+                          enabled: { type: boolean }
+                          source: { type: string, enum: [db, env] }
+                      storage:
+                        type: object
+                        properties:
+                          dir: { type: string }
+                          maxUploadMb: { type: integer }
+                          fileCount: { type: integer }
+                          usedBytes: { type: integer }
+                      tls:
+                        type: object
+                        properties:
+                          path: { type: string }
+                          found: { type: boolean }
+                          subject: { type: string }
+                          issuer: { type: string }
+                          validFrom: { type: string }
+                          validTo: { type: string }
+                          daysLeft: { type: integer }
+                          sans: { type: array, items: { type: string } }
+                      version:
+                        type: object
+                        properties:
+                          node: { type: string }
+                          release: { type: string, nullable: true }
+              example:
+                code: 0
+                message: ok
+                data:
+                  backup:
+                    dir: /data/backups/blackhole
+                    keep: 14
+                    enabled: true
+                    source: env
+                  storage:
+                    dir: /data/blackhole/storage/files
+                    maxUploadMb: 50
+                    fileCount: 12
+                    usedBytes: 10485760
+                  tls:
+                    path: /etc/nginx/ssl/blackhole.crt
+                    found: true
+                    subject: CN=192.168.102.102
+                    issuer: CN=192.168.102.102
+                    validFrom: 'Nov  7 10:00:00 2026 GMT'
+                    validTo: 'Feb  7 10:00:00 2029 GMT'
+                    daysLeft: 821
+                    sans: ['IP Address:192.168.102.102']
+                  version:
+                    node: v22.22.2
+                    release: 构建时间：2026-11-08 00:10:00
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenAdmin' }
+    patch:
+      operationId: updateSystemSettings
+      summary: 修改备份设置
+      description: |
+        D-22 新增。只改备份三项，写入 `system_setting` 表；**备份脚本每次运行时现读，改完不用重启**。
+
+        - `dir` 必须是绝对路径（相对路径在 systemd 下会按 WorkingDirectory 解析，容易写错地方）；
+        - `keep` 1~365；`enabled=false` 时定时任务直接跳过；
+        - **仅超级管理员**可改：备份目录决定服务器往哪写盘。
+      tags: [系统]
+      x-permission: 仅超级管理员
+      x-errors: [400, 401, 403, 422]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dir, keep, enabled]
+              properties:
+                dir: { type: string, description: '绝对路径' }
+                keep: { type: integer, minimum: 1, maximum: 365 }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: 保存后的备份设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      backup:
+                        type: object
+                        properties:
+                          dir: { type: string }
+                          keep: { type: integer }
+                          enabled: { type: boolean }
+                          source: { type: string, enum: [db, env] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenAdmin' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
   /api/folders:
     get:

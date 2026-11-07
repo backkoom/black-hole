@@ -30,11 +30,26 @@ APP_DIR=${APP_DIR:-/data/blackhole}
 #   BACKUP_KEEP     保留多少份（按时间戳目录，超出删最旧的）
 #   BACKUP_ENABLED  是否允许定时任务跑；false 时脚本直接退出 0（timer 不会报红）
 #
-# 优先级：命令行参数 > 环境变量 > 默认值。
-# ⚠️ 2026-11-06 之前只认位置参数，README 里写的 Environment= 其实不生效，已修。
-DEST=${1:-${BACKUP_DIR:-${DEST:-/data/backups/blackhole}}}
-KEEP=${BACKUP_KEEP:-${KEEP:-14}}
-ENABLED=${BACKUP_ENABLED:-true}
+# 优先级：命令行参数 > 数据库（设置页改的） > 环境变量 > 默认值。
+# ⚠️ 2026-11-06 之前只认位置参数，README 里写的 Environment= 其实不生效，已修；
+# ⚠️ 2026-11-08 起「设置 → 系统设置」改的备份配置存数据库，改完**不用重启**，
+#    脚本每次运行时现读（psql 读不到就回退环境变量，别让备份因为读配置失败而停）。
+DB_SETTINGS=""
+if [[ -r ${ENV_FILE:-/etc/blackhole/api.env} ]]; then
+  _db_url=$(grep -E '^DATABASE_URL=' "${ENV_FILE:-/etc/blackhole/api.env}" | head -1 | cut -d= -f2- || true)
+  if [[ -n ${_db_url:-} ]]; then
+    DB_SETTINGS=$(psql "$_db_url" -At -F'=' -c \
+      "SELECT key, value FROM system_setting WHERE key LIKE 'backup.%'" 2>/dev/null || true)
+  fi
+fi
+_db_get() { printf '%s\n' "$DB_SETTINGS" | sed -n "s/^$1=//p" | head -1; }
+DB_DIR=$(_db_get backup.dir)
+DB_KEEP=$(_db_get backup.keep)
+DB_ENABLED=$(_db_get backup.enabled)
+
+DEST=${1:-${DB_DIR:-${BACKUP_DIR:-${DEST:-/data/backups/blackhole}}}}
+KEEP=${DB_KEEP:-${BACKUP_KEEP:-${KEEP:-14}}}
+ENABLED=${DB_ENABLED:-${BACKUP_ENABLED:-true}}
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
 die() { printf '[%s] 失败：%s\n' "$(date '+%F %T')" "$*" >&2; exit 1; }
@@ -53,7 +68,7 @@ esac
 [[ -d $APP_DIR ]] || die "找不到安装目录 $APP_DIR"
 
 # --- 从服务环境变量里取连接串（不打印，避免口令进日志）---
-DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2-)
+DATABASE_URL=${_db_url:-$(grep -E '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2-)}
 [[ -n ${DATABASE_URL:-} ]] || die "$ENV_FILE 里没有 DATABASE_URL"
 
 STAMP=$(date +%Y%m%d-%H%M%S)

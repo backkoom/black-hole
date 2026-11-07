@@ -16,6 +16,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { RisksPage } from './pages/RisksPage';
 import { FilesPage } from './pages/FilesPage';
 import { TeamPage } from './pages/TeamPage';
+import { SystemSettingsPage } from './pages/SystemSettingsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -137,6 +138,15 @@ export const router = createBrowserRouter([
                 element: (
                   <RequireAdmin>
                     <OrgPage />
+                  </RequireAdmin>
+                ),
+              },
+              {
+                // 2026-11-08：备份 / 文件存储 / 证书（D-22）
+                path: 'settings/system',
+                element: (
+                  <RequireAdmin>
+                    <SystemSettingsPage />
                   </RequireAdmin>
                 ),
               },

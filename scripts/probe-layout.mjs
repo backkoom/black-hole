@@ -69,6 +69,8 @@ const probe = () => {
   // scrollWidth 天生大于自身宽度（视觉上完全正常），算进来会一直误报。
   const hOverflow = [...document.querySelectorAll('.wb-content *')]
     .filter((el) => !el.closest('.ant-progress'))
+    // 甘特时间轴、AntD 标签栏是**按设计可横向滚动**的容器（时间跨度/标签数不定）
+    .filter((el) => !el.closest('.wb-gantt-chart') && !el.classList.contains('ant-tabs-nav-wrap'))
     // 省略号元素天生 scrollWidth > clientWidth（这正是它的实现方式），
     // 真正的缺陷是"该换行/该收缩却没处理"，所以在这里排除掉
     .filter((el) => getComputedStyle(el).textOverflow !== 'ellipsis')

@@ -45,6 +45,7 @@ import {
 } from '../api/files';
 import { errorText } from '../api/messages';
 import { formatDateTime, todayShanghaiDate, toCalendarDate } from '../utils/datetime';
+import { formatBytes } from '../utils/format';
 import { designVars } from '../styles/theme';
 import { MetricCard, Panel, ToneTag } from '../components/ui';
 import { PageHeader } from '../components/PageHeader';
@@ -95,22 +96,6 @@ const FOLDER_COLORS = [
   designVars.purple,
 ];
 
-/**
- * 文件大小格式化 —— B → KB → MB → GB。
- *
- * 口径：
- * - 不足 1KB 用字节；不足 1MB 用 KB；不足 1GB 用 MB；否则用 GB；
- * - KB/MB 保留 1 位小数，GB 保留 2 位小数；
- * - 0 字节显示「0 B」。
- */
-export function formatBytes(bytes: number | null | undefined): string {
-  const value = bytes ?? 0;
-  if (!Number.isFinite(value) || value < 0) return '—';
-  if (value < 1024) return `${Math.round(value)} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
 
 /** 容量指标卡专用 —— 统一按 MB / GB 展示（不足 1MB 也按 MB） */
 function formatCapacity(bytes: number | null | undefined): string {
@@ -786,3 +771,6 @@ export function FilesPage() {
     </div>
   );
 }
+
+// 兼容旧引用（formatBytes 已移到 utils/format.ts）
+export { formatBytes } from '../utils/format';

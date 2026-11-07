@@ -67,7 +67,7 @@ export function TaskListTable({
         title: '任务名称',
         dataIndex: 'title',
         ellipsis: true,
-        width: 260,
+        width: 200,
         render: (value: string, row: Task) => (
           <div>
             <span style={{ fontWeight: 600 }}>{value}</span>
@@ -95,7 +95,7 @@ export function TaskListTable({
       {
         title: '所属项目',
         dataIndex: 'projectName',
-        width: 150,
+        width: 118,
         ellipsis: true,
         render: (value: string | null) =>
           value ? <span>{value}</span> : <span className="wb-muted">未归属项目</span>,
@@ -103,7 +103,7 @@ export function TaskListTable({
       {
         title: '负责人',
         dataIndex: 'assigneeName',
-        width: 130,
+        width: 108,
         render: (value: string | null) =>
           value ? (
             <span className="wb-owner-cell">
@@ -119,7 +119,7 @@ export function TaskListTable({
       {
         title: '优先级',
         dataIndex: 'priority',
-        width: 84,
+        width: 74,
         render: (value: Task['priority']) => (
           <ToneTag tone={STATUS_TONE[value] ?? 'gray'}>{PRIORITY_LABEL[value]}</ToneTag>
         ),
@@ -127,7 +127,7 @@ export function TaskListTable({
       {
         title: '状态',
         dataIndex: 'status',
-        width: 92,
+        width: 82,
         render: (value: TaskStatus, row: Task) => (
           <Tooltip title="点击修改状态">
             <span
@@ -153,20 +153,20 @@ export function TaskListTable({
       {
         title: '截止日期',
         dataIndex: 'dueDate',
-        width: 106,
+        width: 92,
         render: (value: string | null) => <span>{formatDateOnly(value)}</span>,
       },
       {
         title: '分类',
         dataIndex: 'category',
-        width: 96,
+        width: 86,
         render: (value: string | null) =>
           value ? <ToneTag tone={categoryTone(value)}>{value}</ToneTag> : <span className="wb-muted">—</span>,
       },
       {
         title: '提醒',
         dataIndex: 'reminderAt',
-        width: 132,
+        width: 112,
         render: (value: string | null) =>
           value ? <span>{formatDateTime(value)}</span> : <span className="wb-muted">—</span>,
       },
@@ -174,7 +174,7 @@ export function TaskListTable({
         title: '操作',
         key: 'actions',
         fixed: 'right',
-        width: 56,
+        width: 48,
         render: (_value: unknown, row: Task) => (
           <Dropdown
             trigger={['click']}
@@ -213,7 +213,7 @@ export function TaskListTable({
       columns={columns}
       dataSource={tasks}
       rowSelection={rowSelection}
-      scroll={{ x: 1040 }}
+      scroll={{ x: 960 }}
       locale={emptyText ? { emptyText } : undefined}
       pagination={pagination}
     />

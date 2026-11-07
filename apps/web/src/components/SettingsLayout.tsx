@@ -43,6 +43,8 @@ export function SettingsLayout() {
           { key: '/settings/users', label: '账号管理' },
           { key: '/settings/org', label: '组织架构' },
           { key: '/settings/workspace-template', label: '工作台模板' },
+          // 2026-11-08 新增：备份 / 文件存储 / HTTPS 证书（D-22）
+          { key: '/settings/system', label: '系统设置' },
         ],
       },
     ];
