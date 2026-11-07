@@ -121,6 +121,21 @@ describe('任务与项目', () => {
     expect(back.body.data.task.doneAt).toBeNull();
   });
 
+  it('C4 任务可以不挂项目：不传 projectId 也能建，返回 projectId=null', async () => {
+    const agent = await loginSeedAdmin();
+    const res = await agent.post('/api/tasks').send({ title: '无项目任务' });
+    expect(res.status).toBe(200);
+    // 必须是 null：不能是 0、也不能整个字段消失（前端按 null 判断"未归属"）
+    expect(res.body.data.task.projectId).toBeNull();
+
+    const list = await agent.get('/api/tasks');
+    const found = (list.body.data.items as { id: number; projectId: number | null }[]).find(
+      (t) => t.id === res.body.data.task.id,
+    );
+    expect(found).toBeDefined();
+    expect(found?.projectId).toBeNull();
+  });
+
   it('D3 删除项目：任务保留、project_id 置空', async () => {
     const agent = await loginSeedAdmin();
     const project = await agent.post('/api/projects').send({ name: '待删项目' });
