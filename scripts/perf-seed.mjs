@@ -121,7 +121,6 @@ async function data() {
       WHERE u.account LIKE 'imp%'`,
   );
   log(`已有工作台 ${existing.rows.length} 个（导入时建的）`);
-  const wsIds = existing.rows.map((r) => Number(r.id));
   const needLayout = existing.rows.filter((r) => r.n === 0).map((r) => Number(r.id));
   const layoutRows = [];
   const MODS = ['metrics', 'todo', 'project_progress', 'idea'];
