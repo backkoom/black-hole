@@ -1,8 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/blackhole-mark.png" />
-    <img src="docs/brand/blackhole-vertical.png" alt="Black Hole" width="220" />
-  </picture>
+  <img src="docs/brand/blackhole-brand.png#gh-light-mode-only" alt="Black Hole" width="240" />
+  <img src="docs/brand/blackhole-mark.png#gh-dark-mode-only" alt="Black Hole" width="120" />
 </p>
 
 # Black Hole
