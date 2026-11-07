@@ -13,7 +13,19 @@
 | `apps/web/public/favicon.ico` | 浏览器标签（16~256 六尺寸） | — |
 | `apps/web/public/brand/apple-touch-icon.png` | iOS 主屏 | 180 |
 
-## 换图：一条命令
+## 换图方式一：双击（不用碰命令行）
+
+把**竖版**和**横版**两张图**一起选中**，拖到 `scripts/set-brand.cmd` 上松手：
+
+1. 弹窗问「是否顺便部署」→ 敲 `Y` 或 `N`
+2. 等它跑完（生成资产 → 构建 → 打包，约 1~2 分钟）
+3. GitHub 上那张图还要手动换一次（见下方"只换 GitHub 那张"）
+
+> `.cmd` 里刻意只写英文：cmd 按系统 OEM 代码页解析批处理文件，
+> 写中文会把引号和括号弄乱（实测直接报"不是内部或外部命令"）。
+> 中文提示统一由 `set-brand.sh` 输出，配合 `chcp 65001` 显示正常。
+
+## 换图方式二：一条命令
 
 ```bash
 python scripts/brand-assets.py \
