@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/brand/blackhole-vertical.png" alt="Black Hole" width="200" />
+</p>
+
 # Black Hole
 
 内网项目管理系统：用户端 10 页固定界面 + 管理员端（工作台编排 / 账号 / 组织架构 / 模板）。

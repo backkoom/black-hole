@@ -197,18 +197,24 @@ body {
   padding: 4px 10px 20px;
 }
 
-.wb-brand-mark {
-  display: flex;
+/* 品牌标记：用设计稿切出来的深色圆角图标（发光环），
+ * 原来是个写「项」的蓝色方块占位。
+ * ⚠️ 图标本身是深色底 + 发光，放在白色侧栏上必须保留圆角，否则像一个黑方块。 */
+.wb-brand-logo {
+  display: block;
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
-  align-items: center;
-  justify-content: center;
   border-radius: 9px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
+  object-fit: contain;
+}
+
+/* 登录页用大一号 */
+.wb-login-brand .wb-brand-logo {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
 }
 
 .wb-brand-name {

@@ -161,9 +161,7 @@ export function AppShell() {
     <Layout className="wb-layout">
       <Sider width={designVars.siderWidth} className="wb-sider" theme="light">
         <div className="wb-brand">
-          <span className="wb-brand-mark" aria-hidden="true">
-            B
-          </span>
+          <img className="wb-brand-logo" src="/brand/blackhole-icon.png" alt="" aria-hidden="true" />
           <span className="wb-brand-name">Black Hole</span>
         </div>
 
