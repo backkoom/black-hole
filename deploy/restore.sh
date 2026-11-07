@@ -113,6 +113,19 @@ psql "$TARGET_URL" -At -F' ' -c "
   || die "有表是空的，这份备份不对，别急着上线"
 
 # --- 5. 真回滚时把前端产物也换回去（可选，按需）---
+# 文件实体（只有恢复到生产库时才铺，演练库不需要动磁盘文件）
+FILES_DIR=$(grep -E '^FILE_STORAGE_DIR=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+FILES_DIR=${FILES_DIR:-/data/blackhole/storage/files}
+if [[ $TARGET == "$APP_DB" && -f $DUMP_DIR/files.tar.gz && ${SKIP_FILES:-0} != "1" ]]; then
+  log "恢复文件实体 → $FILES_DIR"
+  mkdir -p "$(dirname "$FILES_DIR")"
+  tar -xzf "$DUMP_DIR/files.tar.gz" -C "$(dirname "$FILES_DIR")"
+  chown -R blackhole:blackhole "$FILES_DIR" 2>/dev/null || true
+  log "文件实体恢复完成（$(find "$FILES_DIR" -type f | wc -l) 个文件）"
+elif [[ -f $DUMP_DIR/files.tar.gz ]]; then
+  log "跳过文件实体（演练库或 --skip-files）"
+fi
+
 if [[ $TARGET == "$APP_DB" && -f $DUMP_DIR/web.tar.gz ]]; then
   log "同步前端产物…"
   tar -xzf "$DUMP_DIR/web.tar.gz" -C "$APP_DIR"

@@ -18,6 +18,7 @@ import { registerRiskRoutes } from './risks/routes.js';
 import { registerTeamRoutes } from './team/routes.js';
 import { registerFileRoutes } from './files/routes.js';
 import { getConfig } from './config.js';
+import { ensureStorage } from './files/storage.js';
 
 /**
  * Fastify 实例 —— 执行包 §4.1 / §6.1 / §6.3 / D-06。
@@ -52,6 +53,10 @@ function registerLenientJsonParser(app: FastifyInstance): void {
 
 export async function buildApp(): Promise<FastifyInstance> {
   const cfg = getConfig();
+
+  // 文件存储根目录先建好：配置写错/权限不足要在这里就报出来，
+  // 而不是等第一个用户点上传才 500
+  await ensureStorage();
 
   const app = Fastify({
     logger: {

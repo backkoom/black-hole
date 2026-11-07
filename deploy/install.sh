@@ -202,6 +202,8 @@ fi
 # 7. 文件权限
 # ---------------------------------------------------------------------------
 if id blackhole >/dev/null 2>&1; then
+  # 文件实体目录：应用要能写，且不能随版本目录重建而丢失
+  install -d -o blackhole -g blackhole "$APP_DIR/storage/files"
   chown -R blackhole:blackhole "$APP_DIR"
 fi
 mkdir -p "$APP_DIR/logs" && chmod 755 "$APP_DIR/logs"

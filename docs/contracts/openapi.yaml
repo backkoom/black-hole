@@ -12,7 +12,8 @@ info:
     覆盖范围（2026-11-05 逐条核对 `apps/api/src/**/routes.ts` 的路由注册表）：
     - 一期 §6.4 的 34 个操作（24 条路径）
     - 用户端批次 2/3 新增 23 个操作（16 条路径）：统计聚合、风险问题、文件资料、里程碑与会议
-    - 合计 **57 个操作 / 40 条路径**，与代码注册表逐条一致
+    - D-19 新增 2 个操作（2 条路径）：文件上传、文件下载
+    - 合计 **59 个操作 / 42 条路径**，与代码注册表逐条一致
 
     统一约定（§6.1）：
     - 成功 HTTP 200，body `{ code: 0, message: "ok", data: ... }`
@@ -2174,7 +2175,8 @@ paths:
       summary: 文件资料列表
       description: |
         批次 2 新增。返回当前用户可见的全部文件条目（不分页）。
-        ⚠️ **本期只登记元数据，不上传二进制**——没有上传 / 下载接口。
+        2026-11-07 起支持真实上传/下载（见 `/api/files/upload` 与 `/api/files/{id}/download`）。
+        `hasFile=false` 表示只有登记信息、没有实体（历史数据）。
         kind：doc / sheet / slide / image / pdf / archive / other；
         version 是版本号字符串（如 v1.0），currentVersion 标记是否当前版本。
         筛选可叠加：folderId / kind / projectId。
@@ -2285,6 +2287,80 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
               example: { code: 422, message: 文件名需 1 至 256 个字符 }
 
+  /api/files/upload:
+    post:
+      operationId: uploadFile
+      summary: 上传文件（multipart）
+      description: |
+        D-19 新增（2026-11-07）。`multipart/form-data`，文件字段名固定 `file`，
+        可选字段 `folderId` / `projectId`（顺序无关，服务端按名字取）。
+
+        - 落盘路径由服务端生成（`年/月/<uuid>.<ext>`），**不使用用户文件名做路径**；
+        - `sizeBytes` 以实际写入字节数为准，不信任客户端声明；同时记录 sha256；
+        - 单文件超过 `MAX_UPLOAD_MB`（默认 50MB）→ 413，且**不留下半截文件**；
+        - `kind` 由 MIME + 扩展名自动归类。
+      tags: [文件]
+      x-permission: 已登录
+      x-errors: [400, 401, 403, 413]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 要上传的文件
+                folderId:
+                  type: integer
+                  minimum: 1
+                  description: 归入的文件夹；不传 = 未分类
+                projectId:
+                  type: integer
+                  minimum: 1
+                  description: 关联项目；不传 = 不挂项目
+      responses:
+        '200':
+          description: 上传成功，返回登记后的文件
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { const: 0 }
+                  message: { const: 'ok' }
+                  data:
+                    type: object
+                    properties:
+                      file: { $ref: '#/components/schemas/FileAsset' }
+              example:
+                code: 0
+                message: ok
+                data:
+                  file:
+                    id: 31
+                    projectId: null
+                    projectName: null
+                    folderId: null
+                    folderName: null
+                    name: 巡检报告.pdf
+                    kind: pdf
+                    sizeBytes: 1048576
+                    version: v1.0
+                    currentVersion: true
+                    hasFile: true
+                    mimeType: application/pdf
+                    ownerName: 用户02
+                    createdAt: '2026-11-07T18:30:00+08:00'
+                    updatedAt: '2026-11-07T18:30:00+08:00'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenMustChange' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+
   /api/files/summary:
     get:
       operationId: getFileSummary
@@ -2348,6 +2424,40 @@ paths:
                   message: { const: 'ok' }
                   data: { type: 'null' }
               example: { code: 0, message: ok, data: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/ForbiddenOrigin' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/files/{id}/download:
+    get:
+      operationId: downloadFile
+      summary: 下载文件
+      description: |
+        D-19 新增（2026-11-07）。流式返回二进制，**不走统一 JSON 包裹**
+        （§6.1 的例外，与 CSV 模板导出同理）。
+
+        - `Content-Disposition` 同时给 ASCII 兜底的 `filename` 与 RFC 5987 的
+          `filename*=UTF-8''...`，中文名不乱码；
+        - `hasFile=false` 的历史登记数据 → 404「该文件只有登记信息，没有可下载的实体」；
+        - 数据库有记录但磁盘实体丢失 → 404「文件实体已丢失，请联系管理员从备份恢复」。
+      tags: [文件]
+      x-permission: 已登录；普通用户仅自己
+      x-errors: [400, 401, 403, 404]
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: 文件二进制流
+          headers:
+            Content-Disposition:
+              description: 'attachment; filename="..."; filename*=UTF-8''...'
+              schema: { type: string }
+            X-Content-Type-Options:
+              schema: { type: string, enum: [nosniff] }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/ForbiddenOrigin' }
@@ -3608,6 +3718,8 @@ components:
           sizeBytes,
           version,
           currentVersion,
+          hasFile,
+          mimeType,
           ownerName,
           createdAt,
           updatedAt,
@@ -3623,6 +3735,8 @@ components:
         sizeBytes: { type: integer, description: '字节数' }
         version: { type: string, maxLength: 16, description: '版本号字符串（如 v1.0）' }
         currentVersion: { type: boolean, description: '是否当前版本' }
+        hasFile: { type: boolean, description: '是否有可下载的实体；历史登记数据为 false' }
+        mimeType: { type: string, nullable: true, description: '上传时的内容类型，下载时原样回给浏览器' }
         ownerName: { type: string, nullable: true, description: '上传人姓名（JOIN 计算）' }
         createdAt: { type: string }
         updatedAt: { type: string }

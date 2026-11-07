@@ -11,10 +11,12 @@ import {
   Popconfirm,
   Select,
   Table,
+  Upload,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
   DeleteOutlined,
+  DownloadOutlined,
   FileExcelOutlined,
   FileImageOutlined,
   FileOutlined,
@@ -26,6 +28,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   SearchOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { FileAsset, FileKind } from '@blackhole/shared/types';
@@ -33,10 +36,12 @@ import {
   createFolder,
   deleteFile,
   deleteFolder,
+  downloadFile,
   fetchFileStats,
   fileKeys,
   listFiles,
   listFolders,
+  uploadFile,
 } from '../api/files';
 import { errorText } from '../api/messages';
 import { formatDateTime, todayShanghaiDate, toCalendarDate } from '../utils/datetime';
@@ -236,6 +241,18 @@ export function FilesPage() {
     },
   });
 
+  /** 上传：成功后刷新清单与统计，失败把服务端文案（413/422）原样给用户 */
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => uploadFile(file),
+    onSuccess: async (file) => {
+      await invalidate();
+      void message.success(`已上传 ${file.name}（${formatBytes(file.sizeBytes)}）`);
+    },
+    onError: (err) => {
+      void message.error(errorText(err));
+    },
+  });
+
   const deleteFileMutation = useMutation({
     mutationFn: (id: number) => deleteFile(id),
     onSuccess: async () => {
@@ -345,6 +362,14 @@ export function FilesPage() {
             menu={{
               items: [
                 {
+                  key: 'download',
+                  icon: <DownloadOutlined />,
+                  label: '下载',
+                  // 历史登记数据没有实体，按钮灰着并说明原因
+                  disabled: !row.hasFile,
+                },
+                { type: 'divider' as const },
+                {
                   key: 'delete',
                   icon: <DeleteOutlined />,
                   label: '删除',
@@ -354,6 +379,11 @@ export function FilesPage() {
               onClick: ({ key, domEvent }) => {
                 domEvent.stopPropagation();
                 if (key === 'delete') deleteFileMutation.mutate(row.id);
+                if (key === 'download') {
+                  void downloadFile(row.id, row.name).catch((err) => {
+                    void message.error(errorText(err));
+                  });
+                }
               },
             }}
           >
@@ -367,7 +397,7 @@ export function FilesPage() {
         ),
       },
     ],
-    [deleteFileMutation],
+    [deleteFileMutation, message],
   );
 
   const metricCards = [
@@ -406,6 +436,25 @@ export function FilesPage() {
       <PageHeader
         title="文件资料"
         subtitle="集中管理项目文件资料，支持团队共享与版本控制"
+        extra={
+          <Upload
+            multiple
+            showUploadList={false}
+            beforeUpload={(file) => {
+              uploadMutation.mutate(file);
+              // 交给 mutation 自己管状态，别让 antd 再维护一份上传列表
+              return Upload.LIST_IGNORE;
+            }}
+          >
+            <Button
+              type="primary"
+              icon={<UploadOutlined />}
+              loading={uploadMutation.isPending}
+            >
+              上传文件
+            </Button>
+          </Upload>
+        }
       />
 
       {/* 4 张指标卡 */}

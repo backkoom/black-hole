@@ -282,6 +282,10 @@ export interface FileAsset {
   sizeBytes: number;
   version: string;
   currentVersion: boolean;
+  /** 是否有可下载的实体（历史登记数据只有元数据 → false） */
+  hasFile: boolean;
+  /** 上传时记录的类型，下载时原样回给浏览器 */
+  mimeType: string | null;
   ownerName: string | null;
   createdAt: string;
   updatedAt: string;

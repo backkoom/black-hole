@@ -3,6 +3,7 @@ import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp } from '../lib/serialize.js';
 import type { SessionContext } from '../auth/service.js';
+import { removeBlob } from './storage.js';
 
 /**
  * 文件资料 —— 用户端「文件资料」页（稿子图7）。
@@ -22,6 +23,8 @@ interface AssetRow {
   size_bytes: string;
   version: string;
   current_version: boolean;
+  storage_key: string | null;
+  mime_type: string | null;
   owner_name: string | null;
   created_at: Date;
   updated_at: Date;
@@ -30,6 +33,7 @@ interface AssetRow {
 const ASSET_SELECT = `
 SELECT f.id, f.project_id, p.name AS project_name, f.folder_id, fo.name AS folder_name,
        f.name, f.kind, f.size_bytes, f.version, f.current_version,
+       f.storage_key, f.mime_type,
        u.name AS owner_name, f.created_at, f.updated_at
   FROM file_asset f
   LEFT JOIN project p ON p.id = f.project_id AND p.deleted_at IS NULL
@@ -49,6 +53,8 @@ function toAsset(r: AssetRow): FileAsset {
     sizeBytes: Number(r.size_bytes),
     version: r.version,
     currentVersion: r.current_version,
+    hasFile: r.storage_key !== null,
+    mimeType: r.mime_type,
     ownerName: r.owner_name,
     createdAt: formatTimestamp(r.created_at) as string,
     updatedAt: formatTimestamp(r.updated_at) as string,
@@ -117,9 +123,81 @@ export async function createFile(
   return toAsset(row);
 }
 
+/** 上传：先落盘、再写元数据（落盘失败就不该有脏数据） */
+export async function saveUploadedFile(
+  input: {
+    name: string;
+    kind: FileKind;
+    mimeType: string;
+    sizeBytes: number;
+    storageKey: string;
+    sha256: string;
+    folderId?: number | null;
+    projectId?: number | null;
+  },
+  actor: SessionContext,
+): Promise<FileAsset> {
+  const name = input.name.trim();
+  if (!name || name.length > 256) throw unprocessable('文件名需 1 至 256 个字符');
+  const ins = await queryOne<{ id: number }>(
+    `INSERT INTO file_asset
+       (project_id, user_id, folder_id, name, kind, size_bytes, version, current_version,
+        storage_key, mime_type, sha256)
+     VALUES ($1, $2, $3, $4, $5, $6, 'v1.0', true, $7, $8, $9)
+     RETURNING id`,
+    [
+      input.projectId ?? null,
+      actor.user.id,
+      input.folderId ?? null,
+      name,
+      input.kind,
+      input.sizeBytes,
+      input.storageKey,
+      input.mimeType,
+      input.sha256,
+    ],
+  );
+  if (!ins) throw notFound('创建失败');
+  const row = await queryOne<AssetRow>(`${ASSET_SELECT} WHERE f.id = $1`, [Number(ins.id)]);
+  if (!row) throw notFound('文件不存在');
+  return toAsset(row);
+}
+
+/** 下载取件：校验归属，返回磁盘键与原始文件名 */
+export async function getDownloadTarget(
+  id: number,
+  actor: SessionContext,
+): Promise<{ storageKey: string; name: string; mimeType: string | null; sizeBytes: number }> {
+  const row = await queryOne<{
+    storage_key: string | null;
+    name: string;
+    mime_type: string | null;
+    size_bytes: string;
+    user_id: number;
+  }>(
+    `SELECT storage_key, name, mime_type, size_bytes, user_id
+       FROM file_asset WHERE id = $1 AND deleted_at IS NULL`,
+    [id],
+  );
+  if (!row) throw notFound('文件不存在');
+  if (actor.user.role !== 'admin' && Number(row.user_id) !== actor.user.id) {
+    throw notFound('文件不存在');
+  }
+  if (!row.storage_key) {
+    // 历史登记数据（只有名字和大小，没有实体）—— 说清楚，别让人以为文件坏了
+    throw notFound('该文件只有登记信息，没有可下载的实体');
+  }
+  return {
+    storageKey: row.storage_key,
+    name: row.name,
+    mimeType: row.mime_type,
+    sizeBytes: Number(row.size_bytes),
+  };
+}
+
 export async function deleteFile(id: number, actor: SessionContext): Promise<void> {
-  const row = await queryOne<{ user_id: number }>(
-    'SELECT user_id FROM file_asset WHERE id = $1 AND deleted_at IS NULL',
+  const row = await queryOne<{ user_id: number; storage_key: string | null }>(
+    'SELECT user_id, storage_key FROM file_asset WHERE id = $1 AND deleted_at IS NULL',
     [id],
   );
   if (!row) throw notFound('文件不存在');
@@ -127,6 +205,13 @@ export async function deleteFile(id: number, actor: SessionContext): Promise<voi
     throw notFound('文件不存在');
   }
   await query('UPDATE file_asset SET deleted_at = now(), updated_at = now() WHERE id = $1', [id]);
+  // 行删了实体也删：不然磁盘只涨不降，而备份里还留着一堆没人能访问的文件。
+  // 删盘失败不影响接口结果（数据库已经标记删除），只记日志。
+  try {
+    await removeBlob(row.storage_key);
+  } catch (err) {
+    console.warn('[files] 删除实体失败', row.storage_key, err);
+  }
 }
 
 interface FolderRow {

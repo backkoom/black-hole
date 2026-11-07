@@ -41,3 +41,6 @@ dist-release/
 
 # Vite dev server 生成的临时文件（会随每次启动变化）
 apps/web/vite.config.ts.timestamp-*.mjs
+
+# 本地上传的文件实体（dev/test），不进仓库
+.data/

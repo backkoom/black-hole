@@ -12,7 +12,9 @@ import { fileURLToPath } from 'node:url';
  * 生产/验收不读 .env（直接用进程环境变量）。
  */
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT_ENV = join(here, '..', '..', '..', '.env');
+/** 仓库根：dist/config.js 与 src/config.ts 上溯三层都落在仓库根 */
+export const REPO_ROOT = join(here, '..', '..', '..');
+const ROOT_ENV = join(REPO_ROOT, '.env');
 
 if (process.env.NODE_ENV !== 'production') {
   loadDotenv({ path: ROOT_ENV });
@@ -71,6 +73,16 @@ const schema = z.object({
 
   /** 单条 SQL 超时（毫秒）。管理员可查全员统计 = 12 万行聚合，必须有上限 */
   DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(10000),
+
+  /**
+   * 文件实体存放目录（D-19）。
+   * 相对路径按**仓库根**解析，生产建议给绝对路径（如 /data/blackhole/storage/files），
+   * 这样换版本、换目录时文件不会跟着代码走丢。
+   */
+  FILE_STORAGE_DIR: z.string().min(1).default('.data/files'),
+
+  /** 单个文件上传上限（MB）。超过直接 413，不落盘 */
+  MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(2048).default(50),
 });
 
 export type AppConfig = z.infer<typeof schema>;

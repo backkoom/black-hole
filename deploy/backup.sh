@@ -14,6 +14,7 @@
 # 产出（同一次备份共用一个时间戳）：
 #   db-<时间戳>.dump      pg_dump 自定义格式（已压缩，pg_restore 直接读）
 #   web-<时间戳>.tar.gz   前端产物 apps/web/dist + RELEASE.txt
+#   files-<时间戳>.tar.gz 用户上传的文件实体（FILE_STORAGE_DIR，目录不存在则跳过）
 #   env-<时间戳>.bak      环境变量（含口令，权限 600，别外传）
 #   manifest-<时间戳>.txt 大小 / SHA256 / 版本 / 各表行数
 #
@@ -85,6 +86,19 @@ TAR_ARGS=(-czf "$WORK/web.tar.gz" -C "$APP_DIR")
 tar "${TAR_ARGS[@]}"
 log "前端产物 OK（$(du -h "$WORK/web.tar.gz" | cut -f1)）"
 
+# --- 2.5 上传的文件实体 ---
+# 只备份数据库不备份文件，恢复后「文件资料」里全是 hasFile=true 但点下载 404 的死链。
+# 目录从 api.env 读，跟应用用的是同一个配置；目录不存在（还没人传过）就跳过。
+FILES_DIR=$(grep -E '^FILE_STORAGE_DIR=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)
+FILES_DIR=${FILES_DIR:-/data/blackhole/storage/files}
+if [ -d "$FILES_DIR" ] && [ -n "$(ls -A "$FILES_DIR" 2>/dev/null)" ]; then
+  log "打包文件实体（$FILES_DIR）…"
+  tar -czf "$WORK/files.tar.gz" -C "$(dirname "$FILES_DIR")" "$(basename "$FILES_DIR")"
+  log "文件实体 OK（$(du -h "$WORK/files.tar.gz" | cut -f1)）"
+else
+  log "没有文件实体（$FILES_DIR 为空或不存在），跳过"
+fi
+
 # --- 3. 环境变量（含口令）---
 install -m 600 "$ENV_FILE" "$WORK/env.bak"
 log "环境变量 OK（权限 600，含口令，外传前先脱敏）"
@@ -97,7 +111,7 @@ log "环境变量 OK（权限 600，含口令，外传前先脱敏）"
   echo "数据库: $(printf '%s' "$DATABASE_URL" | sed -E 's#(://[^:]+:)[^@]+@#\1***@#')"
   echo
   echo "== 文件 =="
-  ( cd "$WORK" && sha256sum db.dump web.tar.gz env.bak )
+  ( cd "$WORK" && sha256sum db.dump web.tar.gz env.bak $( [ -f files.tar.gz ] && echo files.tar.gz ) )
   echo
   echo "== 各表行数 =="
   psql "$DATABASE_URL" -At -F' ' -c "

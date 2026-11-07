@@ -25,3 +25,8 @@ try {
 
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL ?? 'silent';
+
+// 文件上传用例：把上限压到 1MB，不用真造 50MB 文件；存储目录也隔离到 test-files，
+// 免得测试把开发环境的实体混在一起（跑完由 files.test.ts 清空）
+process.env.MAX_UPLOAD_MB = process.env.MAX_UPLOAD_MB ?? '1';
+process.env.FILE_STORAGE_DIR = process.env.FILE_STORAGE_DIR ?? '.data/test-files';

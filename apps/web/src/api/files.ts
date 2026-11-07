@@ -1,5 +1,5 @@
 import type { FileAsset, FileFolder, FileKind, FileStats } from '@blackhole/shared/types';
-import { apiDelete, apiGet, apiPost } from './client';
+import { apiBlob, apiDelete, apiGet, apiPost, apiPostForm } from './client';
 
 /**
  * 文件资料接口 —— 用户端「文件资料」页（稿子图7）。
@@ -9,13 +9,15 @@ import { apiDelete, apiGet, apiPost } from './client';
  * - GET    /api/files/summary   → FileStats
  * - POST   /api/files           body {name, kind?, sizeBytes?, folderId?, projectId?, version?}
  *                               → { file: FileAsset }
- * - DELETE /api/files/:id       → null（软删）
+ * - POST   /api/files/upload    multipart { file, folderId?, projectId? } → { file }
+ * - GET    /api/files/:id/download  二进制流（Content-Disposition: attachment）
+ * - DELETE /api/files/:id       → null（软删，同时删磁盘实体）
  * - GET    /api/folders         → { items: FileFolder[] }
  * - POST   /api/folders         body {name, projectId?, parentId?} → { folder: FileFolder }
  * - DELETE /api/folders/:id     → null（软删）
  *
  * 口径：
- * - ⚠️ **本期只登记元数据，不存二进制** —— 没有上传 / 下载接口；
+ * - 2026-11-07 起支持真实上传/下载；历史数据可能 hasFile=false（只有登记信息）；
  * - kind：doc / sheet / slide / image / pdf / archive / other；
  * - version 是版本号字符串（如 v1.2），currentVersion 标记是否当前版本；
  * - 普通用户强制只看自己名下的文件与文件夹，管理员不传 userId 即看全员；
@@ -42,7 +44,7 @@ export interface FolderListQuery {
   projectId?: number;
 }
 
-/** 登记文件（只登记元数据，不上传二进制） */
+/** 登记文件（只登记元数据；新页面用 uploadFile，这个留给导入/兼容） */
 export interface CreateFileInput {
   name: string;
   kind?: AssetKind;
@@ -93,6 +95,37 @@ export async function fetchFileStats(): Promise<FileStats> {
 export async function createFile(input: CreateFileInput): Promise<FileAsset> {
   const data = await apiPost<{ file: FileAsset }>('/files', input);
   return data.file;
+}
+
+/** 上传：浏览器文件对象 → 服务端落盘并登记 */
+export async function uploadFile(
+  file: File,
+  opts: { folderId?: number; projectId?: number } = {},
+): Promise<FileAsset> {
+  const form = new FormData();
+  form.append('file', file);
+  if (opts.folderId) form.append('folderId', String(opts.folderId));
+  if (opts.projectId) form.append('projectId', String(opts.projectId));
+  const data = await apiPostForm<{ file: FileAsset }>('/files/upload', form);
+  return data.file;
+}
+
+/**
+ * 下载：取流 → 触发浏览器保存。
+ * 用 Blob 而不是直接开新窗口，是因为同源接口要带 Cookie，
+ * 直接 window.open 在某些浏览器会把未登录态带过去。
+ */
+export async function downloadFile(id: number, name: string): Promise<void> {
+  const blob = await apiBlob(`/files/${id}/download`);
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  // 立刻 revoke 会让部分浏览器的下载中断，10 秒后回收足够安全
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 /** 删除文件（软删） */

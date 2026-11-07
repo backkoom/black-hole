@@ -592,6 +592,39 @@ test.describe('用户端 10 页', () => {
     await expect(page.locator('.wb-file-category-name', { hasText: 'PDF' })).toBeVisible();
   });
 
+  test('文件：真实上传后进列表，下载内容一致', async ({ page }) => {
+    await page.goto('/files', { waitUntil: 'networkidle' });
+
+    const name = `${PREFIX}上传-${Date.now()}.txt`;
+    const content = 'E2E 上传内容\n第二行\n';
+    // 直接喂给 antd Upload 的隐藏 input，走真实的 multipart 上传
+    await page.locator('input[type="file"]').setInputFiles({
+      name,
+      mimeType: 'text/plain',
+      buffer: Buffer.from(content, 'utf8'),
+    });
+
+    // 列表里出现这一行（服务端排序是 created_at 倒序，新文件在最前）
+    const row = page.locator('.ant-table-tbody tr.ant-table-row', { hasText: name }).first();
+    await expect(row).toBeVisible({ timeout: 10_000 });
+
+    // 下载：文件名与内容都要对
+    await row.getByLabel(/更多操作/).click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('menuitem', { name: '下载' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe(name);
+    const stream = await download.createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(chunk as Buffer);
+    expect(Buffer.concat(chunks).toString('utf8')).toBe(content);
+
+    // 清理：删掉刚传的，别污染后续用例
+    await row.getByLabel(/更多操作/).click();
+    await page.getByRole('menuitem', { name: '删除' }).click();
+    await expect(row).toBeHidden({ timeout: 10_000 });
+  });
+
   test('风险：风险列表与等级统计面板有数据', async ({ page }) => {
     const summary = await apiGet<{
       total: number;
