@@ -267,7 +267,7 @@ export function DiscussionsPanel({ projects, tasks }: DiscussionsPanelProps) {
             allowClear
             showSearch
             optionFilterProp="label"
-            placeholder="选择讨论对象（任务 / 项目）"
+            placeholder="选择讨论对象"
             value={target}
             onChange={(value) => setTarget(value)}
             options={targetOptions}

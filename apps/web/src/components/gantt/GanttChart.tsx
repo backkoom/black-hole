@@ -12,7 +12,6 @@ import {
   chooseTier,
   labelTicks,
   makeScale,
-  sliceBySegments,
   type TickLabel,
 } from './timeline';
 
@@ -22,7 +21,11 @@ import {
  * 构成：
  * - **顶部时间轴刻度**：按项目时间跨度自动分档（周 / 月 / 季），标签如「11月」「2027年1月」；
  * - **每个项目一行**：左侧项目名 + 阶段标签，右侧进度百分比 + 截止日；
- * - **时间条**：created_at → due_date 的区间条，条内按 progress 填充，条上叠阶段分段（不同底色）；
+ * - **时间条**：created_at → due_date 的区间条，条内按 progress 填充；
+ *   整条底色 = **项目自己的阶段色**（2026-11-07 定：不再按时间切片，
+ *   否则同一条会左半截一个色右半截另一个色，看着像 bug）；
+ * - **阶段背景带**：整张图背后按"各阶段最早开工时间"切出的竖向淡色带，
+ *   表达全公司的阶段推进（与项目条的颜色互相独立）；
  * - **里程碑菱形**：按 dueDate 定位在时间轴对应日期，已完成实心、未完成空心，hover 显示名称；
  * - **今天的竖虚线**：红色，贯穿整个甘特区；
  * - **悬停提示**：项目行 hover 显示「开始 / 截止 / 进度 / 阶段」。
@@ -358,7 +361,9 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
           {positioned.map(({ row, y }) =>
             row.kind === 'group' ? (
               <div className="wb-gantt-group-row" style={{ height: row.height }} key={row.key}>
-                <span className="wb-gantt-group-title">{row.title}</span>
+                <span className="wb-gantt-group-title" title={row.title}>
+                  {row.title}
+                </span>
                 <span className="wb-gantt-group-meta">
                   {row.count} 个 · {row.average}%
                 </span>
@@ -372,10 +377,13 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
                   onMouseEnter={() => showProjectHover(row.datum, 120, y)}
                   onMouseLeave={() => setHover(null)}
                 >
-                  <span className="wb-gantt-name-text">{row.datum.project.name}</span>
+                  <span className="wb-gantt-name-text" title={row.datum.project.name}>
+                    {row.datum.project.name}
+                  </span>
                 </span>
                 <span
                   className="wb-gantt-phase"
+                  title={row.datum.phase ?? '未设置阶段'}
                   style={{
                     background: TONE_SOFT[row.datum.phaseTone],
                     color: TONE_SOLID[row.datum.phaseTone],
@@ -439,7 +447,29 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
               />
             ))}
 
-            {/* 时间条：底色按阶段分段，条内按 progress 填充 */}
+            {/* 阶段背景带：全公司阶段推进的时间分段。
+                只做背景、不切条 —— 项目条永远是同一个颜色，
+                不会出现"一条进度条左半截是这个阶段色、右半截换个色"的怪现象。
+                分段规则见 timeline.ts buildPhaseBands 的注释（按各阶段最早开工切，互不重叠）。 */}
+            {bands.map((band) => {
+              const bx = scale.x(band.start);
+              const bw = Math.max(0, scale.x(band.end) - bx);
+              if (bw <= 0) return null;
+              return (
+                <rect
+                  key={`ph-${band.phase}-${band.start.format('YYYYMMDD')}`}
+                  x={bx}
+                  y={AXIS_H}
+                  width={bw}
+                  height={Math.max(0, totalHeight - AXIS_H - FOOTER_H)}
+                  fill={TONE_SOFT[categoryTone(band.phase)]}
+                  opacity={0.35}
+                  pointerEvents="none"
+                />
+              );
+            })}
+
+            {/* 时间条：整条按**项目自己的阶段**着色，条内按 progress 填充 */}
             {positioned.map(({ row, y }) => {
               if (row.kind === 'group') return null;
               const { datum } = row;
@@ -447,51 +477,14 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
               const x2 = scale.x(datum.end);
               const barW = Math.max(2, x2 - x1);
               const barY = y + (row.height - BAR_H) / 2;
-              const pieces = sliceBySegments(bands, datum.start, datum.end, datum.phase);
+              const baseFill = datum.phase ? TONE_SOFT[datum.phaseTone] : TRACK_COLOR;
               const filled = (barW * Math.max(0, Math.min(100, datum.project.progress))) / 100;
               return (
                 <g key={`bar-${row.key}`} pointerEvents="none">
-                  {/* 阶段分段底色（不同底色） */}
-                  {pieces.map((piece) => {
-                    const px1 = scale.x(piece.start);
-                    const px2 = scale.x(piece.end);
-                    return (
-                      <rect
-                        key={`${piece.start.format('MM-DD')}-${piece.end.format('MM-DD')}`}
-                        x={px1}
-                        y={barY}
-                        width={Math.max(1, px2 - px1)}
-                        height={BAR_H}
-                        rx={3}
-                        fill={piece.phase ? TONE_SOFT[categoryTone(piece.phase)] : TRACK_COLOR}
-                      />
-                    );
-                  })}
-                  {/* progress 填充（压在分段底色上） */}
-                  <rect
-                    x={x1}
-                    y={barY}
-                    width={filled}
-                    height={BAR_H}
-                    rx={3}
-                    fill={datum.color}
-                  />
-                  {/* 阶段分段界线 —— 画在最上层，已填充的部分也能看出分段 */}
-                  {pieces.slice(1).map((piece) => {
-                    const px = scale.x(piece.start);
-                    return (
-                      <line
-                        key={`div-${piece.start.format('MM-DD')}`}
-                        x1={px}
-                        y1={barY}
-                        x2={px}
-                        y2={barY + BAR_H}
-                        stroke="#ffffff"
-                        strokeWidth={1.5}
-                        opacity={0.9}
-                      />
-                    );
-                  })}
+                  {/* 整条底色 = 项目自己的阶段色（没有阶段时用中性灰） */}
+                  <rect x={x1} y={barY} width={barW} height={BAR_H} rx={3} fill={baseFill} />
+                  {/* progress 填充 */}
+                  <rect x={x1} y={barY} width={filled} height={BAR_H} rx={3} fill={datum.color} />
                 </g>
               );
             })}

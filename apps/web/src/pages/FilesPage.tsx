@@ -319,13 +319,13 @@ export function FilesPage() {
       {
         title: '类型',
         dataIndex: 'kind',
-        width: 92,
+        width: 78,
         render: (value: FileKind) => <ToneTag tone="blue">{FILE_KIND_META[value].label}</ToneTag>,
       },
       {
         title: '大小',
         dataIndex: 'sizeBytes',
-        width: 100,
+        width: 88,
         render: (value: number) => (
           <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatBytes(value)}</span>
         ),
@@ -333,7 +333,7 @@ export function FilesPage() {
       {
         title: '上传人',
         dataIndex: 'ownerName',
-        width: 140,
+        width: 120,
         render: (value: string | null) =>
           value ? (
             <span className="wb-owner-cell">
@@ -349,13 +349,13 @@ export function FilesPage() {
       {
         title: '修改时间',
         dataIndex: 'updatedAt',
-        width: 140,
+        width: 112,
         render: (value: string) => <span>{formatDateTime(value)}</span>,
       },
       {
         title: '操作',
         key: 'actions',
-        width: 56,
+        width: 46,
         render: (_value: unknown, row: FileAsset) => (
           <Dropdown
             trigger={['click']}
@@ -648,7 +648,7 @@ export function FilesPage() {
                     onChange: setSelectedKeys,
                   }}
                   pagination={false}
-                  scroll={{ x: 'max-content' }}
+                  scroll={{ x: 620 }}
                 />
               </StateBlock>
             </div>

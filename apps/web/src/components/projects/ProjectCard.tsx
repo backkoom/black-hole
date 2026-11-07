@@ -38,7 +38,9 @@ export function ProjectCard({ project, onOpen }: ProjectCardProps) {
       }}
     >
       <div className="wb-project-card-head">
-        <span className="wb-project-card-title">{project.name}</span>
+        <span className="wb-project-card-title" title={project.name}>
+          {project.name}
+        </span>
         <ProjectStatusTag status={project.status} />
       </div>
 

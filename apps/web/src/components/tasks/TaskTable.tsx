@@ -137,7 +137,7 @@ export function TaskTable({
       loading={loading}
       columns={columns}
       dataSource={tasks}
-      scroll={{ x: 'max-content' }}
+      scroll={{ x: 1040 }}
       locale={emptyText ? { emptyText } : undefined}
       pagination={pagination}
     />

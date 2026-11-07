@@ -213,7 +213,7 @@ export function TaskListTable({
       columns={columns}
       dataSource={tasks}
       rowSelection={rowSelection}
-      scroll={{ x: 'max-content' }}
+      scroll={{ x: 1040 }}
       locale={emptyText ? { emptyText } : undefined}
       pagination={pagination}
     />

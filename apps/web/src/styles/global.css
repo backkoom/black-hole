@@ -1541,20 +1541,32 @@ body {
 /* 12 列栅格：间距 18px（设计稿） */
 .wb-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* 前两行给左右栏（各自的 subgrid），第三行是底部通栏 */
+  grid-template-rows: auto auto auto;
   /* stretch：左右栏等高（start 会让两栏底部参差） */
   align-items: stretch;
 }
 
-/* 左列约 2/3 宽：项目进度 + 今日任务 */
+/* 左列约 2/3 宽：项目进度 + 今日任务
+ *
+ * ⚠️ 用 display:contents 把包裹层"打散"：两个包裹 div 不再各自成列，
+ * 里面的面板直接成为 .wb-grid 的栅格项。这样左右两栏的第 1 块、第 2 块
+ * 分别落在**同一行**上，行高由较高的那块决定 —— 之前两栏各自 flex 排列，
+ * 行与行之间会差 10px（左"项目进度"底 222 / 右"日程安排"底 212），
+ * CSS 拉不齐，只能改结构。
+ */
 .wb-grid-left {
-  display: flex;
+  display: grid;
   grid-column: span 8;
-  flex-direction: column;
+  /* 与右栏共用父栅格的两行（subgrid）—— 这样左右第 1 块、第 2 块
+   * 严格落在同一行上，边界一致；用 flex 列各排各的会差 10px。
+   * 不支持 subgrid 的浏览器（Chrome < 117）会退化成普通网格，只是对不齐，不会破版。 */
+  grid-template-rows: subgrid;
+  grid-row: span 2;
   gap: 18px;
   min-width: 0;
-  --wb-col-fill: 1;
 }
 
 /* 右列约 1/3 宽：日程安排 + 任务状态 */
@@ -1580,22 +1592,22 @@ body {
   height: 100%;
 }
 
-/* 同排的左右栏：末个面板撑满剩余高度 → 两栏底部对齐 */
-.wb-grid-left > section:last-child,
-.wb-grid-right > section:last-child {
-  flex: var(--wb-col-fill, auto);
+/* 栅格化之后不再需要"末个面板 flex 填充"：同一行的两块面板由
+ * align-items: stretch 自动等高，行高取两者较大者。这里保留一条
+ * 兜底，让面板内部内容顶部对齐（避免 stretch 把内容拉散）。 */
+.wb-grid-left > section,
+.wb-grid-right > section {
   display: flex;
   flex-direction: column;
 }
 
 .wb-grid-right {
-  display: flex;
+  display: grid;
   grid-column: span 4;
-  flex-direction: column;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
   gap: 18px;
   min-width: 0;
-  /* 末个面板撑满剩余高度 → 与左栏底部对齐（否则左右栏底部参差） */
-  --wb-col-fill: 1;
 }
 
 /* 底部通栏：项目列表 */

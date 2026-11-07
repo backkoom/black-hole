@@ -43,7 +43,8 @@ const VIEWPORTS = (process.env.PROBE_VP ?? '1920x1080,1600x900,1440x900,1366x768
   });
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: VIEWPORTS[0], locale: 'zh-CN' });
+// 现网是自签证书，探针要忽略证书错误，否则 goto 直接失败
+const ctx = await browser.newContext({ viewport: VIEWPORTS[0], locale: 'zh-CN', ignoreHTTPSErrors: true });
 const page = await ctx.newPage();
 
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
@@ -68,6 +69,9 @@ const probe = () => {
   // scrollWidth 天生大于自身宽度（视觉上完全正常），算进来会一直误报。
   const hOverflow = [...document.querySelectorAll('.wb-content *')]
     .filter((el) => !el.closest('.ant-progress'))
+    // 省略号元素天生 scrollWidth > clientWidth（这正是它的实现方式），
+    // 真正的缺陷是"该换行/该收缩却没处理"，所以在这里排除掉
+    .filter((el) => getComputedStyle(el).textOverflow !== 'ellipsis')
     .filter((el) => el.scrollWidth > el.clientWidth + 1)
     .filter((el) => {
       const st = getComputedStyle(el);
@@ -106,16 +110,22 @@ const probe = () => {
   const cardRows = [...rows.entries()].map(([top, ws]) => ({ top, n: ws.length, w: ws[0], min: Math.min(...ws) }));
 
   // 文本截断
+  // 只报"被切了却看不到全文"的：有 title（悬停能看到全文）不算缺陷
   const truncated = [...document.querySelectorAll('.wb-content *')]
     .filter((el) => {
       const st = getComputedStyle(el);
-      return st.textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth + 1 && el.children.length === 0;
+      if (st.textOverflow !== 'ellipsis' || el.children.length > 0) return false;
+      if (el.scrollWidth <= el.clientWidth + 1) return false;
+      return !el.getAttribute('title');
     })
     .map((el) => (el.textContent ?? '').trim().slice(0, 18))
     .slice(0, 6);
 
   // 同排面板底边是否齐平：按 top 分行，比较同一行各 section 的 bottom
-  const secs = [...document.querySelectorAll('.wb-content section')].map((el) => {
+  // 排除看板列：那是同一块看板里的泳道，高度天然不同，不是页面级面板
+  const secs = [...document.querySelectorAll('.wb-content section')]
+    .filter((el) => !el.closest('.wb-kanban-cols'))
+    .map((el) => {
     const b = el.getBoundingClientRect();
     return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left) };
   });

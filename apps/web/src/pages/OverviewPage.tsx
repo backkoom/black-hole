@@ -395,7 +395,9 @@ export function OverviewPage() {
                             {projectIcon(project.icon)}
                           </span>
                           <span style={{ flex: 1, minWidth: 0 }}>
-                            <span className="wb-project-card-title">{project.name}</span>
+                            <span className="wb-project-card-title" title={project.name}>
+                              {project.name}
+                            </span>
                             <span className="wb-project-card-sub">
                               {project.owner ?? '未指定负责人'}
                               {project.phase ? ` · ${project.phase}` : ''}

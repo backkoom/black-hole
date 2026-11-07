@@ -759,7 +759,7 @@ export function RisksPage() {
                   columns={columns}
                   dataSource={rows}
                   pagination={false}
-                  scroll={{ x: 'max-content' }}
+                  scroll={{ x: 900 }}
                 />
               </StateBlock>
             </div>
@@ -784,7 +784,7 @@ export function RisksPage() {
                   columns={planColumns}
                   dataSource={responsePlans}
                   pagination={false}
-                  scroll={{ x: 'max-content' }}
+                  scroll={{ x: 900 }}
                 />
               </StateBlock>
             </div>

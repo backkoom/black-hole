@@ -203,28 +203,8 @@ export function buildPhaseBands(
 }
 
 /**
- * 用阶段带切开项目条。
- *
- * - 项目**没有 phase** 时不切分（整条一个普通灰底）；
- * - 项目**有 phase** 时按阶段带切分，每段底色取该时段所处的阶段
- *   （阶段带互不重叠，归属唯一），于是条上能看出「跨了哪几个阶段」。
+ * 说明：2026-11-07 之后**不再用阶段带切项目条**。
+ * 条会按"项目自己的阶段"整条着色（见 GanttChart），阶段带只作为背景层，
+ * 原因是切过的条会出现"左半截一个阶段色、右半截换色"，用户看着像 bug。
+ * 因此删掉了原来的 sliceBySegments()。
  */
-export function sliceBySegments(
-  bands: PhaseBand[],
-  barStart: Dayjs,
-  barEnd: Dayjs,
-  ownPhase: string | null,
-): BarPiece[] {
-  if (!ownPhase) {
-    return [{ start: barStart, end: barEnd, phase: null }];
-  }
-  const pieces: BarPiece[] = [];
-  bands.forEach((band) => {
-    const start = band.start.isAfter(barStart) ? band.start : barStart;
-    const end = band.end.isBefore(barEnd) ? band.end : barEnd;
-    if (!start.isBefore(end)) return;
-    pieces.push({ start, end, phase: band.phase });
-  });
-  if (pieces.length === 0) return [{ start: barStart, end: barEnd, phase: null }];
-  return pieces;
-}

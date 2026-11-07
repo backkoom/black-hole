@@ -685,7 +685,9 @@ export function CalendarPage() {
                     <span className="wb-cal-timeline-time">{entry.time || '全天'}</span>
                     <i className="wb-cal-dot" style={{ background: entry.color }} />
                     <span className="wb-cal-timeline-body">
-                      <span className="wb-cal-timeline-title">{entry.title}</span>
+                      <span className="wb-cal-timeline-title" title={entry.title}>
+                        {entry.title}
+                      </span>
                       <span className="wb-cal-timeline-sub">{entry.subtitle}</span>
                       {entry.people.length > 0 ? (
                         <AvatarGroup people={entry.people} max={3} size={20} />
