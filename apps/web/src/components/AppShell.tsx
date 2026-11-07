@@ -161,8 +161,8 @@ export function AppShell() {
     <Layout className="wb-layout">
       <Sider width={designVars.siderWidth} className="wb-sider" theme="light">
         <div className="wb-brand">
-          <img className="wb-brand-logo" src="/brand/blackhole-icon.png" alt="" aria-hidden="true" />
-          <span className="wb-brand-name">Black Hole</span>
+          {/* 横版商标（标记 + BLACKHOLE + 标语），设计稿直接切出的透明底原图 */}
+          <img className="wb-brand-lockup" src="/brand/blackhole-horizontal.png" alt="Black Hole" />
         </div>
 
         <Menu

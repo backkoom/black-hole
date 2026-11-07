@@ -71,8 +71,7 @@ export function LoginPage() {
     <div className="wb-login">
       <Card className="wb-login-card">
         <div className="wb-brand wb-login-brand">
-          <img className="wb-brand-logo" src="/brand/blackhole-icon.png" alt="" aria-hidden="true" />
-          <span className="wb-brand-name">Black Hole</span>
+          <img className="wb-brand-lockup" src="/brand/blackhole-horizontal.png" alt="Black Hole" />
         </div>
 
         {error ? (

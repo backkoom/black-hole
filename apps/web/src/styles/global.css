@@ -192,37 +192,18 @@ body {
 .wb-brand {
   display: flex;
   flex: 0 0 auto;
-  gap: 10px;
   align-items: center;
-  padding: 4px 10px 20px;
+  padding: 8px 9px 16px;
 }
 
-/* 品牌标记：用设计稿切出来的深色圆角图标（发光环），
- * 原来是个写「项」的蓝色方块占位。
- * ⚠️ 图标本身是深色底 + 发光，放在白色侧栏上必须保留圆角，否则像一个黑方块。 */
-.wb-brand-logo {
+/* 商标：**横版原图**（标记 + BLACKHOLE + 标语），透明底 PNG 直接拿来用。
+ * 没有圆角、没有底色——设计稿本身就是透明底，再加圆角会把它切成方块。
+ * 侧栏 208px 宽，左右各留 9px，撑满 190px。 */
+.wb-brand-lockup {
   display: block;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  object-fit: contain;
-}
-
-/* 登录页用大一号 */
-.wb-login-brand .wb-brand-logo {
-  flex-basis: 40px;
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-}
-
-.wb-brand-name {
-  /* 侧栏改浅色后，白字会看不见 —— 用正文深色 */
-  color: var(--text);
-  font-size: 14.5px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
 }
 
 /* 顶部栏右侧：用户名 + 角色标签 + 退出 */
@@ -382,8 +363,9 @@ body {
   padding: 0 0 20px;
 }
 
-.wb-login-brand .wb-brand-name {
-  color: var(--text);
+/* 登录卡片内容宽约 312px，商标放到 300px —— 标语那一行才看得清 */
+.wb-login-brand .wb-brand-lockup {
+  max-width: 300px;
 }
 
 .wb-login-alert {
