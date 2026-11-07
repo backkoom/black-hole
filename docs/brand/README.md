@@ -35,6 +35,7 @@ python scripts/brand-assets.py \
 ```
 
 - 输入可以是**真透明 PNG**（推荐，无损直接用），也可以是**白底 JPG/PNG**（脚本自动抠白）。
+- 只想换软件内那套（竖版已经在 GitHub 上手工传过）：加 `--skip-vertical`，脚本不会碰 `docs/brand/blackhole-brand.png`。
 - 脚本会重出上面全部文件，`--build` 顺便构建前端。
 - 之后再打包部署（见 `deploy/README.md`）。
 

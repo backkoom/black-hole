@@ -112,23 +112,28 @@ def save(img: Image.Image, path: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="生成 Black Hole 品牌资产")
-    ap.add_argument("--vertical", required=True, help="竖版原图（GitHub 用）")
+    ap.add_argument("--vertical", help="竖版原图（GitHub 用）")
     ap.add_argument("--horizontal", required=True, help="横版原图（软件内用）")
+    ap.add_argument("--skip-vertical", action="store_true",
+                    help="只处理横版，不动 docs/brand 里的竖版（竖版已手工上传时用这个）")
     ap.add_argument("--build", action="store_true", help="顺便执行前端构建")
     args = ap.parse_args()
 
+    if not args.vertical and not args.skip_vertical:
+        raise SystemExit("要么给 --vertical，要么明确加 --skip-vertical")
     for p in (args.vertical, args.horizontal):
-        if not os.path.isfile(p):
+        if p and not os.path.isfile(p):
             raise SystemExit(f"找不到文件: {p}")
 
     print("[1/5] 读取原图")
-    vert_src = load_rgba(args.vertical)
     horz_src = load_rgba(args.horizontal)
+    vert_src = load_rgba(args.vertical) if args.vertical else None
 
-    print("[2/5] 竖版（GitHub）—— 保持原始像素，不缩放")
-    vert = trim(vert_src, 0.045)
-    save(vert, os.path.join(DOC, "blackhole-brand.png"))
-    save(vert, os.path.join(DOC, "blackhole-vertical.png"))  # 旧路径兜底
+    print("[2/5] 竖版（GitHub）" + ("—— 按要求跳过，不动现有文件" if args.skip_vertical else "—— 保持原始像素，不缩放"))
+    if not args.skip_vertical and vert_src is not None:
+        vert = trim(vert_src, 0.045)
+        save(vert, os.path.join(DOC, "blackhole-brand.png"))
+        save(vert, os.path.join(DOC, "blackhole-vertical.png"))  # 旧路径兜底
 
     print("[3/5] 横版（软件内）—— 预乘缩放")
     horz = trim(horz_src, 0.02)
