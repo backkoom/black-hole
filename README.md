@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/brand/blackhole-vertical.png" alt="Black Hole" width="200" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/blackhole-mark.png" />
+    <img src="docs/brand/blackhole-vertical.png" alt="Black Hole" width="220" />
+  </picture>
 </p>
 
 # Black Hole
