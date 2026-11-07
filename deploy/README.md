@@ -171,6 +171,7 @@ sudo bash /tmp/blackhole-release-*/scripts/install.sh --tarball /tmp/blackhole-r
 |---|---|---|
 | 内网 IP 访问（现网就是这种） | `deploy/nginx-https.conf` | `server_name _`，80→301→443，自签证书，不含 HSTS |
 | 有正式域名/证书 | `deploy/nginx.conf.example` | 带 `server_name`、HSTS、ACME 落点，按注释改域名与证书路径 |
+| 要跑**双 API 实例**（L1 高可用） | `deploy/nginx-https-lb.conf` | 换掉 `proxy_pass` 为 upstream，详见 §8.1 |
 
 ```bash
 sudo cp /data/blackhole/deploy/nginx-https.conf /etc/nginx/conf.d/blackhole.conf
@@ -206,8 +207,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 | 情况 | 怎么做 |
 |---|---|
-| 有企业 CA / 正式域名证书 | 把 `.crt`/`.key` 放 `/etc/nginx/ssl/`，改模板里两行路径即可 |
-| 什么都没有，先把 HTTPS 跑起来 | `sudo bash deploy/gen-selfsigned-cert.sh 192.168.102.102`（自签，浏览器提示不安全，点继续访问）。**现网就是这么跑的** |
+| 有企业 CA / 正式域名证书 | **证书由使用方自备**。把 `.crt`/`.key` 放 `/etc/nginx/ssl/`，改模板里两行路径即可——本项目不签发、不代管证书 |
+| 什么都没有，先把 HTTPS 跑起来 | 自签只是**内网过渡**：`sudo bash deploy/gen-selfsigned-cert.sh <IP或域名>`（浏览器会提示不安全）。正式验收前必须换成使用方提供的证书 |
 | 有公网域名 | 装 certbot 走 ACME，模板里已留 `/.well-known/acme-challenge/` 落点 |
 
 **切 HTTPS 必须同时改 4 处，少一处就登不上或起不来：**
@@ -400,8 +401,20 @@ journalctl -u blackhole-backup.service -n 40 --no-pager
 
 备份内容（每次一个时间戳目录，四件套）：数据库 `pg_dump` 自定义格式、前端产物、
 `api.env`（含口令，权限 600）、`manifest.txt`（SHA256 + 版本 + 各表行数）。
-默认放 `/data/backups/blackhole`，保留最近 14 份；**建议改到另一块盘或 NAS**：
-`sudo systemctl edit blackhole-backup.service` 里加 `Environment=DEST=/mnt/backup/blackhole`。
+**备份位置 / 份数 / 开关都是配置项**，写在 `/etc/blackhole/api.env` 里（改完不用重启，下次触发即生效）：
+
+```bash
+# /etc/blackhole/api.env
+BACKUP_DIR=/data/backups/blackhole   # 落哪：本地目录，或已挂载的 NAS 路径
+BACKUP_KEEP=14                       # 保留几份（按时间戳目录，超出删最旧）
+BACKUP_ENABLED=true                  # false = 这台机器不做定时备份（脚本直接退出 0，不报红）
+```
+
+> ⚠️ 用 NAS / 另一块盘时，**先确认已挂载**（`df -h <路径>`）。没挂上时脚本会写到本地盘，
+> 看起来"备份成功"，其实盘一挂两样都没——这是最常见的踩坑。
+>
+> 改完可以立刻验证一次：`sudo systemctl start blackhole-backup.service`，
+> 然后 `ls $BACKUP_DIR` 看有没有新的时间戳目录。
 
 **恢复演练（每季度做一次，别等真出事才试）：**
 
@@ -528,3 +541,98 @@ sudo systemctl start blackhole-api
 | 冒烟脚本找不到文件 | 用了 `scripts/smoke.sh`（服务器上没这个路径） | 改成 `deploy/smoke.sh`（见 §5） |
 | 冒烟脚本登录 403「请求来源不被信任」 | `--direct` 时 Origin 与 `APP_ORIGIN` 不一致 | 加 `--origin=<APP_ORIGIN 的值>` |
 | 冒烟脚本报「未提供 SEED_ADMIN_PASSWORD」 | 口令三个来源都没有 | 设 `SEED_ADMIN_PASSWORD_FILE` 指向口令文件（见 §5.1） |
+
+---
+
+## 8. 高可用（可选）
+
+> 现状：单机三层（nginx / API / PostgreSQL）已经是分离的，只是跑在一台机器上。
+> 下面两级按需启用，**不启用不影响任何功能**。
+
+### 8.1 L1：API 双实例（代码零改动，已在 192.168.102.102 实测）
+
+API 是**无状态**的（会话存在数据库里），所以直接起两个进程、nginx 轮询即可。
+单实例挂掉时 nginx 自动切到另一个，用户无感。
+
+```bash
+# 1) 装模板单元（一个文件，端口由实例名决定）
+sudo cp /data/blackhole/deploy/blackhole-api@.service /etc/systemd/system/
+sudo systemctl daemon-reload
+
+# 2) 停单实例，起两个
+sudo systemctl disable --now blackhole-api
+sudo systemctl enable --now blackhole-api@3001 blackhole-api@3002
+
+# 3) nginx 换成 upstream 版本
+sudo cp /data/blackhole/deploy/nginx-https-lb.conf /etc/nginx/conf.d/blackhole.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**验证（三步都要看）**
+
+```bash
+curl -s -o /dev/null -w '3001=%{http_code}\n' http://127.0.0.1:3001/api/health   # 或 /api/auth/me 401 也算通
+curl -s -o /dev/null -w '3002=%{http_code}\n' http://127.0.0.1:3002/api/health
+curl -sk -o /dev/null -w 'site=%{http_code}\n' https://<域名>/
+
+# 拔掉一个，站点应仍然可用
+sudo systemctl stop blackhole-api@3002
+curl -sk -o /dev/null -w 'after-kill=%{http_code}\n' https://<域名>/
+sudo systemctl start blackhole-api@3002
+```
+
+**降回单实例**
+
+```bash
+sudo systemctl disable --now blackhole-api@3001 blackhole-api@3002
+sudo systemctl enable --now blackhole-api
+sudo cp /data/blackhole/deploy/nginx-https.conf /etc/nginx/conf.d/blackhole.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> ⚠️ 升级（`install.sh`）会自动识别当前是单实例还是多实例：多实例时只重启 `@3001/@3002`，
+> 不会再拉起 3000 那个单元。
+
+### 8.2 L2：PostgreSQL 主从（手册，未在现网实施）
+
+> 这一步需要**第二台机器**，且 PG 大版本必须一致（本项目统一 18）。
+> 本项目不引 keepalived / VIP / 中间件，**不做自动故障转移**——切换是人工步骤。
+
+**主库（现有这台）**
+
+```sql
+-- postgresql.conf
+wal_level = replica
+max_wal_senders = 10
+wal_keep_size = 512MB
+-- pg_hba.conf：只允许从库 IP 复制
+host replication replicator <从库IP>/32 scram-sha-256
+```
+
+```sql
+CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD '<强口令>';
+SELECT pg_reload_conf();
+```
+
+**从库（第二台）**
+
+```bash
+sudo -u postgres pg_basebackup -h <主库IP> -U replicator -D /var/lib/postgresql/18/main \
+     -Fp -Xs -P -R      # -R 会自动写 standby.signal 与 primary_conninfo
+sudo systemctl start postgresql
+sudo -u postgres psql -c 'select status, sender_host from pg_stat_wal_receiver'   # streaming 即成功
+```
+
+**切换（主库挂了）**
+
+```bash
+# 从库提升为主
+sudo -u postgres pg_ctl promote -D /var/lib/postgresql/18/main
+# 改应用连接串
+sudo vi /etc/blackhole/api.env     # DATABASE_URL 指向新的主
+sudo systemctl restart blackhole-api
+bash /data/blackhole/deploy/smoke.sh https://<域名> --insecure
+```
+
+> ⚠️ 提升后**原主库不能再直接启回来**（会脑裂）：确认它已下线，重建为从库再入集群。
+> 这一步建议写到客户运维手册里，作为演练项。

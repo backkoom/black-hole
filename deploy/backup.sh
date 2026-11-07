@@ -23,15 +23,31 @@ set -euo pipefail
 
 ENV_FILE=${ENV_FILE:-/etc/blackhole/api.env}
 APP_DIR=${APP_DIR:-/data/blackhole}
-# 目标目录优先级：第 1 个参数 > 环境变量 DEST（systemd 的 Environment= 用这个） > 默认
-# ⚠️ 2026-11-06 之前只认参数，README 里写的 `Environment=DEST=...` 其实不生效。
-DEST=${1:-${DEST:-/data/backups/blackhole}}
-KEEP=${KEEP:-14}
+
+# --- 三个可配置项（写在 /etc/blackhole/api.env 里，由 systemd EnvironmentFile 注入）---
+#   BACKUP_DIR      备份落到哪（本地目录 / 已挂载的 NAS 路径）
+#   BACKUP_KEEP     保留多少份（按时间戳目录，超出删最旧的）
+#   BACKUP_ENABLED  是否允许定时任务跑；false 时脚本直接退出 0（timer 不会报红）
+#
+# 优先级：命令行参数 > 环境变量 > 默认值。
+# ⚠️ 2026-11-06 之前只认位置参数，README 里写的 Environment= 其实不生效，已修。
+DEST=${1:-${BACKUP_DIR:-${DEST:-/data/backups/blackhole}}}
+KEEP=${BACKUP_KEEP:-${KEEP:-14}}
+ENABLED=${BACKUP_ENABLED:-true}
 
 log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
 die() { printf '[%s] 失败：%s\n' "$(date '+%F %T')" "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "要 root（需读 $ENV_FILE 与 $APP_DIR）"
+
+# 关闭开关：显式 false/0/no/off 时安静退出（退出码 0，避免 timer 天天报失败）
+case "${ENABLED,,}" in
+  false|0|no|off)
+    printf '[%s] 备份已关闭（BACKUP_ENABLED=%s），跳过\n' "$(date '+%F %T')" "$ENABLED"
+    exit 0
+    ;;
+esac
+
 [[ -r $ENV_FILE ]] || die "读不到 $ENV_FILE"
 [[ -d $APP_DIR ]] || die "找不到安装目录 $APP_DIR"
 
@@ -45,7 +61,7 @@ WORK="$DEST/$STAMP"
 mkdir -p "$WORK"
 chmod 700 "$DEST" "$WORK"
 
-log "备份开始 → $WORK"
+log "备份开始 → $WORK（保留 ${KEEP} 份）"
 
 # --- 1. 数据库 ---
 log "导出数据库…"

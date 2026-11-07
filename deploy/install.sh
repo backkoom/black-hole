@@ -153,15 +153,46 @@ fi
 if command -v systemctl >/dev/null; then
   log "安装 systemd unit"
   cp "$APP_DIR/deploy/blackhole-api.service" /etc/systemd/system/$SERVICE.service
+  # 多实例（L1）用的模板单元：存在就一起更新，不存在也无所谓
+  if [ -f "$APP_DIR/deploy/blackhole-api@.service" ]; then
+    cp "$APP_DIR/deploy/blackhole-api@.service" /etc/systemd/system/
+  fi
   systemctl daemon-reload
-  systemctl enable $SERVICE >/dev/null 2>&1 || true
-  systemctl restart $SERVICE
-  sleep 3
-  if systemctl is-active --quiet $SERVICE; then
-    log "服务已启动：systemctl status $SERVICE"
+
+  # 判断是不是「多实例（L1）」模式：有 blackhole-api@*.service 在跑就是
+  if systemctl list-units --type=service --state=running --no-legend 'blackhole-api@*.service' 2>/dev/null | grep -q .; then
+    L1=1
   else
-    warn "服务没起来，看日志：journalctl -u $SERVICE -n 50 --no-pager"
-    exit 3
+    L1=0
+  fi
+
+  if [ "$L1" -eq 0 ]; then
+    systemctl enable $SERVICE >/dev/null 2>&1 || true
+    systemctl restart $SERVICE
+  else
+    log "检测到多实例在跑（blackhole-api@*），跳过单实例单元"
+    for unit in $(systemctl list-units --type=service --state=running --no-legend 'blackhole-api@*.service' | awk '{print $1}'); do
+      log "重启多实例：$unit"
+      systemctl restart "$unit" || warn "$unit 重启失败"
+    done
+  fi
+
+  sleep 3
+  if [ "$L1" -eq 0 ]; then
+    if systemctl is-active --quiet $SERVICE; then
+      log "服务已启动：systemctl status $SERVICE"
+    else
+      warn "服务没起来，看日志：journalctl -u $SERVICE -n 50 --no-pager"
+      exit 3
+    fi
+  else
+    alive=$(systemctl list-units --type=service --state=running --no-legend 'blackhole-api@*.service' | wc -l)
+    if [ "$alive" -ge 1 ]; then
+      log "多实例运行中：$alive 个（nginx 反代 3001/3002）"
+    else
+      warn "多实例一个都没起来，看日志：journalctl -u blackhole-api@3001 -n 50"
+      exit 3
+    fi
   fi
 else
   warn "没有 systemd，请手动启动：cd $APP_DIR/apps/api && node dist/server.js"

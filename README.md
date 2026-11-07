@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web/public/brand/blackhole-vertical.png" alt="Black Hole" width="200" />
+  <img src="docs/brand/blackhole-vertical.png" alt="Black Hole" width="200" />
 </p>
 
 # Black Hole

@@ -1,0 +1,23 @@
+[Unit]
+Description=Black Hole API (Fastify) —— 多实例 %i 端口
+Documentation=file:///data/blackhole/deploy/README.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blackhole
+Group=blackhole
+WorkingDirectory=/data/blackhole/apps/api
+# 共用同一份环境变量
+EnvironmentFile=/etc/blackhole/api.env
+# ⚠️ 端口必须在 ExecStart 里传：systemd 的 %i **不会在 Environment= 里展开**，
+#    写成 Environment=PORT=%i 会导致两个实例都监听到 api.env 里的 3000 上（2026-11-07 踩过）。
+ExecStart=/usr/bin/env PORT=%i /usr/bin/node /data/blackhole/apps/api/dist/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
