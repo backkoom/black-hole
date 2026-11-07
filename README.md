@@ -32,10 +32,10 @@ PostgreSQL 18
 | `/calendar` | 日程安排 | 周一起始月历 + 今日时间轴 + 里程碑 + 任务提醒 |
 | `/progress` | 进度追踪 | 项目进度计划 + 健康度 + 阶段进度 + 偏差分析 |
 | `/team` | 团队协作 | 成员 · 角色分工 · 会议纪要 |
-| `/files` | 文件资料 | 文件夹 / 分类 / 清单 / 版本历史（**只存元数据**） |
+| `/files` | 文件资料 | 文件夹 / 分类 / 清单 / **上传下载** / 版本历史（实体按 uuid 落盘） |
 | `/risks` | 风险问题管理 | 3×3 影响×概率矩阵 · 应对计划 · 状态统计 |
 | `/analytics` | 数据统计 | 完成趋势 · 分类分布 · 进度分布 · 团队工作量 · 排行 |
-| `/settings/*` | 设置 | 个人资料 / 修改密码 / 账号管理 / 组织架构 / 工作台模板 |
+| `/settings/*` | 设置 | 个人资料 / 修改密码 / 账号管理 / 组织架构 / 工作台模板 / **系统设置**（备份·存储·证书） |
 
 ### 管理员端
 
@@ -146,7 +146,15 @@ python3 scripts/scrub-sensitive.py --scan   # 扫工作区 + git 历史
 | [docs/contracts/modules.md](docs/contracts/modules.md) | 15 个模块（12 active + 3 placeholder）与 config schema |
 | [docs/contracts/pages.md](docs/contracts/pages.md) | 页面组件树、字段、交互、状态 |
 | [docs/contracts/acceptance.md](docs/contracts/acceptance.md) | 验收项映射到测试与手工步骤 |
-| [deploy/README.md](deploy/README.md) | 部署手册 |
+| [docs/contracts/perf-report.md](docs/contracts/perf-report.md) | 500 人规模验证实测报告 |
+| [deploy/README.md](deploy/README.md) | 部署手册（安装 / nginx / 备份 / 高可用） |
+
+### 使用指南（给运维和最终用户看的）
+
+| 文件 | 内容 |
+|---|---|
+| [docs/使用指南-账号批量导入.md](docs/使用指南-账号批量导入.md) | CSV 格式、界面步骤、初始密码分发、常见错误对照 |
+| [docs/使用指南-证书替换与异地备份.md](docs/使用指南-证书替换与异地备份.md) | 换正式 HTTPS 证书（含权限坑）、把备份放到 NAS / 另一块盘（含恢复演练） |
 
 页面截图见 `docs/screenshots/`。
 
