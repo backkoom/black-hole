@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/blackhole-brand.png?v=2#gh-light-mode-only" alt="Black Hole" width="240" />
+  <img src="docs/brand/blackhole-brand.png?v=3#gh-light-mode-only" alt="Black Hole" width="240" />
   <img src="docs/brand/blackhole-mark.png#gh-dark-mode-only" alt="Black Hole" width="120" />
 </p>
 
