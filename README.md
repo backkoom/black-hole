@@ -156,7 +156,7 @@ python3 scripts/scrub-sensitive.py --scan   # 扫工作区 + git 历史
 | [docs/使用指南-账号批量导入.md](docs/使用指南-账号批量导入.md) | CSV 格式、界面步骤、初始密码分发、常见错误对照 |
 | [docs/使用指南-证书替换与异地备份.md](docs/使用指南-证书替换与异地备份.md) | 换正式 HTTPS 证书（含权限坑）、把备份放到 NAS / 另一块盘（含恢复演练） |
 
-页面截图见 `docs/screenshots/`。
+页面截图见 `docs/screenshots/`；完整的文档导航见 [docs/README.md](docs/README.md)。
 
 ---
 
