@@ -1,147 +1,103 @@
 import { useMemo } from 'react';
-import { App as AntdApp, Button, Dropdown } from 'antd';
+import { Avatar, Button } from 'antd';
 import {
+  CalendarOutlined,
   CheckOutlined,
   FolderOutlined,
-  MoreOutlined,
-  PlusOutlined,
   ScheduleOutlined,
-  TeamOutlined,
 } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import type { Project, Task } from '@blackhole/shared/types';
-import { updateTaskStatus } from '../api/tasks';
-import { errorText } from '../api/messages';
-import { useAssigneeOptions, useUserProjects, useUserTasks } from '../hooks/useUserData';
-import { useAuth } from '../auth/AuthContext';
-import { useTaskCounts, useTodayTasks } from '../hooks/useTaskCounts';
-import { invalidateUserData } from '../hooks/useInvalidate';
-import { formatDateOnly, formatDateTime, todayShanghaiDate } from '../utils/datetime';
-import {
-  dailyDateSeries,
-  dailyDoneSeries,
-  dailyOpenSeries,
-  seriesDelta,
-  seriesSum,
-} from '../utils/trend';
+import type { Project } from '@blackhole/shared/types';
+import { listIdeas } from '../api/ideas';
+import { listTasks } from '../api/tasks';
+import { useUserProjects } from '../hooks/useUserData';
+import { useTaskCounts } from '../hooks/useTaskCounts';
+import { useStatsTeamWorkload } from '../hooks/useUserStats';
+import { formatDateOnly } from '../utils/datetime';
 import { designVars } from '../styles/theme';
-import { LegendItem, MetricCard, Panel, STATUS_TONE, ToneTag } from '../components/ui';
+import { LegendItem, MetricCard, Panel } from '../components/ui';
 import { DonutChart } from '../components/ui/charts';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
 import { ThinProgress } from '../components/user/ThinProgress';
 import { projectColor, projectIcon } from '../components/user/visuals';
+import { AnalyticsPage } from './AnalyticsPage';
 
 /**
- * 项目总览页（老六最终用户端界面 · 图1）。
+ * 工作台（D-24，2026-11-08 改版）。
  *
- * 组件树：
- * OverviewPage
- * ├─ PageHeader(「工作台」+ 副标题 + 右侧日期/日历按钮)
- * └─ .wb-grid（12 列栅格，间距 18px）
- *    ├─ .wb-metric-row（4 张指标卡）
- *    ├─ .wb-grid-left（约 2/3）
- *    │  ├─ Panel「项目进度」：图标 + 名称 + 细进度条 + 百分比 + 日期
- *    │  └─ Panel「今日任务」：勾选圈 + 名称 + 优先级标签 + 时间
- *    ├─ .wb-grid-right（约 1/3）
- *    │  ├─ Panel「日程安排」：日期 + 时间轴（时间 / 彩点 / 标题 / 副标题）
- *    │  └─ Panel「任务状态」：环形图 + 图例
- *    └─ .wb-grid-full（通栏）
- *       └─ Panel「项目列表」：4 张项目卡片（图标 / 进度条 / 成员数 / ⋯）
+ * 产品定位是**团队工作台**：一屏看清"今天做什么、这周这月推进到哪"，
+ * 哪个数字不对就点进去处理。所以这一页只做**聚合展示 + 下钻入口**，
+ * 不再重复放明细表（明细都在「项目管理」的五个视图里）。
  *
- * 数据口径（全部来自真实接口，没有 mock）：
- * - 项目进度、项目列表：GET /api/projects（progress 由服务端实时算）
- * - 今日任务、日程安排：GET /api/tasks 中 due_date = 今天（Asia/Shanghai）的任务
- * - 任务状态、待办任务：GET /api/stats/tasks 的 todo / doing / done
- * - 团队成员：GET /api/users 的账号数；普通用户没有该接口权限时，
- *   退化为「项目成员 + 任务负责人」的去重人数（同样是真实数据）
- * - 涨跌与折线趋势：由真实任务的 createdAt / doneAt 聚合（近 7 天），不编造
+ * 布局（对应老六给的草图）：
+ *   ① 六张指标卡：我的工作 / 今日任务 / 周工作 / 月度工作 / 季度工作 / 年度工作
+ *      —— 整张卡可点，点数字直接跳到对应页面（二级下钻）
+ *         我的工作 → 项目管理 › 年度规划（原「项目档案」，改名「年度工作规划」）
+ *         今日任务 → 项目管理 › 任务（?due=today）
+ *         周工作   → 项目管理 › 周进度（原「进度追踪」，改名「周工作完成进度」）
+ *         月/季/年 → 项目管理 › 任务（?due=month|quarter|year）
+ *   ② 左：任务状态（环图）/ 年度工作规划（项目进度，点进年度规划）
+ *      右：随记（最近 5 条，去 workspace 记录）/ 团队成员（工作量）
+ *   ③ 通栏：数据看板 —— 直接内嵌原「数据统计」页（embedded 模式，去掉了它的页头与指标卡），
+ *      独立的「数据统计」入口已取消（D-24），老链接 /analytics 重定向回本页
+ *
+ * 数据口径（全部真实接口，没有 mock）：
+ * - 我的工作：GET /api/projects 里 status=active 的数量
+ * - 今日/周/月/季/年：GET /api/tasks?due=… 的 total（pageSize=1，只取计数）
+ * - 任务状态：GET /api/stats/tasks 的 todo / doing / done
+ * - 随记：GET /api/ideas 最近 5 条
+ * - 团队成员：GET /api/stats/team-workload（成员 + 在办/完成率）
  */
-
-const PRIORITY_LABEL: Record<Task['priority'], string> = {
-  high: '高',
-  medium: '中',
-  low: '低',
-};
-
 export function OverviewPage() {
-  const { message } = AntdApp.useApp();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const projectsQuery = useUserProjects();
-  const tasksQuery = useUserTasks();
   const { counts: taskCounts, query: taskCountsQuery } = useTaskCounts();
-  const todayTasksQuery = useTodayTasks();
-  const assigneesQuery = useAssigneeOptions(user);
 
   const projects = projectsQuery.data?.items ?? [];
-  const tasks = tasksQuery.data?.items ?? [];
-  const today = todayShanghaiDate();
+  const taskTotal = taskCounts.total;
 
-  /** 今日任务：用服务端的 due=today 筛选（Asia/Shanghai） */
-  const todayTasks = todayTasksQuery.data ?? [];
-
-  /** 进行中的项目 = status 为 active（服务端按任务完成情况实时算） */
+  /** 我的工作 = 在办项目（服务端按任务完成情况实时算 status） */
   const activeProjects = useMemo(
     () => projects.filter((project) => project.status === 'active'),
     [projects],
   );
 
-  /** 团队成员：管理员有账号列表；普通用户退化为项目成员 + 任务负责人去重 */
-  const teamMemberNames = useMemo(() => {
-    const names = new Set<string>();
-    projects.forEach((project) => project.members.forEach((name) => names.add(name)));
-    tasks.forEach((task) => {
-      if (task.assigneeName) names.add(task.assigneeName);
-    });
-    return names;
-  }, [projects, tasks]);
-
-  const teamSize = assigneesQuery.data?.length ?? teamMemberNames.size;
-
-  /** 指标卡的涨跌与趋势 —— 由真实数据聚合，不编造 */
-  const projectCreatedSeries = useMemo(
-    () => dailyDateSeries(projects.map((project) => project.createdAt)),
-    [projects],
-  );
-  const openSeries = useMemo(() => dailyOpenSeries(tasks), [tasks]);
-  const doneSeries = useMemo(() => dailyDoneSeries(tasks), [tasks]);
-
-  const projectTrend = seriesDelta(projectCreatedSeries);
-  const openTrend = seriesDelta(openSeries);
-  const doneThisWeek = seriesSum(doneSeries);
-
-  const toggleStatus = useMutation({
-    mutationFn: (input: { id: number; status: Task['status'] }) =>
-      updateTaskStatus(input.id, input.status),
-    onSuccess: async () => {
-      await invalidateUserData(queryClient);
+  /**
+   * 五个时间区间的任务数 —— 每档只取 total。
+   * 区间口径在东八区服务端算（自然周/月/季/年），前端自己按 Date 算容易和统计页对不上；
+   * 这里 pageSize=1，五个请求加起来仍是毫秒级。
+   */
+  const rangeQuery = useQuery({
+    queryKey: ['workbench', 'ranges'],
+    queryFn: async () => {
+      const dues = ['today', 'week', 'month', 'quarter', 'year'] as const;
+      const results = await Promise.all(dues.map((due) => listTasks({ page: 1, pageSize: 1, due })));
+      return {
+        today: results[0]?.total ?? 0,
+        week: results[1]?.total ?? 0,
+        month: results[2]?.total ?? 0,
+        quarter: results[3]?.total ?? 0,
+        year: results[4]?.total ?? 0,
+      };
     },
-    onError: (err) => {
-      void message.error(errorText(err));
-    },
+    staleTime: 30_000,
   });
+  const ranges = rangeQuery.data ?? { today: 0, week: 0, month: 0, quarter: 0, year: 0 };
 
-  const taskTotal = taskCounts.total;
+  /** 随记（原「灵感记录」）—— 工作台只显示最近 5 条 */
+  const ideasQuery = useQuery({
+    queryKey: ['workbench', 'ideas'],
+    queryFn: () => listIdeas({ page: 1, pageSize: 5 }),
+    staleTime: 30_000,
+  });
+  const ideas = ideasQuery.data?.items ?? [];
 
-  /** 日程：今天的任务按提醒时间排成时间轴（没有提醒时间的排在后面） */
-  const agendaItems = useMemo(
-    () =>
-      [...todayTasks]
-        .sort((a, b) => {
-          const at = a.reminderAt ?? '';
-          const bt = b.reminderAt ?? '';
-          if (at === bt) return 0;
-          if (!at) return 1;
-          if (!bt) return -1;
-          return at < bt ? -1 : 1;
-        })
-        .slice(0, 5),
-    [todayTasks],
-  );
+  /** 团队成员工作量（复用统计接口，不额外造接口） */
+  const workloadQuery = useStatsTeamWorkload();
+  const workload = (workloadQuery.data?.members ?? []).slice(0, 6);
 
   const renderProjectRow = (project: Project, index: number) => {
     const color = projectColor(project.color, index);
@@ -160,166 +116,64 @@ export function OverviewPage() {
 
   return (
     <div className="wb-page">
-      <PageHeader title="工作台" subtitle="我的待办、项目进展、日程与团队动态，一页看完。" />
+      <PageHeader
+        title="工作台"
+        subtitle="今天要做什么、这周这月推进到哪，一屏看完；点数字进对应页面。"
+      />
+
+      <div className="wb-metric-row">
+        <MetricCard
+          label="我的工作"
+          value={activeProjects.length}
+          icon={<FolderOutlined />}
+          iconColor={designVars.primary}
+          hint="在办项目 · 点进年度工作规划"
+          onClick={() => void navigate('/projects?view=projects')}
+        />
+        <MetricCard
+          label="今日任务"
+          value={ranges.today}
+          icon={<CheckOutlined />}
+          iconColor={designVars.orange}
+          hint="今天到期 · 点进任务列表"
+          onClick={() => void navigate('/projects?view=tasks&due=today')}
+        />
+        <MetricCard
+          label="周工作"
+          value={ranges.week}
+          icon={<ScheduleOutlined />}
+          iconColor={designVars.statusDoing}
+          hint="本周到期 · 点进周进度"
+          onClick={() => void navigate('/projects?view=progress')}
+        />
+        <MetricCard
+          label="月度工作"
+          value={ranges.month}
+          icon={<CalendarOutlined />}
+          iconColor={designVars.purple}
+          hint="本月到期 · 点进任务列表"
+          onClick={() => void navigate('/projects?view=tasks&due=month')}
+        />
+        <MetricCard
+          label="季度工作"
+          value={ranges.quarter}
+          icon={<CalendarOutlined />}
+          iconColor={designVars.muted}
+          hint="本季到期 · 点进任务列表"
+          onClick={() => void navigate('/projects?view=tasks&due=quarter')}
+        />
+        <MetricCard
+          label="年度工作"
+          value={ranges.year}
+          icon={<CalendarOutlined />}
+          iconColor={designVars.primary}
+          hint="本年到期 · 点进任务列表"
+          onClick={() => void navigate('/projects?view=tasks&due=year')}
+        />
+      </div>
 
       <div className="wb-grid">
-        {/* 4 张指标卡 */}
-        <div className="wb-metric-row">
-          <MetricCard
-            label="项目总数"
-            value={projectsQuery.data?.total ?? 0}
-            icon={<FolderOutlined />}
-            iconColor={designVars.primary}
-            delta={projectTrend}
-            trend={projectCreatedSeries}
-            hint={`进行中 ${activeProjects.length} 个`}
-          />
-          <MetricCard
-            label="进行中"
-            value={activeProjects.length}
-            icon={<ScheduleOutlined />}
-            iconColor={designVars.green}
-            hint="尚未完成的项目"
-          />
-          <MetricCard
-            label="待办任务"
-            value={taskCounts.todo}
-            icon={<CheckOutlined />}
-            iconColor={designVars.orange}
-            delta={openTrend}
-            trend={openSeries}
-            hint="近 7 天完成"
-          />
-          <MetricCard
-            label="团队成员"
-            value={teamSize}
-            icon={<TeamOutlined />}
-            iconColor={designVars.purple}
-            hint={`近 7 天完成 ${doneThisWeek} 项任务`}
-          />
-        </div>
-
-        {/* 左列：项目进度 + 今日任务 */}
         <div className="wb-grid-left">
-          <Panel title="项目进度" more="全部项目" onMore={() => void navigate('/projects')} flush>
-            <div style={{ padding: '0 18px 16px' }}>
-              <StateBlock
-                loading={projectsQuery.isPending}
-                error={projectsQuery.isError ? projectsQuery.error : undefined}
-                onRetry={() => void projectsQuery.refetch()}
-                isEmpty={projects.length === 0}
-                emptyText="还没有项目"
-                emptyAction={
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => void navigate('/projects')}
-                  >
-                    新建项目
-                  </Button>
-                }
-              >
-                {projects.slice(0, 5).map(renderProjectRow)}
-              </StateBlock>
-            </div>
-          </Panel>
-
-          <Panel
-            title="今日任务"
-            extra={<span className="wb-muted">{todayTasks.length} 项</span>}
-            flush
-          >
-            <div style={{ padding: '0 18px 16px' }}>
-              <StateBlock
-                loading={todayTasksQuery.isPending}
-                error={todayTasksQuery.isError ? todayTasksQuery.error : undefined}
-                onRetry={() => void todayTasksQuery.refetch()}
-                isEmpty={todayTasks.length === 0}
-                emptyText="今天没有待办任务"
-              >
-                {todayTasks.slice(0, 6).map((task) => (
-                  <div className="wb-today-row" key={task.id}>
-                    <button
-                      type="button"
-                      className={`wb-today-check${task.status === 'done' ? ' is-done' : ''}`}
-                      aria-label={
-                        task.status === 'done' ? `取消完成 ${task.title}` : `标记完成 ${task.title}`
-                      }
-                      onClick={() =>
-                        toggleStatus.mutate({
-                          id: task.id,
-                          status: task.status === 'done' ? 'todo' : 'done',
-                        })
-                      }
-                    >
-                      {task.status === 'done' ? <CheckOutlined style={{ fontSize: 11 }} /> : null}
-                    </button>
-                    <span className={`wb-today-name${task.status === 'done' ? ' is-done' : ''}`}>
-                      {task.title}
-                    </span>
-                    <ToneTag tone={STATUS_TONE[task.priority] ?? 'gray'}>
-                      {PRIORITY_LABEL[task.priority]}
-                    </ToneTag>
-                    <span className="wb-today-time">{formatDateTime(task.reminderAt)}</span>
-                  </div>
-                ))}
-              </StateBlock>
-            </div>
-          </Panel>
-        </div>
-
-        {/* 右列：日程安排 + 任务状态 */}
-        <div className="wb-grid-right">
-          <Panel
-            title="日程安排"
-            extra={
-              <Button
-                type="text"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() => void navigate('/calendar')}
-              >
-                新建
-              </Button>
-            }
-            flush
-          >
-            <div style={{ padding: '0 18px 16px' }}>
-              <StateBlock
-                loading={todayTasksQuery.isPending}
-                error={todayTasksQuery.isError ? todayTasksQuery.error : undefined}
-                onRetry={() => void todayTasksQuery.refetch()}
-                isEmpty={agendaItems.length === 0}
-                emptyText="今天没有日程"
-              >
-                <div className="wb-agenda-date">{formatDateOnly(today)}</div>
-                {agendaItems.map((task) => {
-                  const color =
-                    task.priority === 'high'
-                      ? designVars.red
-                      : task.priority === 'medium'
-                        ? designVars.orange
-                        : designVars.primary;
-                  return (
-                    <div className="wb-agenda-item" key={task.id}>
-                      <span className="wb-agenda-time">
-                        {task.reminderAt ? formatDateTime(task.reminderAt).slice(11) : '全天'}
-                      </span>
-                      <span className="wb-agenda-dot" style={{ background: color }} />
-                      <span style={{ minWidth: 0 }}>
-                        <span className="wb-agenda-title">{task.title}</span>
-                        <span className="wb-agenda-sub">
-                          {task.projectName ?? '未归属项目'}
-                          {task.assigneeName ? ` · ${task.assigneeName}` : ''}
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </StateBlock>
-            </div>
-          </Panel>
-
           <Panel title="任务状态" flush>
             <div style={{ padding: '4px 18px 16px' }}>
               <StateBlock
@@ -350,25 +204,14 @@ export function OverviewPage() {
               </StateBlock>
             </div>
           </Panel>
-        </div>
 
-        {/* 底部通栏：项目列表 */}
-        <div className="wb-grid-full">
           <Panel
-            title="项目列表"
-            extra={
-              <Button
-                type="text"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() => void navigate('/projects')}
-              >
-                新建项目
-              </Button>
-            }
+            title="年度工作规划"
+            more="查看全部"
+            onMore={() => void navigate('/projects?view=projects')}
             flush
           >
-            <div style={{ padding: '0 18px 16px' }}>
+            <div style={{ padding: '0 18px 14px' }}>
               <StateBlock
                 loading={projectsQuery.isPending}
                 error={projectsQuery.isError ? projectsQuery.error : undefined}
@@ -376,87 +219,75 @@ export function OverviewPage() {
                 isEmpty={projects.length === 0}
                 emptyText="还没有项目"
                 emptyAction={
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => void navigate('/projects')}
-                  >
-                    新建项目
+                  <Button type="primary" onClick={() => void navigate('/projects?view=projects')}>
+                    去新建
                   </Button>
                 }
               >
-                <div className="wb-project-cards">
-                  {projects.slice(0, 4).map((project, index) => {
-                    const color = projectColor(project.color, index);
-                    return (
-                      <div className="wb-project-card" key={project.id}>
-                        <div className="wb-project-card-head">
-                          <span className="wb-swatch" style={{ background: color }}>
-                            {projectIcon(project.icon)}
-                          </span>
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <span className="wb-project-card-title" title={project.name}>
-                              {project.name}
-                            </span>
-                            <span className="wb-project-card-sub">
-                              {project.owner ?? '未指定负责人'}
-                              {project.phase ? ` · ${project.phase}` : ''}
-                            </span>
-                          </span>
-                          <Dropdown
-                            trigger={['click']}
-                            menu={{
-                              items: [
-                                { key: 'detail', label: '查看详情' },
-                                { key: 'tasks', label: '查看任务' },
-                              ],
-                              onClick: ({ key }) => {
-                                if (key === 'detail') void navigate(`/projects/${project.id}`);
-                                else void navigate('/tasks');
-                              },
-                            }}
-                          >
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<MoreOutlined />}
-                              aria-label={`${project.name} 的更多操作`}
-                            />
-                          </Dropdown>
-                        </div>
-                        <div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              gap: 8,
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <span className="wb-project-card-meta">
-                              任务 {project.doneItems} / {project.totalItems}
-                            </span>
-                            <span className="wb-progress-percent">{project.progress}%</span>
-                          </div>
-                          <div style={{ marginTop: 6 }}>
-                            <ThinProgress percent={project.progress} color={color} />
-                          </div>
-                        </div>
-                        <div className="wb-project-card-foot">
-                          <span className="wb-project-card-meta">
-                            截止 {formatDateOnly(project.dueDate)}
-                          </span>
-                          <span className="wb-project-card-meta">
-                            {project.memberCount > 0 ? `${project.memberCount} 名成员` : '暂无成员'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="wb-progress-list">
+                  {projects.slice(0, 5).map((project, index) => renderProjectRow(project, index))}
                 </div>
               </StateBlock>
             </div>
           </Panel>
+        </div>
+
+        <div className="wb-grid-right">
+          <Panel title="随记" more="去记录" onMore={() => void navigate('/workspace')} flush>
+            <div style={{ padding: '0 18px 12px' }}>
+              <StateBlock
+                loading={ideasQuery.isPending}
+                error={ideasQuery.isError ? ideasQuery.error : undefined}
+                onRetry={() => void ideasQuery.refetch()}
+                isEmpty={ideas.length === 0}
+                emptyText="还没有随记"
+                emptyHint="想到什么先记下来，回头再整理"
+              >
+                <ul className="wb-idea-list">
+                  {ideas.map((idea) => (
+                    <li key={idea.id} className="wb-idea-item">
+                      <span className="wb-idea-text">{idea.content}</span>
+                      <span className="wb-idea-time">{formatDateOnly(idea.createdAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </StateBlock>
+            </div>
+          </Panel>
+
+          <Panel title="团队成员" more="查看全部" onMore={() => void navigate('/team')} flush>
+            <div style={{ padding: '0 18px 14px' }}>
+              <StateBlock
+                loading={workloadQuery.isPending}
+                error={workloadQuery.isError ? workloadQuery.error : undefined}
+                onRetry={() => void workloadQuery.refetch()}
+                isEmpty={workload.length === 0}
+                emptyText="还没有成员数据"
+              >
+                <ul className="wb-member-list">
+                  {workload.map((member) => (
+                    <li key={member.userId} className="wb-member-row">
+                      <Avatar
+                        size={28}
+                        style={{ background: '#dbe4f5', color: '#2563eb', fontSize: 12 }}
+                      >
+                        {member.name.slice(0, 1)}
+                      </Avatar>
+                      <span className="wb-member-name">{member.name}</span>
+                      <span className="wb-member-meta">
+                        在办 {member.taskCount - member.doneCount} · 完成 {member.rate}%
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </StateBlock>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="wb-grid-full">
+          <div className="wb-dashboard-heading">数据看板</div>
+          <AnalyticsPage embedded />
         </div>
       </div>
     </div>

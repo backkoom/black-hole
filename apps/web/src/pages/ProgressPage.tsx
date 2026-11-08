@@ -199,7 +199,7 @@ export function ProgressPage() {
 
   return (
     <div className="wb-page">
-      <PageHeader title="进度追踪" subtitle="实时掌握项目进度，确保项目按计划高效推进" />
+      <PageHeader title="周工作完成进度" subtitle="按周看项目推进与任务完成情况，及时调整工作方向" />
 
       <div className="wb-grid">
         {/* 4 张指标卡 */}

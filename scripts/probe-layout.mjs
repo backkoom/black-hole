@@ -32,7 +32,7 @@ if (!PW) {
 
 // 页面用 | 分隔（Git Bash 会把逗号分隔的 POSIX 路径当路径列表改写）
 // D-23 后的导航结构：6 个模块 + 项目管理 5 个视图 + 设置
-const PAGES = (process.env.PROBE_PAGES ?? '|projects?view=projects|projects?view=board|projects?view=tasks|projects?view=progress|projects?view=risks|team|calendar|files|analytics|settings')
+const PAGES = (process.env.PROBE_PAGES ?? '|projects?view=projects|projects?view=board|projects?view=tasks|projects?view=progress|projects?view=risks|team|calendar|files|settings')
   .split('|')
   .map((s) => s.trim())
   .map((s) => (s.startsWith('/') ? s : `/${s}`));

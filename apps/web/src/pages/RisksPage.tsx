@@ -432,7 +432,7 @@ export function RisksPage() {
   return (
     <div className="wb-page">
       <PageHeader
-        title="风险问题管理"
+        title="问题风险"
         subtitle="识别项目风险，跟踪问题处理，保障项目顺利推进"
       />
 

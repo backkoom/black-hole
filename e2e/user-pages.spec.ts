@@ -2,8 +2,9 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { clearMustChange, resetAdmin } from './helpers.js';
 
 /**
- * 用户端 10 页 E2E 冒烟 —— 覆盖「项目总览 / 项目看板 / 任务清单 / 日程安排 /
- * 进度追踪 / 团队协作 / 文件资料 / 风险问题 / 数据统计 / 个人资料」。
+ * 用户端模块 E2E 冒烟 —— 覆盖「工作台 / 工作看板 / 任务 / 周进度 / 问题风险 /
+ * 团队协作 / 日程安排 / 文件资料 / 个人资料」。
+ * 注：D-24 起「数据统计」并入工作台，独立入口取消（老链接 /analytics 重定向回工作台）。
  *
  * 约定（与 e2e/workspace.spec.ts、e2e/auth.spec.ts 一致）：
  *  - 数据**全部走真实接口**造（beforeAll 里 POST，afterAll 里 DELETE），**不 mock**；
@@ -342,32 +343,32 @@ test.describe('用户端 10 页', () => {
     expect(badApiResponses, '不应出现 4xx/5xx 的接口响应').toEqual([]);
   });
 
-  test('工作台：4 张指标卡与接口一致，面板有真实数据', async ({ page }) => {
+  test('工作台：六张时间卡与接口一致，点数字能下钻', async ({ page }) => {
     const projects = await apiGet<Paged<ProjectDto>>(api, '/api/projects?page=1&pageSize=100');
-    const statsTasks = await apiGet<{ todo: number; doing: number; done: number }>(
-      api,
-      '/api/stats/tasks',
-    );
-    const statsOverview = await apiGet<{ projectCount: number }>(api, '/api/stats/overview');
-    const users = await apiGet<Paged<{ id: number }>>(api, '/api/users?page=1&pageSize=100');
+    const activeCount = projects.items.filter((project) => project.status === 'active').length;
+    const todayTasks = await apiGet<Paged<unknown>>(api, '/api/tasks?due=today&page=1&pageSize=1');
 
     await page.goto('/', { waitUntil: 'networkidle' });
-    // D-23：首页从「项目总览」改名「工作台」（定位是团队工作台，项目管理只是其中一块）
     await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible();
 
-    // 指标卡：页面数字 === 接口数字
-    expect(await metricValue(page, '项目总数')).toBe(String(projects.total));
-    expect(await metricValue(page, '进行中')).toBe(String(statsOverview.projectCount));
-    expect(await metricValue(page, '待办任务')).toBe(String(statsTasks.todo));
-    expect(await metricValue(page, '团队成员')).toBe(String(users.items.length));
+    // 六张时间卡（D-24）：名字齐全
+    for (const name of ['我的工作', '今日任务', '周工作', '月度工作', '季度工作', '年度工作']) {
+      await expect(page.locator('.wb-metric-row > *', { hasText: name }).first()).toBeVisible();
+    }
+    // 数字 === 接口口径
+    expect(await metricValue(page, '我的工作')).toBe(String(activeCount));
+    expect(await metricValue(page, '今日任务')).toBe(String(todayTasks.total));
 
-    // 面板标题齐全，且数据区真的有造出来的数据
-    for (const title of ['项目进度', '今日任务', '日程安排', '任务状态', '项目列表']) {
+    // 面板齐全，且确实渲染了造出来的数据
+    for (const title of ['任务状态', '年度工作规划', '随记', '团队成员']) {
       await expectPanel(page, title);
     }
-    await expectPanelContains(page, '项目进度', `${PREFIX}冒烟项目`);
-    await expectPanelContains(page, '今日任务', `${PREFIX}任务-待办今天`);
-    await expectPanelContains(page, '项目列表', `${PREFIX}冒烟项目`);
+    await expectPanelContains(page, '年度工作规划', `${PREFIX}冒烟项目`);
+
+    // 下钻：点「今日任务」应带 due=today 进任务列表
+    await page.locator('.wb-metric-row > *', { hasText: '今日任务' }).first().click();
+    await expect(page).toHaveURL(/view=tasks/);
+    await expect(page).toHaveURL(/due=today/);
   });
 
   test('看板：4 列计数与接口一致', async ({ page }) => {
@@ -383,7 +384,7 @@ test.describe('用户端 10 页', () => {
     };
 
     await page.goto('/kanban', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: '项目看板' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: '工作看板' })).toBeVisible();
 
     for (const [title, count] of Object.entries(expected)) {
       const column = page.locator('section.wb-kanban-col').filter({
@@ -535,7 +536,7 @@ test.describe('用户端 10 页', () => {
     const projects = await apiGet<Paged<ProjectDto>>(api, '/api/projects?page=1&pageSize=100');
 
     await page.goto('/progress', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: '进度追踪' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: '周工作完成进度' })).toBeVisible();
 
     for (const title of ['项目进度计划', '项目健康度', '阶段进度', '进度偏差分析']) {
       await expectPanel(page, title);
@@ -634,7 +635,7 @@ test.describe('用户端 10 页', () => {
     }>(api, '/api/risks/summary');
 
     await page.goto('/risks', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: '风险问题管理' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: '问题风险' })).toBeVisible();
 
     for (const title of [
       '风险分布矩阵',
@@ -656,15 +657,10 @@ test.describe('用户端 10 页', () => {
     await expectPanelContains(page, '风险应对计划', `${PREFIX}应对措施`);
   });
 
-  test('统计：趋势、分布与排行面板有数据', async ({ page }) => {
-    const projects = await apiGet<Paged<ProjectDto>>(api, '/api/projects?page=1&pageSize=100');
-    const statsTasks = await apiGet<{ todo: number; doing: number; done: number }>(
-      api,
-      '/api/stats/tasks',
-    );
-
+  test('数据看板：趋势与排行面板有数据（已并入工作台，/analytics 重定向）', async ({ page }) => {
     await page.goto('/analytics', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: '数据统计' })).toBeVisible();
+    // D-24：数据统计独立入口取消，老链接回工作台
+    await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible();
 
     for (const title of [
       '任务完成趋势',
@@ -677,14 +673,6 @@ test.describe('用户端 10 页', () => {
       await expectPanel(page, title);
     }
 
-    // 指标卡 === 接口口径
-    expect(await metricValue(page, '项目总数')).toBe(String(projects.total));
-    expect(await metricValue(page, '任务总数')).toBe(
-      String(statsTasks.todo + statsTasks.doing + statsTasks.done),
-    );
-    expect(await metricValue(page, '已完成任务')).toBe(String(statsTasks.done));
-
-    // 排行里有造出来的项目
     await expectPanelContains(page, '项目完成率排行', `${PREFIX}冒烟项目`);
   });
 

@@ -15,7 +15,8 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
  */
 
 /** due 筛选的三种取值 */
-export type TaskDueFilter = 'today' | 'overdue' | 'week';
+/** 时间区间筛选：今日 / 逾期 / 本周 / 本月 / 本季 / 本年（D-24 工作台时间视图） */
+export type TaskDueFilter = 'today' | 'overdue' | 'week' | 'month' | 'quarter' | 'year';
 
 export interface TaskListQuery {
   page: number;

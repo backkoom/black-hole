@@ -45,7 +45,7 @@ test.describe('验收补漏', () => {
     await page.goto('/workspace', { waitUntil: 'networkidle' });
     await page.waitForTimeout(800);
 
-    // 模板默认 4 个模块：今日待办 / 项目进度 / 快捷入口 / 灵感记录
+    // 模板默认 4 个模块：今日待办 / 项目进度 / 快捷入口 / 随记
     // 新用户没有任务、没有项目、没写过灵感 → 三个数据模块都应给空态文案
     await expect(page.getByText('今天没有待办')).toBeVisible();
     await expect(page.getByText('还没有进行中的项目')).toBeVisible();

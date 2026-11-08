@@ -41,8 +41,8 @@ export function ProjectsPage() {
   return (
     <div className="wb-page">
       <PageHeader
-        title="项目档案"
-        subtitle="项目进度按任务实时计算；点击卡片查看项目详情与任务。"
+        title="年度工作规划"
+        subtitle="按年度规划项目与目标；进度按任务实时计算，点击卡片查看详情与任务。"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
             新建项目

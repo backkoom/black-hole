@@ -19,7 +19,7 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(PAGINATION.defaultPage),
   pageSize: z.coerce.number().int().min(1).max(PAGINATION.maxPageSize).default(PAGINATION.defaultPageSize),
   keyword: z.string().min(1).max(64).optional(),
-  due: z.enum(['today', 'overdue', 'week']).optional(),
+  due: z.enum(['today', 'overdue', 'week', 'month', 'quarter', 'year']).optional(),
   projectId: z.coerce.number().int().positive().optional(),
   status: z.enum(['todo', 'doing', 'done']).optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),

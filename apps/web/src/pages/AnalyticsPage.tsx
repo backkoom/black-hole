@@ -65,7 +65,8 @@ const CATEGORY_COLORS = [
 /** 进度分桶配色（0-20% → 100% 依次变绿） */
 const BUCKET_COLORS = ['#ef4444', '#f59e0b', '#2563eb', '#8b5cf6', '#10b981'];
 
-export function AnalyticsPage() {
+/** embedded：作为「工作台」的一节渲染时用（不渲染自己的 PageHeader 与指标卡行） */
+export function AnalyticsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [days, setDays] = useState<7 | 30>(7);
 
   const projectsQuery = useUserProjects();
@@ -170,10 +171,11 @@ export function AnalyticsPage() {
     [projects],
   );
 
-  return (
-    <div className="wb-page">
-      <PageHeader title="数据统计" subtitle="多维度数据分析，全面掌握项目进展与团队效能" />
+  const body = (
+    <>
 
+      {embedded ? null : (
+        <>
       {/* 4 张指标卡 */}
       <div className="wb-metric-row">
         <MetricCard
@@ -211,6 +213,9 @@ export function AnalyticsPage() {
           hint="项目成员与任务负责人去重"
         />
       </div>
+
+        </>
+      )}
 
       <div className="wb-agg-grid">
         {/* 左上（宽）：任务完成趋势 */}
@@ -423,6 +428,15 @@ export function AnalyticsPage() {
           </Panel>
         </div>
       </div>
+    </>
+  );
+
+  if (embedded) return <div className="wb-analytics-embedded">{body}</div>;
+
+  return (
+    <div className="wb-page">
+      <PageHeader title="数据统计" subtitle="多维度数据分析，全面掌握项目进展与团队效能" />
+      {body}
     </div>
   );
 }

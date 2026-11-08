@@ -69,7 +69,7 @@ test.describe('工作台编辑器', () => {
 
   test('B1 新用户首次进入看到模板的 4 个模块', async ({ page }) => {
     await gotoWorkspace(page);
-    for (const name of ['今日待办', '项目进度', '快速入口', '灵感记录']) {
+    for (const name of ['今日待办', '项目进度', '快速入口', '随记']) {
       await expect(card(page, name)).toBeVisible();
     }
   });
@@ -158,7 +158,7 @@ test.describe('工作台编辑器', () => {
       '快速入口',
       '日历',
       '数据报表',
-      '灵感记录',
+      '随记',
       '文本卡片',
       '公告通知',
       '链接列表',

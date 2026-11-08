@@ -1926,3 +1926,93 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ===== 工作台（D-24，2026-11-08 改版） ===== */
+
+/* 数据看板分区标题：把嵌入的统计内容与上面的面板分开 */
+.wb-dashboard-heading {
+  margin: 22px 0 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 嵌入的统计页不再自带上下留白（外层已经有 gap） */
+.wb-analytics-embedded .wb-agg-grid {
+  margin-top: 0;
+}
+
+/* 随记列表 */
+.wb-idea-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-idea-item {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.wb-idea-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.wb-idea-text {
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-idea-time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* 团队成员行 */
+.wb-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-member-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.wb-member-name {
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-member-meta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}

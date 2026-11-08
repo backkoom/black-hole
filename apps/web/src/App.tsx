@@ -9,7 +9,6 @@ import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { FilesPage } from './pages/FilesPage';
 import { TeamPage } from './pages/TeamPage';
@@ -79,12 +78,8 @@ export const router = createBrowserRouter([
             ),
           },
           { path: 'risks', element: <Navigate to="/projects?view=risks" replace /> },
-          {
-            path: 'analytics',
-            element: (
-              <AnalyticsPage />
-            ),
-          },
+          // D-24：数据统计并入工作台，独立入口取消；老链接回工作台
+          { path: 'analytics', element: <Navigate to="/" replace /> },
           {
             path: 'workspace',
             element: <WorkspacePage />,

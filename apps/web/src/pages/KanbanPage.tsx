@@ -419,7 +419,7 @@ export function KanbanPage() {
   return (
     <div className="wb-page">
       <PageHeader
-        title="项目看板"
+        title="工作看板"
         subtitle="以可视化看板管理项目任务，掌握进度，提升团队协作效率"
       />
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   App as AntdApp,
   Button,
@@ -22,8 +22,15 @@ import {
   ScheduleOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import type { Priority, TaskStatus } from '@blackhole/shared/types';
-import { deleteTask, listTasks, tasksKeys, updateTaskStatus } from '../api/tasks';
+import {
+  deleteTask,
+  listTasks,
+  tasksKeys,
+  updateTaskStatus,
+  type TaskDueFilter,
+} from '../api/tasks';
 import { errorText } from '../api/messages';
 import { useAssigneeOptions, useUserProjects } from '../hooks/useUserData';
 import { useAuth } from '../auth/AuthContext';
@@ -85,6 +92,19 @@ export function TasksPage() {
   const { user } = useAuth();
 
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
+
+  /**
+   * 从工作台点「今日任务 / 月度工作 …」进来时带 ?due=today|week|month|quarter|year，
+   * 这里把它落成筛选条件（D-24）。URL 一变就同步，返回上一页再点另一张卡也能生效。
+   */
+  const [searchParams] = useSearchParams();
+  const urlDue = searchParams.get('due');
+  useEffect(() => {
+    if (!urlDue) return;
+    const allowed = ['today', 'overdue', 'week', 'month', 'quarter', 'year'];
+    if (!allowed.includes(urlDue)) return;
+    setFilters((prev) => ({ ...prev, due: urlDue as TaskDueFilter, page: 1 }));
+  }, [urlDue]);
   const [keywordInput, setKeywordInput] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);

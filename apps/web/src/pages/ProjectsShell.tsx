@@ -33,11 +33,11 @@ const VIEWS = ['projects', 'board', 'tasks', 'progress', 'risks'] as const;
 type View = (typeof VIEWS)[number];
 
 const LABELS: Record<View, string> = {
-  projects: '档案',
-  board: '看板',
+  projects: '年度规划',
+  board: '工作看板',
   tasks: '任务',
-  progress: '进度',
-  risks: '风险',
+  progress: '周进度',
+  risks: '问题风险',
 };
 
 export function ProjectsShell() {

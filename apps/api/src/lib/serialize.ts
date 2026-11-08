@@ -47,6 +47,25 @@ export function todayString(): string {
  * 本周起止（自然周：周一 00:00 至周日 23:59）。
  * 周起始日固定周一，不做用户自定义（workspace.md §1.4：一旦可配，两个人看到的完成率就不一样）。
  */
+/** 东八区「本月 / 本季度 / 本年度」的自然区间（首日 00:00 ~ 末日 23:59） */
+function thisPeriodRange(
+  kind: 'month' | 'quarter' | 'year',
+  now: Date = new Date(),
+): { start: string; end: string } {
+  const shifted = new Date(now.getTime() + OFFSET_MS);
+  const year = shifted.getUTCFullYear();
+  const month = shifted.getUTCMonth(); // 0-11
+  const startMonth = kind === 'month' ? month : kind === 'quarter' ? Math.floor(month / 3) * 3 : 0;
+  const months = kind === 'month' ? 1 : kind === 'quarter' ? 3 : 12;
+  const start = new Date(Date.UTC(year, startMonth, 1));
+  const end = new Date(Date.UTC(year, startMonth + months, 0)); // 下月第 0 天 = 本月最后一天
+  return { start: formatDate(start) as string, end: formatDate(end) as string };
+}
+
+export const thisMonthRange = (now?: Date) => thisPeriodRange('month', now);
+export const thisQuarterRange = (now?: Date) => thisPeriodRange('quarter', now);
+export const thisYearRange = (now?: Date) => thisPeriodRange('year', now);
+
 export function thisWeekRange(now = new Date()): { start: string; end: string } {
   const shifted = new Date(now.getTime() + OFFSET_MS);
   const dow = shifted.getUTCDay(); // 0=周日

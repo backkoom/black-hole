@@ -63,6 +63,11 @@ export interface MetricCardProps {
   trendColor?: string;
   /** 副说明（指标卡底部一行小字） */
   hint?: string;
+  /**
+   * 点击整张卡跳转（D-24：工作台的指标卡点数字就进对应页面）。
+   * 传了就变成可点样式：手型光标 + hover 抬一档 + 键盘可回车。
+   */
+  onClick?: () => void;
 }
 
 export function MetricCard({
@@ -75,6 +80,7 @@ export function MetricCard({
   trend,
   trendColor,
   hint,
+  onClick,
 }: MetricCardProps): JSX.Element {
   const hasDelta = delta !== undefined && delta !== 0;
   // 未显式指定色调时，按 iconColor 反查 —— 命中就自动用淡色底（设计稿样式）
@@ -84,10 +90,21 @@ export function MetricCard({
 
   return (
     <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       style={{
         background: designVars.card,
         borderRadius: designVars.radius,
         boxShadow: cardShadow,
+        cursor: onClick ? 'pointer' : undefined,
+        transition: onClick ? 'box-shadow 0.15s, transform 0.15s' : undefined,
         padding: '16px 18px 14px',
         display: 'flex',
         flexDirection: 'column',

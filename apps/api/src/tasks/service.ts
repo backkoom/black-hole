@@ -1,7 +1,15 @@
 import type { Priority, Task, TaskStatus } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
-import { formatDate, formatTimestamp, thisWeekRange, todayString } from '../lib/serialize.js';
+import {
+  formatDate,
+  formatTimestamp,
+  thisMonthRange,
+  thisQuarterRange,
+  thisWeekRange,
+  thisYearRange,
+  todayString,
+} from '../lib/serialize.js';
 import type { SessionContext } from '../auth/service.js';
 
 /**
@@ -76,7 +84,7 @@ function toTask(r: TaskRow): Task {
   };
 }
 
-export type DueFilter = 'today' | 'overdue' | 'week';
+export type DueFilter = 'today' | 'overdue' | 'week' | 'month' | 'quarter' | 'year';
 
 export interface ListTasksQuery {
   page: number;
@@ -152,8 +160,16 @@ export async function listTasks(q: ListTasksQuery): Promise<ListTasksResult> {
     } else if (q.due === 'overdue') {
       where.push(`t.due_date < '${today}' AND t.status <> 'done'`);
     } else {
-      const { start, end } = thisWeekRange();
-      where.push(`t.due_date BETWEEN '${start}' AND '${end}'`);
+      // week / month / quarter / year —— D-24 工作台的时间视图
+      const range =
+        q.due === 'month'
+          ? thisMonthRange()
+          : q.due === 'quarter'
+            ? thisQuarterRange()
+            : q.due === 'year'
+              ? thisYearRange()
+              : thisWeekRange();
+      where.push(`t.due_date BETWEEN '${range.start}' AND '${range.end}'`);
     }
   }
   const clause = `WHERE ${where.join(' AND ')}`;

@@ -3,7 +3,6 @@ import { Avatar, Button, Layout, Menu, Tag } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
-  BarChartOutlined,
   CalendarOutlined,
   ClusterOutlined,
   DashboardOutlined,
@@ -61,7 +60,6 @@ const NAV_GROUPS: NavGroup[] = [
       { key: '/team', match: '/team', icon: <TeamOutlined />, label: '团队协作' },
       { key: '/calendar', match: '/calendar', icon: <CalendarOutlined />, label: '日程安排' },
       { key: '/files', match: '/files', icon: <FolderOpenOutlined />, label: '文件资料' },
-      { key: '/analytics', match: '/analytics', icon: <BarChartOutlined />, label: '数据统计' },
     ],
   },
 ];
