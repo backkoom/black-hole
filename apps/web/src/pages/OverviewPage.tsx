@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
-import { Avatar, Button, Tag } from 'antd';
-import { CalendarOutlined, CheckOutlined, ScheduleOutlined, WarningOutlined } from '@ant-design/icons';
+import { Button, Tag } from 'antd';
+import { CalendarOutlined, ScheduleOutlined, WarningOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import type { Risk } from '@blackhole/shared/types';
@@ -8,34 +8,31 @@ import { listTasks } from '../api/tasks';
 import { listRisks } from '../api/risks';
 import { useUserProjects } from '../hooks/useUserData';
 import { useTaskCounts } from '../hooks/useTaskCounts';
-import { useStatsTeamWorkload } from '../hooks/useUserStats';
-import { formatDateOnly } from '../utils/datetime';
 import { designVars } from '../styles/theme';
-import { LegendItem, MetricCard, Panel } from '../components/ui';
+import { MetricCard, Panel } from '../components/ui';
 import { DonutChart } from '../components/ui/charts';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
-import { ThinProgress } from '../components/user/ThinProgress';
-import { projectColor, projectIcon } from '../components/user/visuals';
-import { QuickAdd } from '../components/workbench/QuickAdd';
-import { TodayPanel } from '../components/workbench/TodayPanel';
+import { TodayTasks, TodayAgenda } from '../components/workbench/TodayPanel';
 import { StickyNotes, type StickyNotesHandle } from '../components/workbench/StickyNotes';
 import { WorkbenchCharts } from '../components/workbench/WorkbenchCharts';
+import { RecentFiles } from '../components/workbench/RecentFiles';
 
 /**
- * 工作台（D-31 改版，取代 D-24 那版）。
+ * 工作台（D-32 按老六的规划图重排）。
  *
- * 这一版按老六的反馈逐条改，布局从"六格拼图"变成**一条阅读动线**：
- *   ① 快速添加：一个输入框写任务，回车进今日待办（不再是四个没有内容的空入口）
- *   ② 五张时间卡：今日 / 周 / 月 / 季 / 年 —— 删掉与「今日任务」重复的「我的工作」
- *   ③ 今天：待办 + 日程合并（同一件事的两面，之前是两块重复面板）
- *   ④ 任务状态 + 风险预警并排（老六要求"风险预警跟任务状态挨着"）
- *   ⑤ 年度工作规划 + 团队成员
- *   ⑥ 随记便签：真能在本页写、删（不再跳 /workspace 那个自定义工作台）
- *   ⑦ 数据看板：工作进度 / 工作类别 / 工作完成率三块，数字全部实时算
+ * 版式就是老六给的那五行，从上到下：
+ *   工作台（标题）
+ *   数据看板                                   ← 提到最上面
+ *   本周  本月  本季  本年                      ← 四张时间卡（去掉「今日」，今日是独立模块）
+ *   今天   任务状态   风险预警
+ *   日程   随记      文件资料
  *
- * 栅格换成 **12 列直接布局**（不再用左右 subgrid）：每行几块自己声明 span，
- * 行内天然等高，省掉"栏里多一块就要同步改 span"的坑。
+ * 三处关键改动：
+ * - **添加框并进「今天」**：原来顶部那条大输入框和随记的输入框长得一样、功能都在"记一句话"，
+ *   现在收进「今天」做成行内添加（点「加一条」就地出现输入行），随记只管便签；
+ * - **任务状态紧凑化**：小环 + 2×2 数字格，不再是一大片空白；
+ * - **新增文件资料模块**：最近 6 个文件，点进文件页。
  */
 export function OverviewPage() {
   const navigate = useNavigate();
@@ -43,32 +40,28 @@ export function OverviewPage() {
 
   const projectsQuery = useUserProjects();
   const { counts: taskCounts, query: taskCountsQuery } = useTaskCounts();
-  const workloadQuery = useStatsTeamWorkload();
-
   const projects = projectsQuery.data?.items ?? [];
-  const workload = (workloadQuery.data?.members ?? []).slice(0, 6);
-  const taskTotal = taskCounts.total;
 
-  /** 时间区间计数 + 逾期；区间口径在服务端按东八区算 */
+  /** 四个时间区间 + 逾期（今日不进卡，它是独立模块） */
   const rangeQuery = useQuery({
     queryKey: ['workbench', 'ranges'],
     queryFn: async () => {
-      const dues = ['today', 'week', 'month', 'quarter', 'year', 'overdue'] as const;
+      const dues = ['week', 'month', 'quarter', 'year', 'today', 'overdue'] as const;
       const results = await Promise.all(dues.map((due) => listTasks({ page: 1, pageSize: 1, due })));
       return {
-        today: results[0]?.total ?? 0,
-        week: results[1]?.total ?? 0,
-        month: results[2]?.total ?? 0,
-        quarter: results[3]?.total ?? 0,
-        year: results[4]?.total ?? 0,
+        week: results[0]?.total ?? 0,
+        month: results[1]?.total ?? 0,
+        quarter: results[2]?.total ?? 0,
+        year: results[3]?.total ?? 0,
+        today: results[4]?.total ?? 0,
         overdue: results[5]?.total ?? 0,
       };
     },
     staleTime: 30_000,
   });
-  const ranges = rangeQuery.data ?? { today: 0, week: 0, month: 0, quarter: 0, year: 0, overdue: 0 };
+  const ranges = rangeQuery.data ?? { week: 0, month: 0, quarter: 0, year: 0, today: 0, overdue: 0 };
 
-  /** 风险预警：只取未关闭的，按等级排 */
+  /** 风险预警：未关闭，按等级排 */
   const risksQuery = useQuery({
     queryKey: ['workbench', 'risks'],
     queryFn: () => listRisks({ status: 'open' }),
@@ -81,38 +74,24 @@ export function OverviewPage() {
   }, [risksQuery.data]);
   const highRisks = risks.filter((risk) => risk.level === 'high').length;
 
-  const renderProjectRow = (project: (typeof projects)[number], index: number) => {
-    const color = projectColor(project.color, index);
-    return (
-      <div key={project.id} className="wb-progress-row">
-        <span className="wb-progress-icon" style={{ background: `${color}1a`, color }}>
-          {projectIcon(project.icon)}
-        </span>
-        <span className="wb-progress-name" title={project.name}>
-          {project.name}
-        </span>
-        <ThinProgress percent={project.progress} color={color} />
-        <span className="wb-progress-percent">{project.progress}%</span>
-        <span className="wb-progress-date">{formatDateOnly(project.dueDate)}</span>
-      </div>
-    );
-  };
+  /** 任务状态的紧凑格子：待处理 / 进行中 / 已完成 / 逾期 */
+  const statusCells = [
+    { label: '待处理', value: taskCounts.todo, color: designVars.orange },
+    { label: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
+    { label: '已完成', value: taskCounts.done, color: designVars.statusDone },
+    { label: '已逾期', value: ranges.overdue, color: designVars.red },
+  ];
 
   return (
     <div className="wb-page">
-      <PageHeader title="工作台" subtitle="今天做什么、这周推进到哪。写完就回车，别在菜单里找。" />
+      <PageHeader title="工作台" subtitle="一屏看清今天、这周和手头的项目。" />
 
-      <QuickAdd projects={projects} onWriteIdea={() => stickyRef.current?.focus()} />
+      {/* ① 数据看板 */}
+      <div className="wb-dashboard-heading">数据看板</div>
+      <WorkbenchCharts />
 
-      <div className="wb-metric-row wb-metric-row-5">
-        <MetricCard
-          label="今日"
-          value={ranges.today}
-          icon={<CheckOutlined />}
-          iconColor={designVars.orange}
-          hint="今天到期"
-          onClick={() => void navigate('/projects?view=tasks&due=today')}
-        />
+      {/* ② 四张时间卡 */}
+      <div className="wb-metric-row wb-metric-row-4">
         <MetricCard
           label="本周"
           value={ranges.week}
@@ -147,84 +126,71 @@ export function OverviewPage() {
         />
       </div>
 
+      {/* ③ 今天 / 任务状态 / 风险预警 */}
       <div className="wb-hb-grid">
-        <div className="wb-hb-12">
+        <div className="wb-hb-4">
           <Panel
             title="今天"
             more="全部任务"
             onMore={() => void navigate('/projects?view=tasks&due=today')}
             flush
           >
-            <div style={{ padding: '0 18px 14px' }}>
-              <TodayPanel onAddTask={() => void navigate('/projects?view=tasks&due=today')} />
+            <div style={{ padding: '0 18px 12px' }}>
+              <TodayTasks projects={projects} />
             </div>
           </Panel>
         </div>
 
-        <div className="wb-hb-7">
+        <div className="wb-hb-4">
           <Panel title="任务状态" flush>
-            <div style={{ padding: '4px 18px 16px' }}>
-              <StateBlock
-                loading={taskCountsQuery.isPending}
-                error={taskCountsQuery.isError ? taskCountsQuery.error : undefined}
-                onRetry={() => void taskCountsQuery.refetch()}
-                isEmpty={taskTotal === 0}
-                emptyText="还没有任务"
-              >
-                <div className="wb-status-chart">
-                  <DonutChart
-                    segments={[
-                      { name: '待处理', value: taskCounts.todo, color: designVars.orange },
-                      { name: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
-                      { name: '已完成', value: taskCounts.done, color: designVars.statusDone },
-                    ]}
-                    centerValue={taskTotal}
-                    centerLabel="总任务"
-                    size={126}
-                    thickness={16}
-                  />
-                  <div className="wb-status-legend">
-                    <LegendItem color={designVars.orange} name="待处理" value={taskCounts.todo} />
-                    <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts.doing} />
-                    <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts.done} />
-                  </div>
-                  <div className="wb-status-side">
-                    <button
-                      type="button"
-                      className="wb-status-side-row"
-                      onClick={() => void navigate('/projects?view=tasks&due=overdue')}
-                    >
-                      <span className="wb-status-side-label">已逾期</span>
-                      <span
-                        className="wb-status-side-value"
-                        style={{ color: ranges.overdue > 0 ? designVars.red : undefined }}
-                      >
-                        {ranges.overdue}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="wb-status-side-row"
-                      onClick={() => void navigate('/projects?view=tasks&due=today')}
-                    >
-                      <span className="wb-status-side-label">今日到期</span>
-                      <span className="wb-status-side-value">{ranges.today}</span>
-                    </button>
-                  </div>
-                </div>
-              </StateBlock>
+            <StateBlock
+              loading={taskCountsQuery.isPending}
+              error={taskCountsQuery.isError ? taskCountsQuery.error : undefined}
+              onRetry={() => void taskCountsQuery.refetch()}
+              isEmpty={taskCounts.total === 0}
+              emptyText="还没有任务"
+            >
+            <div className="wb-status-compact">
+              <DonutChart
+                segments={[
+                  { name: '待处理', value: taskCounts.todo, color: designVars.orange },
+                  { name: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
+                  { name: '已完成', value: taskCounts.done, color: designVars.statusDone },
+                ]}
+                centerValue={taskCounts.total}
+                centerLabel="任务"
+                size={84}
+                thickness={11}
+              />
+              <div className="wb-status-cells">
+                {statusCells.map((cell) => (
+                  <button
+                    key={cell.label}
+                    type="button"
+                    className="wb-status-cell"
+                    onClick={() =>
+                      void navigate(
+                        cell.label === '已逾期'
+                          ? '/projects?view=tasks&due=overdue'
+                          : `/projects?view=tasks${cell.label === '待处理' ? '&status=todo' : cell.label === '进行中' ? '&status=doing' : '&status=done'}`,
+                      )
+                    }
+                  >
+                    <span className="wb-status-cell-value" style={{ color: cell.color }}>
+                      {cell.value}
+                    </span>
+                    <span className="wb-status-cell-label">{cell.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
+            </StateBlock>
           </Panel>
         </div>
 
-        <div className="wb-hb-5">
-          <Panel
-            title="风险预警"
-            more="全部风险"
-            onMore={() => void navigate('/projects?view=risks')}
-            flush
-          >
-            <div style={{ padding: '2px 18px 14px' }}>
+        <div className="wb-hb-4">
+          <Panel title="风险预警" more="全部风险" onMore={() => void navigate('/projects?view=risks')} flush>
+            <div style={{ padding: '0 18px 12px' }}>
               <StateBlock
                 loading={risksQuery.isPending}
                 error={risksQuery.isError ? risksQuery.error : undefined}
@@ -251,7 +217,7 @@ export function OverviewPage() {
                 </ul>
                 {highRisks > 0 ? (
                   <div className="wb-risk-foot">
-                    <WarningOutlined /> 其中 {highRisks} 条高风险，优先处理
+                    <WarningOutlined /> 其中 {highRisks} 条高风险
                   </div>
                 ) : null}
               </StateBlock>
@@ -259,74 +225,36 @@ export function OverviewPage() {
           </Panel>
         </div>
 
-        <div className="wb-hb-7">
-          <Panel
-            title="年度工作规划"
-            more="查看全部"
-            onMore={() => void navigate('/projects?view=projects')}
-            flush
-          >
-            <div style={{ padding: '0 18px 14px' }}>
-              <StateBlock
-                loading={projectsQuery.isPending}
-                error={projectsQuery.isError ? projectsQuery.error : undefined}
-                onRetry={() => void projectsQuery.refetch()}
-                isEmpty={projects.length === 0}
-                emptyText="还没有项目"
-                emptyAction={
-                  <Button type="primary" onClick={() => void navigate('/projects?view=projects')}>
-                    去新建
-                  </Button>
-                }
-              >
-                <div className="wb-progress-list">
-                  {projects.slice(0, 5).map((project, index) => renderProjectRow(project, index))}
-                </div>
-              </StateBlock>
+        {/* ④ 日程 / 随记 / 文件资料 */}
+        <div className="wb-hb-4">
+          <Panel title="日程" more="去日历" onMore={() => void navigate('/calendar')} flush>
+            <div style={{ padding: '0 18px 12px' }}>
+              <TodayAgenda />
             </div>
           </Panel>
         </div>
 
-        <div className="wb-hb-5">
-          <Panel title="团队成员" more="查看全部" onMore={() => void navigate('/team')} flush>
-            <div style={{ padding: '0 18px 14px' }}>
-              <StateBlock
-                loading={workloadQuery.isPending}
-                error={workloadQuery.isError ? workloadQuery.error : undefined}
-                onRetry={() => void workloadQuery.refetch()}
-                isEmpty={workload.length === 0}
-                emptyText="还没有成员数据"
-              >
-                <ul className="wb-member-list">
-                  {workload.map((member) => (
-                    <li key={member.userId} className="wb-member-row">
-                      <Avatar size={26} style={{ background: '#dbe4f5', color: '#2563eb', fontSize: 11 }}>
-                        {member.name.slice(0, 1)}
-                      </Avatar>
-                      <span className="wb-member-name">{member.name}</span>
-                      <span className="wb-member-meta">
-                        在办 {member.taskCount - member.doneCount} · {member.rate}%
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </StateBlock>
-            </div>
-          </Panel>
-        </div>
-
-        <div className="wb-hb-12">
+        <div className="wb-hb-4">
           <Panel title="随记" more="全部随记" onMore={() => void navigate('/workspace')} flush>
-            <div style={{ padding: '4px 18px 16px' }}>
-              <StickyNotes ref={stickyRef} limit={8} />
+            <div style={{ padding: '0 18px 12px' }}>
+              <StickyNotes ref={stickyRef} limit={2} />
             </div>
           </Panel>
         </div>
 
-        <div className="wb-hb-12">
-          <div className="wb-dashboard-heading">数据看板</div>
-          <WorkbenchCharts />
+        <div className="wb-hb-4">
+          <Panel title="文件资料" more="全部文件" onMore={() => void navigate('/files')} flush>
+            <div style={{ padding: '0 18px 12px' }}>
+              <RecentFiles />
+            </div>
+          </Panel>
         </div>
+      </div>
+
+      <div className="wb-page-foot">
+        <Button type="link" size="small" onClick={() => stickyRef.current?.focus()}>
+          ＋ 写一张便签
+        </Button>
       </div>
     </div>
   );

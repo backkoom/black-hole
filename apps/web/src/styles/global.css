@@ -2938,3 +2938,185 @@ body {
 .wb-hb-5 > section > div { justify-content: flex-start; }
 
 .wb-status-side { justify-content: center; }
+
+/* ============ D-32：按老六规划图的三列版式 ============ */
+
+/* 四张时间卡（今日已独立成模块，不再进卡） */
+.wb-metric-row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* 三列网格：每块占 4 格 */
+.wb-hb-4 { grid-column: span 4; min-width: 0; }
+.wb-hb-4 > section { height: 100%; }
+
+/* 数据看板提到页面最上面时，标题不要再留 22px 上边距 */
+.wb-page > .wb-dashboard-heading:first-of-type { margin-top: 4px; }
+
+/* 面板标题里的小数字（今天 3 条） */
+.wb-panel-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--soft-orange);
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  vertical-align: 1px;
+}
+
+/* 「今天」里的行内添加：点「加一条」就地出现，不占常驻高度 */
+.wb-inline-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 6px;
+  padding: 2px 6px;
+  border: 1px dashed #c9d7f5;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.wb-inline-add .ant-input {
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.wb-inline-add-project {
+  width: 118px;
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 紧凑任务状态：小环 + 2×2 数字格 */
+.wb-status-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px 16px;
+}
+
+.wb-status-cells {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  flex: 1;
+}
+
+.wb-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-status-cell:hover .wb-status-cell-label {
+  color: var(--primary);
+}
+
+.wb-status-cell-value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-status-cell-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 文件资料模块 */
+.wb-file-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-file-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 2px 8px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-file-row:hover .wb-file-name {
+  color: var(--primary);
+}
+
+.wb-file-list li + li .wb-file-row {
+  border-top: 1px solid var(--border);
+}
+
+.wb-file-icon-sm {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wb-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.wb-file-meta {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 页面底部的小动作（写便签） */
+.wb-page-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+/* 三列在窄屏收成两列 / 一列 */
+@media (max-width: 1440px) {
+  .wb-hb-4 { grid-column: span 6; }
+  .wb-metric-row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1180px) {
+  .wb-hb-4 { grid-column: span 12; }
+  .wb-metric-row-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 三列版式下随记只有 1/3 宽：便签必须单列，否则两列会溢出面板 */
+.wb-hb-4 .wb-sticky-wall {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.wb-hb-4 .wb-sticky-note {
+  min-height: 78px;
+  padding: 14px 12px 6px;
+}
+
+.wb-hb-4 .wb-sticky-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+/* 任务状态四格：两列对齐更紧凑 */
+.wb-status-cells { gap: 6px 18px; }
