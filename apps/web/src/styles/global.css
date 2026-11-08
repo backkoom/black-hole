@@ -2459,3 +2459,482 @@ body {
   color: var(--primary);
   font-size: 10px;
 }
+
+/* ============ 工作台 D-31：12 列直接布局 + 新组件 ============ */
+
+/* 12 列直接布局：每行几块由子元素自己声明 span，行内天然等高 */
+.wb-hb-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.wb-hb-12 { grid-column: span 12; min-width: 0; }
+.wb-hb-7  { grid-column: span 7;  min-width: 0; }
+.wb-hb-5  { grid-column: span 5;  min-width: 0; }
+
+.wb-hb-grid > * > section { height: 100%; }
+
+/* 五张指标卡（原六张，删掉「我的工作」） */
+.wb-metric-row-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+/* 快速添加：一个输入框写任务 + 三个小动作 */
+.wb-quickadd {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.03);
+}
+
+.wb-quickadd:focus-within {
+  border-color: #c9d7f5;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.wb-quickadd-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-quickadd-icon {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.wb-quickadd-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 0 !important;
+  font-size: 14px;
+}
+
+.wb-quickadd-project {
+  max-width: 190px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wb-quickadd-submit {
+  border-radius: 8px;
+}
+
+.wb-quickadd-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+}
+
+.wb-quickadd-actions .ant-btn {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+/* 「今天」：左待办右日程 */
+.wb-today {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 22px;
+}
+
+.wb-today-col {
+  min-width: 0;
+}
+
+.wb-today-agenda {
+  padding-left: 22px;
+  border-left: 1px solid var(--border);
+}
+
+.wb-today-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+
+.wb-today-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.wb-today-count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--soft-gray);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* 风险预警 */
+.wb-risk-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-risk-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  padding: 7px 0;
+}
+
+.wb-risk-item + .wb-risk-item {
+  border-top: 1px solid var(--border);
+}
+
+.wb-risk-tag {
+  margin: 0;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.wb-risk-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.wb-risk-meta {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wb-risk-foot {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+  color: var(--red);
+}
+
+/* 随记便签墙 */
+.wb-sticky-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wb-sticky-input .ant-input {
+  font-size: 13px;
+}
+
+.wb-sticky-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.wb-sticky-note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 104px;
+  padding: 16px 14px 8px;
+  border: 1px solid #f3e6b8;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fffdf2 0%, #fdf6d8 100%);
+  box-shadow: 0 2px 6px rgba(180, 160, 90, 0.12);
+  transform: rotate(var(--wb-note-tilt, 0deg));
+}
+
+.wb-sticky-pin {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: #d9b84a;
+  font-size: 11px;
+}
+
+.wb-sticky-text {
+  flex: 1;
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #6b5a1e;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wb-sticky-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #b3a271;
+}
+
+.wb-sticky-foot .ant-btn {
+  color: #b3a271;
+}
+
+.wb-sticky-foot .ant-btn:hover {
+  color: var(--red) !important;
+}
+
+/* 数据看板三块 */
+.wb-charts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.wb-charts-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.wb-charts-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.wb-charts-card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wb-charts-sub,
+.wb-charts-more {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wb-charts-more {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.wb-charts-body {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 108px;
+}
+
+.wb-charts-body-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.wb-charts-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.wb-charts-ring-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.wb-charts-ring-label b {
+  display: block;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.wb-charts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 74px 38px;
+  gap: 8px;
+  align-items: center;
+}
+
+.wb-charts-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wb-charts-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  text-align: right;
+}
+
+.wb-charts-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-charts-legend li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.wb-charts-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.wb-charts-legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wb-charts-legend-value {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-charts-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.wb-charts-rate b {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.wb-charts-rate span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wb-charts-bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  height: 84px;
+}
+
+.wb-charts-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.wb-charts-bar-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 52px;
+  border-radius: 4px;
+  background: var(--soft-gray);
+}
+
+.wb-charts-bar-fill {
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #7aa5f5 0%, var(--primary) 100%);
+}
+
+.wb-charts-bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.wb-charts-bar-label {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* 窄屏：三块看板与「今天」双栏都收成一列 */
+@media (max-width: 1440px) {
+  .wb-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wb-charts-card:last-child { grid-column: span 2; }
+}
+
+@media (max-width: 1180px) {
+  .wb-hb-7, .wb-hb-5 { grid-column: span 12; }
+  .wb-today { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .wb-today-agenda { padding-left: 0; border-left: 0; border-top: 1px solid var(--border); padding-top: 12px; }
+  .wb-charts { grid-template-columns: minmax(0, 1fr); }
+  .wb-charts-card:last-child { grid-column: auto; }
+  .wb-metric-row-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 任务状态面板：与右侧风险预警等高时，内容垂直居中，别顶在上面留一大片空 */
+.wb-hb-7 > section,
+.wb-hb-5 > section { height: 100%; }
+
+.wb-hb-7 > section > div,
+.wb-hb-5 > section > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 但风险列表要顶对齐（行数多时居中会显得飘） */
+.wb-hb-5 > section > div { justify-content: flex-start; }
+
+.wb-status-side { justify-content: center; }

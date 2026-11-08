@@ -1,5 +1,5 @@
 import type { Idea, Paged } from '@blackhole/shared/types';
-import { apiGet, apiPost } from './client';
+import { apiDelete, apiGet, apiPost } from './client';
 
 /**
  * 灵感接口 —— 只用 openapi.yaml 里的 2 个：
@@ -33,4 +33,9 @@ export async function listIdeas(query: {
 export async function createIdea(content: string): Promise<Idea> {
   const data = await apiPost<{ idea: Idea }>('/ideas', { content });
   return data.idea;
+}
+
+/** 删除随记（硬删，服务端只允许删自己的） */
+export async function deleteIdea(id: number): Promise<null> {
+  return apiDelete<null>(`/ideas/${id}`);
 }
