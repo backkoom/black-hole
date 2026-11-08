@@ -293,6 +293,20 @@ export interface FileAsset {
   updatedAt: string;
 }
 
+/** 站内通知（D-28）：一人一条，readAt 为空表示未读 */
+export type NotificationKind = 'task_due' | 'task_overdue' | 'system';
+
+export interface Notification {
+  id: number;
+  kind: NotificationKind;
+  title: string;
+  body: string | null;
+  /** 点击后跳转的前端路由；为空表示纯文本提醒 */
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
 /** 文件历史版本（D-27）：一行一份磁盘实体，不会互相覆盖 */
 export interface FileVersion {
   versionNo: number;

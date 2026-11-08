@@ -14,6 +14,7 @@ import {
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { designVars } from '../styles/theme';
+import { NotificationBell } from './layout/NotificationBell';
 
 const { Sider, Header, Content } = Layout;
 
@@ -179,6 +180,7 @@ export function AppShell() {
       <Layout className="wb-main">
         <Header className="wb-header">
           <div className="wb-header-right">
+            <NotificationBell />
             {user ? (
               <>
                 <Avatar size={30} className="wb-avatar">

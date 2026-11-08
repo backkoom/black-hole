@@ -18,6 +18,7 @@ import { registerRiskRoutes } from './risks/routes.js';
 import { registerTeamRoutes } from './team/routes.js';
 import { registerFileRoutes } from './files/routes.js';
 import { registerSystemRoutes } from './system/routes.js';
+import { registerNotificationRoutes } from './notifications/routes.js';
 import { getConfig } from './config.js';
 import { ensureStorage } from './files/storage.js';
 
@@ -154,6 +155,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerRiskRoutes(app);
   await registerFileRoutes(app);
   await registerSystemRoutes(app);
+  await registerNotificationRoutes(app);
   await registerTeamRoutes(app);
 
   return app;
