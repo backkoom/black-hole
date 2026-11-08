@@ -1808,23 +1808,62 @@ body {
 
 /* 快捷操作条 —— B 端工作台「重要功能突出」：常用动作不用先想它在哪个模块 */
 .wb-quick-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* 入口卡：图标色块 + 标题 + 一句描述（照大厂案例的做法，比一排小按钮好认） */
+.wb-quick-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
-.wb-quick-row .wb-quick-btn {
-  height: 34px;
-  border-radius: 9px;
+.wb-quick-card:hover {
+  border-color: #c9d7f5;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.wb-quick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  font-size: 17px;
+}
+
+.wb-quick-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wb-quick-title {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.wb-quick-hint {
-  margin-left: 4px;
+.wb-quick-desc {
   font-size: 12px;
   color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 今日待办 —— 可以在工作台直接勾完成 */
@@ -1838,10 +1877,26 @@ body {
 
 .wb-todo-item {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 180px) auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
-  padding: 9px 0;
+  padding: 8px 0;
+}
+
+/* 标题 + 副行（项目 · 分类），照案例的待办行做成两行 */
+.wb-todo-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.wb-todo-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .wb-todo-item + .wb-todo-item {
@@ -1885,15 +1940,6 @@ body {
 .wb-todo-item.is-done .wb-todo-title {
   color: var(--muted);
   text-decoration: line-through;
-}
-
-.wb-todo-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: right;
 }
 
 /* 今日日程 */

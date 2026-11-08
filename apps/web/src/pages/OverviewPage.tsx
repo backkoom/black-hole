@@ -168,25 +168,36 @@ export function OverviewPage() {
       key: 'task',
       icon: <PlusOutlined />,
       label: '新建任务',
-      primary: true,
+      desc: '记一条待办，指定到期日',
+      color: designVars.primary,
+      tone: '#eef3ff',
       onClick: () => setTaskModalOpen(true),
     },
     {
       key: 'file',
       icon: <CloudUploadOutlined />,
       label: '上传文件',
+      desc: '传到项目文件库',
+      color: designVars.green,
+      tone: '#e9f9f1',
       onClick: () => void navigate('/files'),
     },
     {
       key: 'idea',
       icon: <TagsOutlined />,
       label: '记一条随记',
+      desc: '想到什么先记下来',
+      color: designVars.orange,
+      tone: '#fff4e5',
       onClick: () => void navigate('/workspace'),
     },
     {
       key: 'meeting',
       icon: <ScheduleOutlined />,
       label: '排日程',
+      desc: '约会议、定里程碑',
+      color: designVars.purple,
+      tone: '#f3ecff',
       onClick: () => void navigate('/calendar'),
     },
   ];
@@ -198,19 +209,24 @@ export function OverviewPage() {
         subtitle="今天做什么、这周这月推进到哪，一屏看完；常用操作就在手边，点数字进对应页面。"
       />
 
+      {/* 快捷入口：按大厂案例做成"图标 + 标题 + 一句描述"的入口卡，不是一排小按钮 */}
       <div className="wb-quick-row">
         {quickActions.map((action) => (
-          <Button
+          <button
             key={action.key}
-            className="wb-quick-btn"
-            type={action.primary ? 'primary' : 'default'}
-            icon={action.icon}
+            type="button"
+            className="wb-quick-card"
             onClick={action.onClick}
           >
-            {action.label}
-          </Button>
+            <span className="wb-quick-icon" style={{ background: action.tone, color: action.color }}>
+              {action.icon}
+            </span>
+            <span className="wb-quick-text">
+              <span className="wb-quick-title">{action.label}</span>
+              <span className="wb-quick-desc">{action.desc}</span>
+            </span>
+          </button>
         ))}
-        <span className="wb-quick-hint">不用先想“在哪个模块”，这里直接开干</span>
       </div>
 
       <div className="wb-metric-row">
@@ -296,12 +312,20 @@ export function OverviewPage() {
                         >
                           {done ? <CheckOutlined /> : null}
                         </button>
-                        <span className="wb-todo-title" title={task.title}>
-                          {task.title}
+                        <span className="wb-todo-main">
+                          <span className="wb-todo-title" title={task.title}>
+                            {task.title}
+                          </span>
+                          <span className="wb-todo-sub">
+                            {task.projectName ?? '未挂项目'}
+                            {task.category ? ` · ${task.category}` : ''}
+                          </span>
                         </span>
-                        <span className="wb-todo-meta">{task.projectName ?? '未挂项目'}</span>
                         <ToneTag tone={STATUS_TONE[task.priority] ?? 'gray'}>
                           {task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
+                        </ToneTag>
+                        <ToneTag tone={STATUS_TONE[task.status] ?? 'gray'}>
+                          {task.status === 'todo' ? '待处理' : task.status === 'doing' ? '进行中' : '已完成'}
                         </ToneTag>
                       </li>
                     );

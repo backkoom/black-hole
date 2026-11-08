@@ -163,7 +163,7 @@ await page.waitForTimeout(1800);
 const todoRows = page.locator('.wb-todo-item');
 const todoCount = await todoRows.count();
 const agendaCount = await page.locator('.wb-agenda-item').count();
-const quickCount = await page.locator('.wb-quick-btn').count();
+const quickCount = await page.locator('.wb-quick-card').count();
 console.log(`今日待办 ${todoCount} 条 | 今日日程 ${agendaCount} 场 | 快捷操作 ${quickCount} 个`);
 
 if (todoCount > 0) {
@@ -181,7 +181,7 @@ if (todoCount > 0) {
 }
 
 // 快捷操作「新建任务」必须真的打开表单（之前任务页那个按钮只弹"正在迭代"）
-await page.locator('.wb-quick-btn').first().click();
+await page.locator('.wb-quick-card').first().click();
 await page.waitForTimeout(1400);
 const modal = page.locator('.ant-modal-content').first();
 const modalVisible = await modal.isVisible().catch(() => false);
