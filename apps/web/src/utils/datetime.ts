@@ -20,6 +20,15 @@ export function formatDateTime(value: string | null | undefined): string {
 }
 
 /**
+ * 只取时分（HH:mm），同样按 Asia/Shanghai —— 今日日程/时间轴上用。
+ */
+export function formatTimeOnly(value: string | null | undefined): string {
+  if (!value) return '—';
+  const parsed = dayjs(value).tz('Asia/Shanghai');
+  return parsed.isValid() ? parsed.format('HH:mm') : '—';
+}
+
+/**
  * 日期列（due_date / 项目截止日）—— 接口给的是 `YYYY-MM-DD` 的**日历日**，
  * 服务端已按 Asia/Shanghai 产出，这里原样展示，不做任何时区换算。
  */

@@ -141,6 +141,12 @@ const IDEAS = [
   '把审批流里的驳回原因做成必填',
 ];
 
+/** 今天的两场会 —— 工作台「今日日程」面板要有内容，否则看不出效果 */
+const MEETINGS = [
+  { title: '周例会 · 进度对齐', start: '09:30', end: '10:15', location: '3F 小会议室' },
+  { title: '门户改版视觉走查', start: '14:00', end: '15:00', location: '线上 · 腾讯会议' },
+];
+
 async function main() {
   const login = await call('/api/auth/login', {
     method: 'POST',
@@ -177,6 +183,32 @@ async function main() {
     await call(`/api/ideas/${i.id}`, { method: 'DELETE' });
   }
   console.log(`清理：任务 ${existingTasks.length} 条 / 随记 ${existingIdeas.length} 条`);
+
+  // 1b) 今天的会议（按标题识别上一轮，先删后建）
+  const todayStr = day(0);
+  const meetingList = await call(
+    `/api/meetings?from=${todayStr}T00:00:00%2B08:00&to=${todayStr}T23:59:59%2B08:00`,
+  );
+  const meetingTitles = new Set(MEETINGS.map((m) => m.title));
+  const existingMeetings = (meetingList.json?.data?.items ?? []).filter((m) =>
+    meetingTitles.has(m.title),
+  );
+  for (const m of existingMeetings) {
+    await call(`/api/meetings/${m.id}`, { method: 'DELETE' });
+  }
+  for (const m of MEETINGS) {
+    await call('/api/meetings', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: m.title,
+        startAt: `${todayStr}T${m.start}:00+08:00`,
+        endAt: `${todayStr}T${m.end}:00+08:00`,
+        location: m.location,
+        projectId,
+      }),
+    });
+  }
+  console.log(`会议：清 ${existingMeetings.length} 场，建 ${MEETINGS.length} 场（今天）`);
 
   // 2) 今日到期 3 条（待办 / 进行中 / 已完成各一）
   const today = day(0);

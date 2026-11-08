@@ -157,5 +157,42 @@ if ((await chip.count()) === 0) {
   );
 }
 
+// ---- 工作台新面板：今日待办 / 今日日程 / 快捷操作 ----
+await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1800);
+const todoRows = page.locator('.wb-todo-item');
+const todoCount = await todoRows.count();
+const agendaCount = await page.locator('.wb-agenda-item').count();
+const quickCount = await page.locator('.wb-quick-btn').count();
+console.log(`今日待办 ${todoCount} 条 | 今日日程 ${agendaCount} 场 | 快捷操作 ${quickCount} 个`);
+
+if (todoCount > 0) {
+  const first = todoRows.first();
+  const before = (await first.getAttribute('class')) ?? '';
+  await first.locator('.wb-todo-check').click();
+  await page.waitForTimeout(1600);
+  const after = (await first.getAttribute('class')) ?? '';
+  await first.locator('.wb-todo-check').click(); // 还原，别把演示数据改成已完成
+  await page.waitForTimeout(1600);
+  const restored = (await first.getAttribute('class')) ?? '';
+  console.log(
+    `${before !== after ? '✓' : '✗'} 勾选生效：${before.includes('is-done') ? '已完成' : '未完成'} → ${after.includes('is-done') ? '已完成' : '未完成'}（还原后 ${restored.includes('is-done') ? '已完成' : '未完成'}）`,
+  );
+}
+
+// 快捷操作「新建任务」必须真的打开表单（之前任务页那个按钮只弹"正在迭代"）
+await page.locator('.wb-quick-btn').first().click();
+await page.waitForTimeout(1400);
+const modal = page.locator('.ant-modal-content').first();
+const modalVisible = await modal.isVisible().catch(() => false);
+const modalTitle = modalVisible
+  ? (await page.locator('.ant-modal-title').first().innerText().catch(() => '')).trim()
+  : '';
+console.log(`${modalVisible ? '✓' : '✗'} 快捷「新建任务」：${modalVisible ? `打开表单「${modalTitle}」` : '没打开'}`);
+if (modalVisible) {
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(600);
+}
+
 await browser.close();
 if (pass !== expectations.length) process.exit(1);

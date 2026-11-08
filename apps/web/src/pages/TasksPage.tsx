@@ -43,6 +43,7 @@ import { MetricCard, STATUS_TONE, ToneTag } from '../components/ui';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
 import { TaskListTable } from '../components/user/TaskListTable';
+import { TaskFormModal } from '../components/tasks/TaskFormModal';
 import { categoryTone } from '../components/user/visuals';
 
 /** 到期区间的中文名 —— 工作台点卡进来、或从「已选筛选」里看都用这一套 */
@@ -131,6 +132,7 @@ export function TasksPage() {
   const [keywordInput, setKeywordInput] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const projectsQuery = useUserProjects();
   const assigneesQuery = useAssigneeOptions(user);
@@ -491,7 +493,7 @@ export function TasksPage() {
             <Button size="small" icon={<ExportOutlined />} onClick={handleExport}>
               导出
             </Button>
-            <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => void message.info('新建任务表单正在迭代')}>
+            <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
               新建任务
             </Button>
           </Space>
@@ -561,6 +563,14 @@ export function TasksPage() {
           </div>
         </StateBlock>
       </Card>
+
+      <TaskFormModal
+        open={createOpen}
+        mode="create"
+        projects={projectsQuery.data?.items ?? []}
+        ownerUserId={user?.id}
+        onClose={() => setCreateOpen(false)}
+      />
     </div>
   );
 }
