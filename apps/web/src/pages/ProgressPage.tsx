@@ -6,8 +6,12 @@ import {
   FundProjectionScreenOutlined,
   ScheduleOutlined,
 } from '@ant-design/icons';
-import { Select } from 'antd';
+import { App as AntdApp, Select } from 'antd';
 import type { Project, Task } from '@blackhole/shared/types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updateProject } from '../api/projects';
+import { errorText } from '../api/messages';
+import { invalidateUserData } from '../hooks/useInvalidate';
 import { useAllTasks } from '../hooks/useAllTasks';
 import { useUserProjects } from '../hooks/useUserData';
 import { useStatsTaskCounts } from '../hooks/useUserStats';
@@ -138,6 +142,8 @@ function buildDeviation(
 }
 
 export function ProgressPage() {
+  const { message } = AntdApp.useApp();
+  const queryClient = useQueryClient();
   const projectsQuery = useUserProjects();
   const tasksQuery = useAllTasks();
   const taskStatsQuery = useStatsTaskCounts();
@@ -145,6 +151,20 @@ export function ProgressPage() {
 
   /** 甘特图分组方式（默认按阶段分组 —— 对齐设计稿图5 的下拉） */
   const [groupBy, setGroupBy] = useState<GanttGroupBy>('phase');
+
+  /**
+   * 拖拽改期（D-29）：改动的是 start_date 与 due_date 两个日期，
+   * 成功后刷项目/任务/统计缓存 —— 甘特条、健康度、看板都跟着变。
+   */
+  const rescheduleMutation = useMutation({
+    mutationFn: (input: { id: number; startDate: string; dueDate: string }) =>
+      updateProject(input.id, { startDate: input.startDate, dueDate: input.dueDate }),
+    onSuccess: async (project) => {
+      await invalidateUserData(queryClient);
+      void message.success(`「${project.name}」已改期`);
+    },
+    onError: (err) => void message.error(errorText(err)),
+  });
 
   const projects = projectsQuery.data?.items ?? [];
   const tasks = tasksQuery.data ?? [];
@@ -273,6 +293,10 @@ export function ProgressPage() {
                   projects={projects}
                   milestones={milestones}
                   groupBy={groupBy}
+                  canEdit={!rescheduleMutation.isPending}
+                  onReschedule={(id, next) =>
+                    rescheduleMutation.mutate({ id, startDate: next.startDate, dueDate: next.dueDate })
+                  }
                 />
               </StateBlock>
             </div>

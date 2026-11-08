@@ -90,6 +90,8 @@ export interface Project {
   userId: number;
   name: string;
   owner: string | null;
+  /** 项目开始日（甘特条左端）；历史数据等于创建日 */
+  startDate: string | null;
   dueDate: string | null;
   totalItems: number;
   doneItems: number;

@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import type { Dayjs } from 'dayjs';
 import type { Milestone, Project } from '@blackhole/shared/types';
 import { designVars } from '../../styles/theme';
@@ -125,9 +132,22 @@ export interface GanttChartProps {
   milestones: Milestone[];
   /** 是否按阶段分组 */
   groupBy: GanttGroupBy;
+  /** 是否允许拖拽改期（服务端仍会校验归属，这里只是别让人白拖） */
+  canEdit?: boolean;
+  /** 拖拽/拉伸结束后回调：给出新的开始日与截止日（YYYY-MM-DD） */
+  onReschedule?: (projectId: number, next: { startDate: string; dueDate: string }) => void;
 }
 
-export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
+/** 拖拽模式：整条平移 / 拖左端改开始 / 拖右端改截止 */
+type DragMode = 'move' | 'start' | 'end';
+
+export function GanttChart({
+  projects,
+  milestones,
+  groupBy,
+  canEdit = false,
+  onReschedule,
+}: GanttChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const [available, setAvailable] = useState(0);
   const [hover, setHover] = useState<HoverInfo | null>(null);
@@ -153,7 +173,8 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
   const data = useMemo<ProjectDatum[]>(() => {
     if (!today) return [];
     return projects.map((project, index) => {
-      const created = parseDateOnly(project.createdAt) ?? today;
+      // 甘特条左端 = start_date（历史数据由迁移回填成创建日）；缺就退回创建日
+      const start = parseDateOnly(project.startDate) ?? parseDateOnly(project.createdAt) ?? today;
       const due = parseDateOnly(project.dueDate);
       const phase = (project.phase ?? '').trim() || null;
       return {
@@ -161,8 +182,8 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
         color: projectColor(project.color, index),
         phase,
         phaseTone: phase ? categoryTone(phase) : 'gray',
-        start: created,
-        end: due && due.isAfter(created) ? due : created,
+        start,
+        end: due && due.isAfter(start) ? due : start,
         hasDue: due !== null,
       };
     });
@@ -269,6 +290,106 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
     [range, chartWidth],
   );
 
+  /* ---------------- 拖拽改期（D-29） ---------------- */
+
+  const [drag, setDrag] = useState<{ id: number; mode: DragMode; days: number } | null>(null);
+  const dragRef = useRef<{ id: number; mode: DragMode; startX: number; days: number } | null>(null);
+
+  /** 一天占多少像素 —— 拖拽换算用，随容器宽度与时间跨度变化 */
+  const dayWidth = useMemo(() => {
+    if (!scale || !range) return 10;
+    const one = scale.x(range.start.add(1, 'day')) - scale.x(range.start);
+    return one > 0 ? one : 10;
+  }, [scale, range]);
+  const dayWidthRef = useRef(dayWidth);
+  dayWidthRef.current = dayWidth;
+
+  /**
+   * 条形几何（含当前拖拽偏移）—— 视觉条与拖拽热区共用同一套算法，
+   * 两边各算一次的话一定会出现"看到的和拖到的差几像素"。
+   */
+  const barSpan = (datum: ProjectDatum): { x: number; width: number } => {
+    if (!scale) return { x: 0, width: 2 };
+    let x1 = scale.x(datum.start);
+    let x2 = scale.x(datum.end);
+    const active = drag && drag.id === datum.project.id ? drag : null;
+    if (active && active.days !== 0) {
+      const dx = active.days * dayWidth;
+      if (active.mode === 'move') {
+        x1 += dx;
+        x2 += dx;
+      } else if (active.mode === 'start') {
+        x1 = Math.min(x1 + dx, x2 - 2);
+      } else {
+        x2 = Math.max(x2 + dx, x1 + 2);
+      }
+    }
+    return { x: x1, width: Math.max(2, x2 - x1) };
+  };
+
+  const startDrag = (
+    event: ReactPointerEvent<SVGRectElement>,
+    datum: ProjectDatum,
+    mode: DragMode,
+  ): void => {
+    if (!canEdit || !onReschedule) return;
+    event.preventDefault();
+    event.stopPropagation();
+    // 拖的时候把悬停浮层收起来：它跟手停在光标下方，会挡住条形（里程碑菱形同理，见验证脚本）
+    setHover(null);
+    dragRef.current = { id: datum.project.id, mode, startX: event.clientX, days: 0 };
+    setDrag({ id: datum.project.id, mode, days: 0 });
+  };
+
+  /**
+   * 拖拽跟手 —— 监听挂在 window 上而不是元素上：
+   * 鼠标划出条形/容器（甚至划到左侧信息列）时拖动不能断。
+   */
+  useEffect(() => {
+    if (!canEdit || !onReschedule) return undefined;
+    const onMove = (event: PointerEvent): void => {
+      const current = dragRef.current;
+      if (!current) return;
+      const days = Math.round((event.clientX - current.startX) / Math.max(1, dayWidthRef.current));
+      if (days === current.days) return;
+      current.days = days;
+      setDrag({ id: current.id, mode: current.mode, days });
+    };
+    const onUp = (): void => {
+      const current = dragRef.current;
+      if (!current) return;
+      dragRef.current = null;
+      setDrag(null);
+      if (current.days === 0) return;
+      const datum = data.find((item) => item.project.id === current.id);
+      if (!datum) return;
+      let start = datum.start;
+      let end = datum.end;
+      if (current.mode === 'move') {
+        start = start.add(current.days, 'day');
+        end = end.add(current.days, 'day');
+      } else if (current.mode === 'start') {
+        start = start.add(current.days, 'day');
+        if (!start.isBefore(end)) return; // 拖过头就不提交，别造出 0 工期
+      } else {
+        end = end.add(current.days, 'day');
+        if (!end.isAfter(start)) return;
+      }
+      onReschedule(current.id, {
+        startDate: start.format('YYYY-MM-DD'),
+        dueDate: end.format('YYYY-MM-DD'),
+      });
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, [canEdit, onReschedule, data]);
+
   /**
    * 刻度标签抽稀 —— 宽度不够时丢掉会叠字的那些（刻度线仍画全）。
    * 首尾的标签贴着边界（text-anchor 改成 start / end），所以只跟右邻比较。
@@ -317,7 +438,7 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
       y,
       title: datum.project.name,
       lines: [
-        { label: '开始', value: formatDateOnly(datum.project.createdAt) },
+        { label: '开始', value: formatDateOnly(datum.project.startDate ?? datum.project.createdAt) },
         {
           label: '截止',
           value: datum.hasDue ? formatDateOnly(datum.project.dueDate) : '未设置',
@@ -473,18 +594,30 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
             {positioned.map(({ row, y }) => {
               if (row.kind === 'group') return null;
               const { datum } = row;
-              const x1 = scale.x(datum.start);
-              const x2 = scale.x(datum.end);
-              const barW = Math.max(2, x2 - x1);
+              const span = barSpan(datum);
+              const barW = span.width;
               const barY = y + (row.height - BAR_H) / 2;
               const baseFill = datum.phase ? TONE_SOFT[datum.phaseTone] : TRACK_COLOR;
               const filled = (barW * Math.max(0, Math.min(100, datum.project.progress))) / 100;
+              const activeDrag = drag && drag.id === datum.project.id ? drag : null;
               return (
                 <g key={`bar-${row.key}`} pointerEvents="none">
                   {/* 整条底色 = 项目自己的阶段色（没有阶段时用中性灰） */}
-                  <rect x={x1} y={barY} width={barW} height={BAR_H} rx={3} fill={baseFill} />
+                  <rect x={span.x} y={barY} width={barW} height={BAR_H} rx={3} fill={baseFill} />
                   {/* progress 填充 */}
-                  <rect x={x1} y={barY} width={filled} height={BAR_H} rx={3} fill={datum.color} />
+                  <rect x={span.x} y={barY} width={filled} height={BAR_H} rx={3} fill={datum.color} />
+                  {/* 拖拽中的偏移提示：+3 天 / -2 天 */}
+                  {activeDrag && activeDrag.days !== 0 ? (
+                    <text
+                      x={span.x}
+                      y={barY - 5}
+                      fontSize={11}
+                      fill={designVars.primary}
+                      textAnchor="middle"
+                    >
+                      {`${activeDrag.days > 0 ? '+' : ''}${activeDrag.days} 天`}
+                    </text>
+                  ) : null}
                 </g>
               );
             })}
@@ -504,6 +637,57 @@ export function GanttChart({ projects, milestones, groupBy }: GanttChartProps) {
                 />
               ) : null,
             )}
+
+            {/* 拖拽层（D-29）：透明热区盖在条上 —— 整条拖动平移，两端 8px 手柄改开始/截止。
+                必须画在"行热区"之后，否则事件会被整行热区吞掉（踩过）。 */}
+            {canEdit
+              ? positioned.map(({ row, y }) => {
+                  if (row.kind === 'group') return null;
+                  const { datum } = row;
+                  const span = barSpan(datum);
+                  const barY = y + (row.height - BAR_H) / 2;
+                  const dragging = drag?.id === datum.project.id;
+                  return (
+                    <g key={`drag-${row.key}`} data-gantt-bar={datum.project.id}>
+                      <rect
+                        x={span.x}
+                        y={barY - 4}
+                        width={Math.max(6, span.width)}
+                        height={BAR_H + 8}
+                        fill="transparent"
+                        style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+                        onPointerDown={(event) => startDrag(event, datum, 'move')}
+                        onMouseEnter={() => showProjectHover(datum, 120, y)}
+                        onMouseLeave={() => setHover(null)}
+                      >
+                        <title>
+                          {`拖动整条改期；拖两端调开始/截止。当前 ${formatDateOnly(
+                            datum.project.startDate,
+                          )} ~ ${formatDateOnly(datum.project.dueDate)}`}
+                        </title>
+                      </rect>
+                      <rect
+                        x={span.x - 4}
+                        y={barY - 4}
+                        width={8}
+                        height={BAR_H + 8}
+                        fill="transparent"
+                        style={{ cursor: 'ew-resize' }}
+                        onPointerDown={(event) => startDrag(event, datum, 'start')}
+                      />
+                      <rect
+                        x={span.x + span.width - 4}
+                        y={barY - 4}
+                        width={8}
+                        height={BAR_H + 8}
+                        fill="transparent"
+                        style={{ cursor: 'ew-resize' }}
+                        onPointerDown={(event) => startDrag(event, datum, 'end')}
+                      />
+                    </g>
+                  );
+                })
+              : null}
 
             {/* 里程碑菱形：已完成实心，未完成空心 */}
             {positioned.map(({ row, y }) => {

@@ -25,6 +25,8 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   name?: string;
   owner?: string | null;
+  /** 开始日（甘特拖拽改期时与 dueDate 一起平移） */
+  startDate?: string | null;
   dueDate?: string | null;
 }
 

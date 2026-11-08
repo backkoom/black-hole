@@ -23,6 +23,7 @@ interface ProjectRow {
   user_id: number;
   name: string;
   owner: string | null;
+  start_date: string | null;
   due_date: string | null;
   created_at: Date;
   updated_at: Date;
@@ -40,7 +41,7 @@ interface ProjectRow {
  * （聚合子查询里根本没有它的行）。
  */
 const PROJECT_SELECT = `
-SELECT p.id, p.user_id, p.name, p.owner, p.due_date, p.created_at, p.updated_at,
+SELECT p.id, p.user_id, p.name, p.owner, p.start_date, p.due_date, p.created_at, p.updated_at,
        COALESCE(agg.total_items, 0) AS total_items,
        COALESCE(agg.done_items, 0) AS done_items,
        p.icon, p.color, p.phase,
@@ -69,6 +70,7 @@ function toProject(r: ProjectRow): Project {
     userId: Number(r.user_id),
     name: r.name,
     owner: r.owner,
+    startDate: formatDate(r.start_date),
     dueDate: formatDate(r.due_date),
     totalItems,
     doneItems,
@@ -175,8 +177,8 @@ export async function createProject(
     throw unprocessable('负责人不能超过 64 个字符');
   }
   const ins = await queryOne<{ id: number }>(
-    `INSERT INTO project (user_id, name, owner, due_date, icon, color, phase)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    `INSERT INTO project (user_id, name, owner, start_date, due_date, icon, color, phase)
+     VALUES ($1, $2, $3, CURRENT_DATE, $4, $5, $6, $7) RETURNING id`,
     [
       userId,
       name,
@@ -199,6 +201,8 @@ export async function createProject(
 export interface UpdateProjectInput {
   name?: string;
   owner?: string | null;
+  /** 开始日（甘特拖拽改期时与 dueDate 一起平移） */
+  startDate?: string | null;
   dueDate?: string | null;
   icon?: string | null;
   color?: string | null;
@@ -236,6 +240,7 @@ export async function updateProject(
             icon = CASE WHEN $7::boolean THEN $8 ELSE icon END,
             color = CASE WHEN $9::boolean THEN $10 ELSE color END,
             phase = CASE WHEN $11::boolean THEN $12 ELSE phase END,
+            start_date = CASE WHEN $13::boolean THEN $14::date ELSE start_date END,
             updated_at = now()
       WHERE id = $1`,
     [
@@ -251,6 +256,8 @@ export async function updateProject(
       input.color ?? null,
       input.phase !== undefined,
       input.phase ?? null,
+      input.startDate !== undefined,
+      input.startDate ?? null,
     ],
   );
 
