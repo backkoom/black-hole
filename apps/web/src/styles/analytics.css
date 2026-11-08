@@ -32,6 +32,13 @@
   min-width: 0;
 }
 
+/* 整行面板：内嵌进工作台时，重复的「任务状态统计」被去掉，
+   剩下的排行面板独占一行，避免右侧留半个空位 */
+.wb-agg-12 {
+  grid-column: span 12;
+  min-width: 0;
+}
+
 /* 团队工作量：负责人 + 条形 + 完成率 */
 .wb-workload {
   display: flex;

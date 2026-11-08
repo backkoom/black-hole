@@ -1805,6 +1805,54 @@ body {
   min-width: 0;
 }
 
+/* 任务状态面板右侧「要注意」：逾期 / 今日到期，行本身可点 */
+.wb-status-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 auto;
+  min-width: 150px;
+  padding-left: 16px;
+  border-left: 1px solid var(--wb-line, #eef1f5);
+}
+
+.wb-status-side-title {
+  font-size: 12px;
+  color: var(--wb-text-3, #8b93a1);
+  margin-bottom: 4px;
+}
+
+.wb-status-side-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.wb-status-side-row:hover {
+  background: var(--wb-hover, #f4f6fa);
+}
+
+.wb-status-side-label {
+  font-size: 12px;
+  color: var(--wb-text-2, #5b6472);
+}
+
+.wb-status-side-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--wb-text-1, #1f2530);
+}
+
 /* 项目列表卡片行 */
 .wb-project-cards {
   display: grid;

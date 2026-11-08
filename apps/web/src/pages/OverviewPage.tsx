@@ -66,14 +66,14 @@ export function OverviewPage() {
   );
 
   /**
-   * 五个时间区间的任务数 —— 每档只取 total。
+   * 时间区间的任务数 + 逾期数 —— 每档只取 total。
    * 区间口径在东八区服务端算（自然周/月/季/年），前端自己按 Date 算容易和统计页对不上；
-   * 这里 pageSize=1，五个请求加起来仍是毫秒级。
+   * 这里 pageSize=1，几个请求加起来仍是毫秒级。
    */
   const rangeQuery = useQuery({
     queryKey: ['workbench', 'ranges'],
     queryFn: async () => {
-      const dues = ['today', 'week', 'month', 'quarter', 'year'] as const;
+      const dues = ['today', 'week', 'month', 'quarter', 'year', 'overdue'] as const;
       const results = await Promise.all(dues.map((due) => listTasks({ page: 1, pageSize: 1, due })));
       return {
         today: results[0]?.total ?? 0,
@@ -81,11 +81,19 @@ export function OverviewPage() {
         month: results[2]?.total ?? 0,
         quarter: results[3]?.total ?? 0,
         year: results[4]?.total ?? 0,
+        overdue: results[5]?.total ?? 0,
       };
     },
     staleTime: 30_000,
   });
-  const ranges = rangeQuery.data ?? { today: 0, week: 0, month: 0, quarter: 0, year: 0 };
+  const ranges = rangeQuery.data ?? {
+    today: 0,
+    week: 0,
+    month: 0,
+    quarter: 0,
+    year: 0,
+    overdue: 0,
+  };
 
   /** 随记（原「灵感记录」）—— 工作台只显示最近 5 条 */
   const ideasQuery = useQuery({
@@ -199,6 +207,31 @@ export function OverviewPage() {
                     <LegendItem color={designVars.orange} name="待处理" value={taskCounts.todo} />
                     <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts.doing} />
                     <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts.done} />
+                  </div>
+                  {/* 右侧留白原来空着，改成"要注意的"两个数：逾期 / 今日到期，点了直接进列表 */}
+                  <div className="wb-status-side">
+                    <div className="wb-status-side-title">要注意</div>
+                    <button
+                      type="button"
+                      className="wb-status-side-row"
+                      onClick={() => void navigate('/projects?view=tasks&due=overdue')}
+                    >
+                      <span className="wb-status-side-label">已逾期</span>
+                      <span
+                        className="wb-status-side-value"
+                        style={{ color: ranges.overdue > 0 ? designVars.red : undefined }}
+                      >
+                        {ranges.overdue}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="wb-status-side-row"
+                      onClick={() => void navigate('/projects?view=tasks&due=today')}
+                    >
+                      <span className="wb-status-side-label">今日到期</span>
+                      <span className="wb-status-side-value">{ranges.today}</span>
+                    </button>
                   </div>
                 </div>
               </StateBlock>

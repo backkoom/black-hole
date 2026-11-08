@@ -355,42 +355,48 @@ export function AnalyticsPage({ embedded = false }: { embedded?: boolean } = {})
           </Panel>
         </div>
 
-        {/* 左下：任务状态统计 */}
-        <div className="wb-agg-6">
-          <Panel title="任务状态统计" flush>
-            <div style={{ padding: '4px 18px 16px' }}>
-              <StateBlock
-                loading={taskCountsQuery.isPending}
-                error={taskCountsQuery.isError ? taskCountsQuery.error : undefined}
-                onRetry={() => void taskCountsQuery.refetch()}
-                isEmpty={totalTasks === 0}
-                emptyText="还没有任务"
-              >
-                <div className="wb-status-chart">
-                  <DonutChart
-                    segments={[
-                      { name: '已完成', value: taskCounts?.done ?? 0, color: designVars.statusDone },
-                      { name: '进行中', value: taskCounts?.doing ?? 0, color: designVars.statusDoing },
-                      { name: '待处理', value: taskCounts?.todo ?? 0, color: designVars.orange },
-                    ]}
-                    centerValue={totalTasks}
-                    centerLabel="总任务"
-                    size={126}
-                    thickness={16}
-                  />
-                  <div className="wb-status-legend">
-                    <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts?.done ?? 0} />
-                    <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts?.doing ?? 0} />
-                    <LegendItem color={designVars.orange} name="待处理" value={taskCounts?.todo ?? 0} />
+        {/*
+          左下：任务状态统计
+          embedded（内嵌进工作台）时不渲染 —— 工作台顶部已经有一块「任务状态」环图，
+          同一个数字画两遍就是老六最反感的"功能重复"。
+        */}
+        {embedded ? null : (
+          <div className="wb-agg-6">
+            <Panel title="任务状态统计" flush>
+              <div style={{ padding: '4px 18px 16px' }}>
+                <StateBlock
+                  loading={taskCountsQuery.isPending}
+                  error={taskCountsQuery.isError ? taskCountsQuery.error : undefined}
+                  onRetry={() => void taskCountsQuery.refetch()}
+                  isEmpty={totalTasks === 0}
+                  emptyText="还没有任务"
+                >
+                  <div className="wb-status-chart">
+                    <DonutChart
+                      segments={[
+                        { name: '已完成', value: taskCounts?.done ?? 0, color: designVars.statusDone },
+                        { name: '进行中', value: taskCounts?.doing ?? 0, color: designVars.statusDoing },
+                        { name: '待处理', value: taskCounts?.todo ?? 0, color: designVars.orange },
+                      ]}
+                      centerValue={totalTasks}
+                      centerLabel="总任务"
+                      size={126}
+                      thickness={16}
+                    />
+                    <div className="wb-status-legend">
+                      <LegendItem color={designVars.statusDone} name="已完成" value={taskCounts?.done ?? 0} />
+                      <LegendItem color={designVars.statusDoing} name="进行中" value={taskCounts?.doing ?? 0} />
+                      <LegendItem color={designVars.orange} name="待处理" value={taskCounts?.todo ?? 0} />
+                    </div>
                   </div>
-                </div>
-              </StateBlock>
-            </div>
-          </Panel>
-        </div>
+                </StateBlock>
+              </div>
+            </Panel>
+          </div>
+        )}
 
-        {/* 右下：项目完成率排行 */}
-        <div className="wb-agg-6">
+        {/* 右下：项目完成率排行（内嵌时独占整行，因为左边那块已经被去掉） */}
+        <div className={embedded ? 'wb-agg-12' : 'wb-agg-6'}>
           <Panel title="项目完成率排行" flush>
             <div style={{ padding: '0 18px 16px' }}>
               <StateBlock
