@@ -25,6 +25,7 @@ import {
   FileTextOutlined,
   FileZipOutlined,
   FolderFilled,
+  HistoryOutlined,
   MoreOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -50,6 +51,7 @@ import { designVars } from '../styles/theme';
 import { MetricCard, Panel, ToneTag } from '../components/ui';
 import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
+import { FileVersionDrawer } from '../components/files/FileVersionDrawer';
 import '../styles/files.css';
 
 /**
@@ -132,6 +134,7 @@ export function FilesPage() {
   const [kindFilter, setKindFilter] = useState<FileKind | undefined>(undefined);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [folderOpen, setFolderOpen] = useState(false);
+  const [versionFile, setVersionFile] = useState<FileAsset | null>(null);
   const [form] = Form.useForm<{ name?: string }>();
 
   /** 文件清单：分类下拉走服务端筛选；搜索框在已取到的清单上本地过滤 */
@@ -353,6 +356,11 @@ export function FilesPage() {
                   // 历史登记数据没有实体，按钮灰着并说明原因
                   disabled: !row.hasFile,
                 },
+                {
+                  key: 'versions',
+                  icon: <HistoryOutlined />,
+                  label: '版本历史',
+                },
                 { type: 'divider' as const },
                 {
                   key: 'delete',
@@ -363,6 +371,7 @@ export function FilesPage() {
               ],
               onClick: ({ key, domEvent }) => {
                 domEvent.stopPropagation();
+                if (key === 'versions') setVersionFile(row);
                 if (key === 'delete') deleteFileMutation.mutate(row.id);
                 if (key === 'download') {
                   void downloadFile(row.id, row.name).catch((err) => {
@@ -768,6 +777,8 @@ export function FilesPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <FileVersionDrawer file={versionFile} onClose={() => setVersionFile(null)} />
     </div>
   );
 }

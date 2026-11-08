@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { mkdir, rm } from 'node:fs/promises';
+import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, isAbsolute, resolve, sep } from 'node:path';
 import { Transform, type Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -90,6 +90,16 @@ export async function writeStream(
 export async function removeBlob(key: string | null | undefined): Promise<void> {
   if (!key) return;
   await rm(resolveKey(key), { force: true });
+}
+
+/**
+ * 复制一份实体到新的存储键（回滚用）。
+ *
+ * 为什么回滚要复制而不是直接复用旧键：每个版本必须**独占**一份实体，
+ * 否则删旧版本 / 清理历史时会把正在用的文件一起删掉。
+ */
+export async function copyBlob(fromKey: string, toKey: string): Promise<void> {
+  await copyFile(resolveKey(fromKey), resolveKey(toKey));
 }
 
 /** 按 MIME + 扩展名归类，和 shared 里的 FileKind 对齐 */

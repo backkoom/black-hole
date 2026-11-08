@@ -1,4 +1,4 @@
-import type { FileAsset, FileFolder, FileKind, FileStats } from '@blackhole/shared/types';
+import type { FileAsset, FileFolder, FileKind, FileStats, FileVersion } from '@blackhole/shared/types';
 import { apiBlob, apiDelete, apiGet, apiPost, apiPostForm } from './client';
 
 /**
@@ -125,6 +125,49 @@ export async function downloadFile(id: number, name: string): Promise<void> {
   anchor.click();
   anchor.remove();
   // 立刻 revoke 会让部分浏览器的下载中断，10 秒后回收足够安全
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** 版本列表：items 新的在前，currentVersionNo 是当前版本号 */
+export async function listFileVersions(
+  id: number,
+): Promise<{ items: FileVersion[]; currentVersionNo: number }> {
+  return apiGet<{ items: FileVersion[]; currentVersionNo: number }>(`/files/${id}/versions`);
+}
+
+/** 上传新版本（不覆盖旧版本，各版本独占一份磁盘实体） */
+export async function uploadFileVersion(
+  id: number,
+  file: File,
+  note?: string,
+): Promise<FileAsset> {
+  const form = new FormData();
+  form.append('file', file);
+  if (note) form.append('note', note);
+  const data = await apiPostForm<{ file: FileAsset }>(`/files/${id}/versions`, form);
+  return data.file;
+}
+
+/** 回滚：以历史版本内容生成一个新版本（版本号继续往上加，不回退） */
+export async function restoreFileVersion(id: number, versionNo: number): Promise<FileAsset> {
+  const data = await apiPost<{ file: FileAsset }>(`/files/${id}/versions/${versionNo}/restore`, {});
+  return data.file;
+}
+
+/** 下载某个历史版本 */
+export async function downloadFileVersion(
+  id: number,
+  versionNo: number,
+  name: string,
+): Promise<void> {
+  const blob = await apiBlob(`/files/${id}/versions/${versionNo}/download`);
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 

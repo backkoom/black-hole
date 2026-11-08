@@ -1,9 +1,9 @@
-import type { FileAsset, FileFolder, FileKind, FileStats } from '@blackhole/shared/types';
+import type { FileAsset, FileFolder, FileKind, FileStats, FileVersion } from '@blackhole/shared/types';
 import { query, queryOne } from '../db.js';
 import { notFound, unprocessable } from '../lib/errors.js';
 import { formatTimestamp } from '../lib/serialize.js';
 import type { SessionContext } from '../auth/service.js';
-import { removeBlob } from './storage.js';
+import { buildStorageKey, copyBlob, removeBlob } from './storage.js';
 
 /**
  * 文件资料 —— 用户端「文件资料」页（稿子图7）。
@@ -22,6 +22,7 @@ interface AssetRow {
   kind: FileKind;
   size_bytes: string;
   version: string;
+  version_no: number;
   current_version: boolean;
   storage_key: string | null;
   mime_type: string | null;
@@ -32,7 +33,7 @@ interface AssetRow {
 
 const ASSET_SELECT = `
 SELECT f.id, f.project_id, p.name AS project_name, f.folder_id, fo.name AS folder_name,
-       f.name, f.kind, f.size_bytes, f.version, f.current_version,
+       f.name, f.kind, f.size_bytes, f.version, f.version_no, f.current_version,
        f.storage_key, f.mime_type,
        u.name AS owner_name, f.created_at, f.updated_at
   FROM file_asset f
@@ -52,6 +53,7 @@ function toAsset(r: AssetRow): FileAsset {
     kind: r.kind,
     sizeBytes: Number(r.size_bytes),
     version: r.version,
+    versionNo: Number(r.version_no ?? 1),
     currentVersion: r.current_version,
     hasFile: r.storage_key !== null,
     mimeType: r.mime_type,
@@ -158,7 +160,15 @@ export async function saveUploadedFile(
     ],
   );
   if (!ins) throw notFound('创建失败');
-  const row = await queryOne<AssetRow>(`${ASSET_SELECT} WHERE f.id = $1`, [Number(ins.id)]);
+  const fileId = Number(ins.id);
+  // 首个版本也入库：版本历史从"上传那一刻"开始，不做特例（否则版本列表要判空）
+  await query(
+    `INSERT INTO file_version (file_id, version_no, storage_key, size_bytes, mime_type, sha256, uploaded_by)
+     VALUES ($1, 1, $2, $3, $4, $5, $6)
+     ON CONFLICT (file_id, version_no) DO NOTHING`,
+    [fileId, input.storageKey, input.sizeBytes, input.mimeType, input.sha256, actor.user.id],
+  );
+  const row = await queryOne<AssetRow>(`${ASSET_SELECT} WHERE f.id = $1`, [fileId]);
   if (!row) throw notFound('文件不存在');
   return toAsset(row);
 }
@@ -206,11 +216,20 @@ export async function deleteFile(id: number, actor: SessionContext): Promise<voi
   }
   await query('UPDATE file_asset SET deleted_at = now(), updated_at = now() WHERE id = $1', [id]);
   // 行删了实体也删：不然磁盘只涨不降，而备份里还留着一堆没人能访问的文件。
-  // 删盘失败不影响接口结果（数据库已经标记删除），只记日志。
-  try {
-    await removeBlob(row.storage_key);
-  } catch (err) {
-    console.warn('[files] 删除实体失败', row.storage_key, err);
+  // ⚠️ 历史版本各自占一份实体（D-27），必须逐个删，只删当前版本会留下孤儿文件。
+  const versions = await query<{ storage_key: string }>(
+    'SELECT storage_key FROM file_version WHERE file_id = $1',
+    [id],
+  );
+  const keys = new Set<string>(versions.map((v) => v.storage_key));
+  if (row.storage_key) keys.add(row.storage_key);
+  for (const key of keys) {
+    // 删盘失败不影响接口结果（数据库已经标记删除），只记日志。
+    try {
+      await removeBlob(key);
+    } catch (err) {
+      console.warn('[files] 删除实体失败', key, err);
+    }
   }
 }
 
@@ -323,5 +342,205 @@ export async function getFileStats(userId?: number): Promise<FileStats> {
       count: Number(r.count),
       bytes: Number(r.bytes),
     })),
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * 文件版本历史（D-27）
+ * ------------------------------------------------------------------ */
+
+interface VersionRow {
+  version_no: number;
+  size_bytes: string;
+  mime_type: string | null;
+  sha256: string | null;
+  note: string | null;
+  uploaded_name: string | null;
+  created_at: Date;
+}
+
+function toVersion(r: VersionRow): FileVersion {
+  return {
+    versionNo: Number(r.version_no),
+    sizeBytes: Number(r.size_bytes),
+    mimeType: r.mime_type,
+    sha256: r.sha256,
+    note: r.note,
+    uploadedByName: r.uploaded_name,
+    createdAt: formatTimestamp(r.created_at) as string,
+  };
+}
+
+/** 版本列表：新的在前；current 由调用方按 file_asset.version_no 标记 */
+export async function listFileVersions(id: number, actor: SessionContext): Promise<FileVersion[]> {
+  await assertFileAccess(id, actor, 'file_id, version_no, storage_key');
+  const rows = await query<VersionRow>(
+    `SELECT v.version_no, v.size_bytes, v.mime_type, v.sha256, v.note,
+            u.name AS uploaded_name, v.created_at
+       FROM file_version v
+       LEFT JOIN app_user u ON u.id = v.uploaded_by
+      WHERE v.file_id = $1
+      ORDER BY v.version_no DESC`,
+    [id],
+  );
+  return rows.map(toVersion);
+}
+
+/** 取"当前版本号"，用于前端标 current */
+export async function getCurrentVersionNo(id: number): Promise<number> {
+  const row = await queryOne<{ version_no: number }>(
+    'SELECT version_no FROM file_asset WHERE id = $1 AND deleted_at IS NULL',
+    [id],
+  );
+  return row ? Number(row.version_no) : 0;
+}
+
+/** 新增一个版本（上传新文件内容），并把 file_asset 指向它 */
+export async function addFileVersion(
+  id: number,
+  input: {
+    storageKey: string;
+    sizeBytes: number;
+    mimeType: string;
+    sha256: string;
+    note?: string | null;
+  },
+  actor: SessionContext,
+): Promise<FileAsset> {
+  const asset = await assertFileAccess(id, actor, 'file_id, version_no, storage_key');
+  // 只有登记信息的老数据没有实体，第一次补文件应记作 v1（否则会凭空从 v2 开始）
+  const nextNo = asset.storage_key ? Number(asset.version_no) + 1 : 1;
+  await query(
+    `INSERT INTO file_version (file_id, version_no, storage_key, size_bytes, mime_type, sha256, note, uploaded_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [
+      id,
+      nextNo,
+      input.storageKey,
+      input.sizeBytes,
+      input.mimeType,
+      input.sha256,
+      input.note ?? null,
+      actor.user.id,
+    ],
+  );
+  await query(
+    `UPDATE file_asset
+        SET storage_key = $2, size_bytes = $3, mime_type = $4, sha256 = $5,
+            version_no = $6, version = $7, updated_at = now()
+      WHERE id = $1`,
+    [id, input.storageKey, input.sizeBytes, input.mimeType, input.sha256, nextNo, `v${nextNo}.0`],
+  );
+  const row = await queryOne<AssetRow>(`${ASSET_SELECT} WHERE f.id = $1`, [id]);
+  if (!row) throw notFound('文件不存在');
+  return toAsset(row);
+}
+
+/** 历史版本的取件信息（下载某一版） */
+export async function getVersionDownloadTarget(
+  id: number,
+  versionNo: number,
+  actor: SessionContext,
+): Promise<{ storageKey: string; name: string; mimeType: string | null; sizeBytes: number }> {
+  const asset = await assertFileAccess(id, actor, 'file_id, name, mime_type');
+  const row = await queryOne<{
+    storage_key: string;
+    size_bytes: string;
+    mime_type: string | null;
+  }>(
+    'SELECT storage_key, size_bytes, mime_type FROM file_version WHERE file_id = $1 AND version_no = $2',
+    [id, versionNo],
+  );
+  if (!row) throw notFound('该版本不存在');
+  const ext = asset.name.includes('.') ? asset.name.slice(asset.name.lastIndexOf('.')) : '';
+  const base = ext ? asset.name.slice(0, -ext.length) : asset.name;
+  return {
+    storageKey: row.storage_key,
+    name: `${base}-v${versionNo}${ext}`,
+    mimeType: row.mime_type,
+    sizeBytes: Number(row.size_bytes),
+  };
+}
+
+/**
+ * 回滚：以历史版本的内容**生成一个新版本**（不是把版本号退回去）。
+ *
+ * 这样审计链是连续的（谁在什么时候把哪一版的内容又拿出来用，一目了然），
+ * 也不会出现"当前版本号变小、后面又有更大号"的混乱。
+ */
+export async function restoreFileVersion(
+  id: number,
+  versionNo: number,
+  actor: SessionContext,
+): Promise<FileAsset> {
+  await assertFileAccess(id, actor, 'file_id, name');
+  const src = await queryOne<{
+    storage_key: string;
+    size_bytes: string;
+    mime_type: string | null;
+    sha256: string | null;
+  }>('SELECT storage_key, size_bytes, mime_type, sha256 FROM file_version WHERE file_id = $1 AND version_no = $2', [
+    id,
+    versionNo,
+  ]);
+  if (!src) throw notFound('该版本不存在');
+
+  const asset = await queryOne<{ name: string }>(
+    'SELECT name FROM file_asset WHERE id = $1 AND deleted_at IS NULL',
+    [id],
+  );
+  const newKey = buildStorageKey(asset?.name ?? 'file');
+  await copyBlob(src.storage_key, newKey);
+  try {
+    return await addFileVersion(
+      id,
+      {
+        storageKey: newKey,
+        sizeBytes: Number(src.size_bytes),
+        mimeType: src.mime_type ?? 'application/octet-stream',
+        sha256: src.sha256 ?? '',
+        note: `回滚自 v${versionNo}`,
+      },
+      actor,
+    );
+  } catch (err) {
+    // 写库失败要把刚复制的实体删掉，别留孤儿
+    await removeBlob(newKey).catch(() => undefined);
+    throw err;
+  }
+}
+
+/** 归属校验：只有本人或管理员能碰；不存在与无权限都回 404（不泄露存在性） */
+async function assertFileAccess<T extends string>(
+  id: number,
+  actor: SessionContext,
+  _fields: T,
+): Promise<{
+  file_id: number;
+  version_no: number;
+  storage_key: string | null;
+  name: string;
+  mime_type: string | null;
+}> {
+  const row = await queryOne<{
+    file_id: number;
+    version_no: number;
+    storage_key: string | null;
+    name: string;
+    mime_type: string | null;
+    user_id: number;
+  }>('SELECT id AS file_id, version_no, storage_key, name, mime_type, user_id FROM file_asset WHERE id = $1 AND deleted_at IS NULL', [
+    id,
+  ]);
+  if (!row) throw notFound('文件不存在');
+  if (actor.user.role !== 'admin' && Number(row.user_id) !== actor.user.id) {
+    throw notFound('文件不存在');
+  }
+  return {
+    file_id: Number(row.file_id),
+    version_no: Number(row.version_no),
+    storage_key: row.storage_key,
+    name: row.name,
+    mime_type: row.mime_type,
   };
 }

@@ -281,6 +281,8 @@ export interface FileAsset {
   kind: FileKind;
   sizeBytes: number;
   version: string;
+  /** 当前版本号（从 1 开始，与 file_version.version_no 对应） */
+  versionNo: number;
   currentVersion: boolean;
   /** 是否有可下载的实体（历史登记数据只有元数据 → false） */
   hasFile: boolean;
@@ -289,6 +291,18 @@ export interface FileAsset {
   ownerName: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** 文件历史版本（D-27）：一行一份磁盘实体，不会互相覆盖 */
+export interface FileVersion {
+  versionNo: number;
+  sizeBytes: number;
+  mimeType: string | null;
+  sha256: string | null;
+  /** 上传时填的备注；回滚产生的版本会写「回滚自 vN」 */
+  note: string | null;
+  uploadedByName: string | null;
+  createdAt: string;
 }
 
 export interface FileFolder {

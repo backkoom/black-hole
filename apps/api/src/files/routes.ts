@@ -4,14 +4,19 @@ import { ok, requireActiveSession } from '../auth/middleware.js';
 import { createReadStream } from 'node:fs';
 import { access } from 'node:fs/promises';
 import {
+  addFileVersion,
   createFile,
   createFolder,
   deleteFile,
   deleteFolder,
+  getCurrentVersionNo,
   getDownloadTarget,
   getFileStats,
+  getVersionDownloadTarget,
+  listFileVersions,
   listFiles,
   listFolders,
+  restoreFileVersion,
   saveUploadedFile,
 } from './service.js';
 import {
@@ -183,6 +188,105 @@ export async function registerFileRoutes(app: FastifyInstance): Promise<void> {
     //    Fastify 看不到反代后加的响应头，条件判断也拦不住，结果就是两个同名头。
     //    安全性由 nginx 保证（见 deploy/nginx-https*.conf）。
     return reply.send(createReadStream(abs));
+  });
+
+  /* ---------------- 版本历史（D-27） ---------------- */
+
+  app.get('/api/files/:id/versions', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    const items = await listFileVersions(id, actor);
+    const current = await getCurrentVersionNo(id);
+    return ok(reply, { items, currentVersionNo: current });
+  });
+
+  // 上传新版本：和首次上传同一套 multipart 处理（字段可能在文件之后）
+  app.post('/api/files/:id/versions', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    const limit = maxUploadBytes();
+    const tooLargeMessage = `单个文件不能超过 ${Math.round(limit / 1024 / 1024)} MB`;
+
+    let mimeType = 'application/octet-stream';
+    let storageKey: string | null = null;
+    let written: { sizeBytes: number; sha256: string } | null = null;
+    let note: string | null = null;
+    let truncated = false;
+
+    for await (const part of req.parts({ limits: { fileSize: limit, files: 1 } })) {
+      if (part.type === 'file') {
+        if (part.fieldname !== 'file') {
+          part.file.resume();
+          continue;
+        }
+        mimeType = part.mimetype || 'application/octet-stream';
+        storageKey = buildStorageKey(part.filename ?? 'file');
+        try {
+          written = await writeStream(part.file, storageKey);
+        } catch (err) {
+          await removeBlob(storageKey);
+          if (part.file.truncated) throw payloadTooLarge(tooLargeMessage);
+          throw err;
+        }
+        if (part.file.truncated) {
+          await removeBlob(storageKey);
+          truncated = true;
+        }
+      } else if (part.fieldname === 'note') {
+        const value = String(part.value ?? '').trim();
+        note = value ? value.slice(0, 256) : null;
+      }
+    }
+
+    if (truncated) throw payloadTooLarge(tooLargeMessage);
+    if (!storageKey || !written) throw badRequest('请选择要上传的文件');
+
+    try {
+      const file = await addFileVersion(
+        id,
+        {
+          storageKey,
+          sizeBytes: written.sizeBytes,
+          mimeType,
+          sha256: written.sha256,
+          note,
+        },
+        actor,
+      );
+      return ok(reply, { file });
+    } catch (err) {
+      // 校验没过（比如不是本人的文件）→ 别把刚落的盘留着
+      await removeBlob(storageKey);
+      throw err;
+    }
+  });
+
+  app.get('/api/files/:id/versions/:versionNo/download', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const params = req.params as { id: string; versionNo: string };
+    const id = parseId(params.id);
+    const versionNo = Number(params.versionNo);
+    if (!Number.isInteger(versionNo) || versionNo <= 0) throw badRequest('版本号不合法');
+    const target = await getVersionDownloadTarget(id, versionNo, actor);
+    const abs = resolveKey(target.storageKey);
+    try {
+      await access(abs);
+    } catch {
+      throw notFound('该版本的实体已丢失，请联系管理员从备份恢复');
+    }
+    reply.header('Content-Type', target.mimeType ?? 'application/octet-stream');
+    reply.header('Content-Disposition', contentDisposition(target.name));
+    reply.header('Content-Length', String(target.sizeBytes));
+    return reply.send(createReadStream(abs));
+  });
+
+  app.post('/api/files/:id/versions/:versionNo/restore', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const params = req.params as { id: string; versionNo: string };
+    const id = parseId(params.id);
+    const versionNo = Number(params.versionNo);
+    if (!Number.isInteger(versionNo) || versionNo <= 0) throw badRequest('版本号不合法');
+    return ok(reply, { file: await restoreFileVersion(id, versionNo, actor) });
   });
 
   app.delete('/api/files/:id', async (req, reply) => {
