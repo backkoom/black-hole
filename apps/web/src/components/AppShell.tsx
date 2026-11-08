@@ -1,19 +1,16 @@
 import { useMemo, type ReactNode } from 'react';
 import { Avatar, Button, Layout, Menu, Tag } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   AppstoreOutlined,
   BarChartOutlined,
-  BlockOutlined,
   CalendarOutlined,
-  CheckSquareOutlined,
+  ClusterOutlined,
   DashboardOutlined,
-  DatabaseOutlined,
   FolderOpenOutlined,
-  LineChartOutlined,
   LogoutOutlined,
   SettingOutlined,
   TeamOutlined,
-  WarningOutlined,
 } from '@ant-design/icons';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -53,27 +50,17 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    title: '我的工作',
+    // D-23（2026-11-08）：从"12 项平铺"改成"6 个模块"。
+    // 看板 / 任务 / 进度 / 风险 原本是四个平级入口，但读的是同一批 task+project，
+    // 收进「项目管理」模块（进去后顶部 tab 切换），导航只留一个入口。
+    // 不设分组标题：模块本身就是分组，再加标题会多一层噪音。
+    title: '',
     items: [
-      { key: '/', match: '/', exact: true, icon: <DashboardOutlined />, label: '项目总览' },
-      { key: '/tasks', match: '/tasks', icon: <CheckSquareOutlined />, label: '任务清单' },
-      { key: '/calendar', match: '/calendar', icon: <CalendarOutlined />, label: '日程安排' },
-    ],
-  },
-  {
-    title: '项目协作',
-    items: [
-      // 看板用「分栏」图标，别再和文件夹撞脸
-      { key: '/kanban', match: '/kanban', icon: <BlockOutlined />, label: '项目看板' },
+      { key: '/', match: '/', exact: true, icon: <DashboardOutlined />, label: '工作台' },
+      { key: '/projects', match: '/projects', icon: <ClusterOutlined />, label: '项目管理' },
       { key: '/team', match: '/team', icon: <TeamOutlined />, label: '团队协作' },
+      { key: '/calendar', match: '/calendar', icon: <CalendarOutlined />, label: '日程安排' },
       { key: '/files', match: '/files', icon: <FolderOpenOutlined />, label: '文件资料' },
-      { key: '/risks', match: '/risks', icon: <WarningOutlined />, label: '风险问题' },
-    ],
-  },
-  {
-    title: '数据洞察',
-    items: [
-      { key: '/progress', match: '/progress', icon: <LineChartOutlined />, label: '进度追踪' },
       { key: '/analytics', match: '/analytics', icon: <BarChartOutlined />, label: '数据统计' },
     ],
   },
@@ -90,7 +77,6 @@ const ADMIN_GROUP: NavGroup = {
   title: '系统管理',
   items: [
     { key: '/workspace', match: '/workspace', icon: <AppstoreOutlined />, label: '自定义工作台' },
-    { key: '/projects', match: '/projects', icon: <DatabaseOutlined />, label: '项目档案' },
   ],
 };
 
@@ -151,11 +137,16 @@ export function AppShell() {
   };
 
   // 分组标题交给 AntD 的 group 渲染，样式在 global.css 的 .ant-menu-item-group-title 里
-  const menuItems = groups.map((group) => ({
-    type: 'group' as const,
-    label: group.title,
-    children: group.items.map(toMenuItem),
-  }));
+  // 无标题的分组直接平铺（D-23：六个模块不需要再套一层"导航"标题）
+  // 用 for 循环建菜单项（flatMap 的联合类型 AntD 认不出来，会报 not assignable）
+  const menuItems: MenuProps['items'] = [];
+  for (const group of groups) {
+    if (group.title) {
+      menuItems.push({ type: 'group', label: group.title, children: group.items.map(toMenuItem) });
+    } else {
+      menuItems.push(...group.items.map(toMenuItem));
+    }
+  }
 
   return (
     <Layout className="wb-layout">

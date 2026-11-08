@@ -1,0 +1,31 @@
+/* 项目管理模块的顶部 tab（D-23）
+ *
+ * 五个视图收进一个模块后，tab 是唯一的切换入口：
+ * - 贴住内容区顶部，不额外留白（下面每个页面自带 PageHeader）
+ * - 选中态用主题蓝，未选中灰，和侧栏保持一致
+ * - 窄屏时 tab 允许横向滚动（AntD 自带），不换行刷高度 */
+
+.wb-project-shell {
+  margin-bottom: 2px;
+}
+
+.wb-project-shell .ant-tabs-nav {
+  margin-bottom: 14px;
+}
+
+.wb-project-shell .ant-tabs-nav::before {
+  border-bottom-color: var(--border);
+}
+
+.wb-project-shell .ant-tabs-tab {
+  padding: 8px 2px;
+  font-size: 13.5px;
+}
+
+.wb-project-shell .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 22px;
+}
+
+.wb-project-shell .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 600;
+}

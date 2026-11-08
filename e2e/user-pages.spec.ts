@@ -342,7 +342,7 @@ test.describe('用户端 10 页', () => {
     expect(badApiResponses, '不应出现 4xx/5xx 的接口响应').toEqual([]);
   });
 
-  test('总览：4 张指标卡与接口一致，面板有真实数据', async ({ page }) => {
+  test('工作台：4 张指标卡与接口一致，面板有真实数据', async ({ page }) => {
     const projects = await apiGet<Paged<ProjectDto>>(api, '/api/projects?page=1&pageSize=100');
     const statsTasks = await apiGet<{ todo: number; doing: number; done: number }>(
       api,
@@ -352,7 +352,8 @@ test.describe('用户端 10 页', () => {
     const users = await apiGet<Paged<{ id: number }>>(api, '/api/users?page=1&pageSize=100');
 
     await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: '项目总览' })).toBeVisible();
+    // D-23：首页从「项目总览」改名「工作台」（定位是团队工作台，项目管理只是其中一块）
+    await expect(page.getByRole('heading', { level: 1, name: '工作台' })).toBeVisible();
 
     // 指标卡：页面数字 === 接口数字
     expect(await metricValue(page, '项目总数')).toBe(String(projects.total));

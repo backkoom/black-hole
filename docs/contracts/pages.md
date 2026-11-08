@@ -54,6 +54,22 @@
 
 ---
 
+## 路由变更（D-23，2026-11-08）
+
+> 本文档是**一期设计基线**，页面内容仍然有效；但导航结构已按"团队工作台"重构，
+> 路由与归属以下表为准。旧路径全部重定向，不会 404。
+
+| 一期路由 | 现路由 | 归属 |
+|---|---|---|
+| `/` | `/` | 工作台（原「项目总览」） |
+| `/kanban` | `/projects?view=board` | 项目管理 › 看板 |
+| `/tasks` | `/projects?view=tasks` | 项目管理 › 任务 |
+| `/progress` | `/projects?view=progress` | 项目管理 › 进度 |
+| `/risks` | `/projects?view=risks` | 项目管理 › 风险 |
+| `/projects`（含 `/projects/:id`） | `/projects?view=projects`（详情页不变） | 项目管理 › 档案（仅管理员） |
+| `/team` `/calendar` `/files` `/analytics` | 不变 | 各自模块 |
+| `/settings/*` | 不变 | 设置 |
+
 ## 页面清单
 
 | 路由 | 页面名 | 可见角色 | 主要内容 |

@@ -8,18 +8,14 @@ import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
 import { OrgPage } from './pages/OrgPage';
 import { OverviewPage } from './pages/OverviewPage';
-import { KanbanPage } from './pages/KanbanPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { ProgressPage } from './pages/ProgressPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
-import { RisksPage } from './pages/RisksPage';
 import { FilesPage } from './pages/FilesPage';
 import { TeamPage } from './pages/TeamPage';
 import { SystemSettingsPage } from './pages/SystemSettingsPage';
+import { ProjectsShell } from './pages/ProjectsShell';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
-import { ProjectsPage } from './pages/ProjectsPage';
-import { TasksPage } from './pages/TasksPage';
 import { UsersPage } from './pages/UsersPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { WorkspaceTemplatePage } from './pages/WorkspaceTemplatePage';
@@ -59,25 +55,17 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { index: true, element: <OverviewPage /> },
-          {
-            path: 'kanban',
-            element: (
-              <KanbanPage />
-            ),
-          },
-          { path: 'tasks', element: <TasksPage /> },
+          // D-23：看板 / 任务 / 进度 / 风险收进「项目管理」模块，
+          // 旧路径保留重定向，书签与外部链接不会 404
+          { path: 'kanban', element: <Navigate to="/projects?view=board" replace /> },
+          { path: 'tasks', element: <Navigate to="/projects?view=tasks" replace /> },
           {
             path: 'calendar',
             element: (
               <CalendarPage />
             ),
           },
-          {
-            path: 'progress',
-            element: (
-              <ProgressPage />
-            ),
-          },
+          { path: 'progress', element: <Navigate to="/projects?view=progress" replace /> },
           {
             path: 'team',
             element: (
@@ -90,12 +78,7 @@ export const router = createBrowserRouter([
               <FilesPage />
             ),
           },
-          {
-            path: 'risks',
-            element: (
-              <RisksPage />
-            ),
-          },
+          { path: 'risks', element: <Navigate to="/projects?view=risks" replace /> },
           {
             path: 'analytics',
             element: (
@@ -107,12 +90,13 @@ export const router = createBrowserRouter([
             element: <WorkspacePage />,
           },
           {
-            path: 'projects',
-            element: <ProjectsPage />,
-          },
-          {
             path: 'projects/:id',
             element: <ProjectDetailPage />,
+          },
+          {
+            // 项目管理模块：?view=projects|board|tasks|progress|risks
+            path: 'projects',
+            element: <ProjectsShell />,
           },
           // 直达 /settings 时落到个人资料。之前「设置」的菜单 key 写的是
           // /settings/password —— 点设置进"改密码"，不符合常理。

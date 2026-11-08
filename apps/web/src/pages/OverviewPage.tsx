@@ -38,7 +38,7 @@ import { projectColor, projectIcon } from '../components/user/visuals';
  *
  * 组件树：
  * OverviewPage
- * ├─ PageHeader(「项目总览」+ 副标题 + 右侧日期/日历按钮)
+ * ├─ PageHeader(「工作台」+ 副标题 + 右侧日期/日历按钮)
  * └─ .wb-grid（12 列栅格，间距 18px）
  *    ├─ .wb-metric-row（4 张指标卡）
  *    ├─ .wb-grid-left（约 2/3）
@@ -160,7 +160,7 @@ export function OverviewPage() {
 
   return (
     <div className="wb-page">
-      <PageHeader title="项目总览" subtitle="一眼看完项目进展、今日待办与团队状态。" />
+      <PageHeader title="工作台" subtitle="我的待办、项目进展、日程与团队动态，一页看完。" />
 
       <div className="wb-grid">
         {/* 4 张指标卡 */}
