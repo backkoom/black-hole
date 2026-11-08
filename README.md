@@ -141,6 +141,7 @@ python3 scripts/scrub-sensitive.py --scan   # 扫工作区 + git 历史
 
 | 文件 | 内容 |
 |---|---|
+| [docs/项目现状.md](docs/项目现状.md) | **一页看完**：现网拓扑、已完成项、验证命令、已知限制、二期候选 |
 | [docs/contracts/openapi.yaml](docs/contracts/openapi.yaml) | 接口契约（OpenAPI 3.1） |
 | [docs/contracts/decisions.md](docs/contracts/decisions.md) | 已决策项 + 未决项 + 影响面 |
 | [docs/contracts/modules.md](docs/contracts/modules.md) | 15 个模块（12 active + 3 placeholder）与 config schema |
