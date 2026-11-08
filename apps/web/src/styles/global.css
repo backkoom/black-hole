@@ -1805,6 +1805,42 @@ body {
   min-width: 0;
 }
 
+/* 到期筛选常显标签（来自 URL ?due=，筛选条上没有对应控件）
+   给一层淡橙底：不加底时用户看不见，会以为"表格只剩 3 行"是 bug */
+.wb-due-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: var(--soft-orange);
+  border: 1px solid #fbe0b8;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wb-due-chip .wb-muted {
+  color: var(--text-2);
+}
+
+.wb-due-chip-close {
+  margin-left: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.wb-due-chip-close:hover {
+  opacity: 1;
+}
+
 /* 任务状态面板右侧「要注意」：逾期 / 今日到期，行本身可点 */
 .wb-status-side {
   display: flex;
@@ -1813,12 +1849,12 @@ body {
   flex: 0 0 auto;
   min-width: 150px;
   padding-left: 16px;
-  border-left: 1px solid var(--wb-line, #eef1f5);
+  border-left: 1px solid var(--border);
 }
 
 .wb-status-side-title {
   font-size: 12px;
-  color: var(--wb-text-3, #8b93a1);
+  color: var(--muted);
   margin-bottom: 4px;
 }
 
@@ -1838,19 +1874,19 @@ body {
 }
 
 .wb-status-side-row:hover {
-  background: var(--wb-hover, #f4f6fa);
+  background: var(--soft-gray);
 }
 
 .wb-status-side-label {
   font-size: 12px;
-  color: var(--wb-text-2, #5b6472);
+  color: var(--text-2);
 }
 
 .wb-status-side-value {
   font-size: 16px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--wb-text-1, #1f2530);
+  color: var(--text);
 }
 
 /* 项目列表卡片行 */

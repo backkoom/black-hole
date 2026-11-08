@@ -45,6 +45,16 @@ import { StateBlock } from '../components/user/StateBlock';
 import { TaskListTable } from '../components/user/TaskListTable';
 import { categoryTone } from '../components/user/visuals';
 
+/** 到期区间的中文名 —— 工作台点卡进来、或从「已选筛选」里看都用这一套 */
+const DUE_LABELS: Record<TaskDueFilter, string> = {
+  today: '今天到期',
+  overdue: '已逾期',
+  week: '本周到期',
+  month: '本月到期',
+  quarter: '本季到期',
+  year: '本年到期',
+};
+
 /**
  * 任务清单页（老六最终用户端界面 · 图3）。
  *
@@ -80,6 +90,8 @@ interface Filters {
   category?: string;
   from?: string;
   to?: string;
+  /** 到期区间：由工作台点卡（URL ?due=）带进来，筛选条上没有可视控件 */
+  due?: TaskDueFilter;
   page: number;
   pageSize: number;
 }
@@ -97,7 +109,7 @@ export function TasksPage() {
    * 从工作台点「今日任务 / 月度工作 …」进来时带 ?due=today|week|month|quarter|year，
    * 这里把它落成筛选条件（D-24）。URL 一变就同步，返回上一页再点另一张卡也能生效。
    */
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const urlDue = searchParams.get('due');
   useEffect(() => {
     if (!urlDue) return;
@@ -105,6 +117,17 @@ export function TasksPage() {
     if (!allowed.includes(urlDue)) return;
     setFilters((prev) => ({ ...prev, due: urlDue as TaskDueFilter, page: 1 }));
   }, [urlDue]);
+
+  /**
+   * 清掉到期筛选 —— 同时把 URL 上的 ?due= 摘掉，
+   * 否则刷新一次又被 useEffect 装回来（用户会觉得"清不掉"）。
+   */
+  const clearDue = () => {
+    setFilters((prev) => ({ ...prev, due: undefined, page: 1 }));
+    const next = new URLSearchParams(searchParams);
+    next.delete('due');
+    setSearchParams(next, { replace: true });
+  };
   const [keywordInput, setKeywordInput] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -369,6 +392,21 @@ export function TasksPage() {
           </div>
         </div>
 
+        {/* 到期筛选来自 URL（工作台点卡进来），筛选条上没有对应控件，
+            所以这里必须常显一枚可关闭的标签 —— 否则用户只看到「共 3 项」却不知道为什么 */}
+        {filters.due ? (
+          <div className="wb-due-chip">
+            <span className="wb-muted">当前视图：</span>
+            <ToneTag tone="orange">
+              {DUE_LABELS[filters.due] ?? filters.due}
+              <button type="button" className="wb-due-chip-close" onClick={clearDue} aria-label="清除到期筛选">
+                ×
+              </button>
+            </ToneTag>
+            <span className="wb-muted">共 {total} 项</span>
+          </div>
+        ) : null}
+
         {moreOpen ? (
           <div
             style={{
@@ -382,6 +420,7 @@ export function TasksPage() {
             }}
           >
             <span className="wb-muted">已选筛选：</span>
+            {filters.due ? <ToneTag tone="orange">{DUE_LABELS[filters.due] ?? filters.due}</ToneTag> : null}
             {filters.keyword ? <ToneTag tone="blue">关键词：{filters.keyword}</ToneTag> : null}
             {filters.projectId ? (
               <ToneTag tone="blue">
@@ -413,7 +452,8 @@ export function TasksPage() {
                 截止：{filters.from ?? '不限'} ~ {filters.to ?? '不限'}
               </ToneTag>
             ) : null}
-            {!filters.keyword &&
+            {!filters.due &&
+            !filters.keyword &&
             !filters.projectId &&
             !filters.status &&
             !filters.priority &&

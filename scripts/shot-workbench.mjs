@@ -139,5 +139,23 @@ await page.waitForTimeout(1800);
 await page.screenshot({ path: join(OUT, '42-今日任务-落地.png') });
 console.log('截图 ✓ 42-今日任务-落地');
 
+// 到期标签必须常显（筛选条上没有对应控件），且能一键清掉并把 ?due= 从 URL 摘掉
+const chip = page.locator('.wb-due-chip');
+const chipText = (await chip.count()) ? (await chip.innerText()).replace(/\s+/g, ' ').trim() : '';
+const rowsBefore = await page.locator('.ant-table-tbody tr.ant-table-row').count();
+console.log(`到期标签：「${chipText || '缺失'}」| 表格行数 ${rowsBefore}`);
+if ((await chip.count()) === 0) {
+  console.log('✗ 到期标签没显示 —— 用户会看不懂为什么只有几行');
+} else {
+  await page.locator('.wb-due-chip-close').click();
+  await page.waitForTimeout(1500);
+  const afterUrl = page.url().replace(BASE, '');
+  const rowsAfter = await page.locator('.ant-table-tbody tr.ant-table-row').count();
+  const stillThere = await page.locator('.wb-due-chip').count();
+  console.log(
+    `${afterUrl.includes('due=') ? '✗' : '✓'} 清除后 URL ${afterUrl} | 行数 ${rowsBefore}→${rowsAfter} | 标签仍在 ${stillThere > 0}`,
+  );
+}
+
 await browser.close();
 if (pass !== expectations.length) process.exit(1);
