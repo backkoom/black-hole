@@ -105,7 +105,13 @@ export async function listProjects(q: ListProjectsQuery): Promise<ListProjectsRe
   const params: unknown[] = [];
   if (q.userId !== undefined) {
     params.push(q.userId);
-    where.push(`p.user_id = $${params.length}`);
+    // D-30：非管理员能看到「自己建的」和「自己被拉进成员表的」项目
+    const n = params.length;
+    where.push(
+      `(p.user_id = $${n} OR EXISTS (
+         SELECT 1 FROM project_member pm WHERE pm.project_id = p.id AND pm.user_id = $${n}
+       ))`,
+    );
   }
   const clause = `WHERE ${where.join(' AND ')}`;
 
@@ -294,4 +300,112 @@ export async function deleteProject(
       [projectId],
     );
   });
+}
+
+/* ------------------------------------------------------------------ *
+ * 项目成员（D-30）
+ *
+ * 口径：
+ * - 可见性：项目归属人 + 成员表里的人 + 管理员；其他人一律 404（不泄露存在性）；
+ * - 可改性：只有归属人与管理员能改（成员只读，避免"被拉进来的人把别人踢掉"）；
+ * - 成员做成"整表替换"而不是逐条增删：前端一次提交最终名单，服务端一个事务换掉，
+ *   少一堆并发增删的边界。
+ * ------------------------------------------------------------------ */
+
+export interface ProjectMemberInfo {
+  userId: number;
+  name: string;
+  account: string;
+  isOwner: boolean;
+}
+
+/** 可选成员候选（轻量）：登录用户都能取，只给 id/姓名/账号 —— 选人下拉用 */
+export async function listMemberCandidates(): Promise<
+  { userId: number; name: string; account: string; isOwner: boolean }[]
+> {
+  const rows = await query<{ id: number; name: string; account: string }>(
+    `SELECT id, name, account FROM app_user
+      WHERE status = 'active'
+      ORDER BY name COLLATE "zh-CN"`,
+  );
+  return rows.map((r) => ({
+    userId: Number(r.id),
+    name: r.name,
+    account: r.account,
+    isOwner: false,
+  }));
+}
+
+export async function isProjectMember(projectId: number, userId: number): Promise<boolean> {
+  const row = await queryOne<{ ok: number }>(
+    'SELECT 1 AS ok FROM project_member WHERE project_id = $1 AND user_id = $2',
+    [projectId, userId],
+  );
+  return row !== null;
+}
+
+/** 成员列表：归属人置顶并标 isOwner（他可能不在成员表里，也要显示） */
+export async function getProjectMembers(projectId: number): Promise<ProjectMemberInfo[]> {
+  const rows = await query<{ user_id: number; name: string; account: string; is_owner: boolean }>(
+    `SELECT u.id AS user_id, u.name, u.account, (u.id = p.user_id) AS is_owner
+       FROM project p
+       JOIN app_user u ON u.id = p.user_id
+      WHERE p.id = $1 AND p.deleted_at IS NULL
+     UNION
+     SELECT u.id, u.name, u.account, false
+       FROM project_member pm
+       JOIN app_user u ON u.id = pm.user_id
+      WHERE pm.project_id = $1`,
+    [projectId],
+  );
+  return rows
+    .map((r) => ({
+      userId: Number(r.user_id),
+      name: r.name,
+      account: r.account,
+      isOwner: Boolean(r.is_owner),
+    }))
+    .sort((a, b) => Number(b.isOwner) - Number(a.isOwner) || a.name.localeCompare(b.name, 'zh-CN'));
+}
+
+/**
+ * 整表替换成员名单。归属人不写进成员表（他是隐含成员，避免两处真相）。
+ * 传空数组 = 清空协作者，只留归属人。
+ */
+export async function setProjectMembers(
+  projectId: number,
+  userIds: number[],
+  actorUserId: number,
+  isAdmin: boolean,
+): Promise<ProjectMemberInfo[]> {
+  const row = await queryOne<{ user_id: number }>(
+    'SELECT user_id FROM project WHERE id = $1 AND deleted_at IS NULL',
+    [projectId],
+  );
+  if (!row) throw notFound('项目不存在');
+  const ownerId = Number(row.user_id);
+  if (!isAdmin && ownerId !== actorUserId) throw notFound('项目不存在');
+
+  // 去重，并剔除归属人自己（隐含成员）
+  const unique = [...new Set(userIds)].filter((id) => Number.isInteger(id) && id > 0 && id !== ownerId);
+  if (unique.length > 0) {
+    const found = await query<{ id: number }>(
+      `SELECT id FROM app_user WHERE id = ANY($1::bigint[]) AND status = 'active'`,
+      [unique],
+    );
+    if (found.length !== unique.length) throw unprocessable('名单里有不存在或已停用的用户');
+  }
+
+  await withTransaction(async (client) => {
+    await client.query('DELETE FROM project_member WHERE project_id = $1', [projectId]);
+    if (unique.length > 0) {
+      await client.query(
+        `INSERT INTO project_member (project_id, user_id)
+         SELECT $1, unnest($2::bigint[])`,
+        [projectId, unique],
+      );
+    }
+  });
+
+  return getProjectMembers(projectId);
 }

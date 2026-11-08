@@ -3,12 +3,17 @@ import { z } from 'zod';
 import { ok, requireActiveSession } from '../auth/middleware.js';
 import {
   createProject,
+  getProjectMembers,
+  isProjectMember,
+  listMemberCandidates,
+  setProjectMembers,
   deleteProject,
   getProjectDetail,
   listProjects,
   updateProject,
 } from './service.js';
 import { badRequest, notFound } from '../lib/errors.js';
+import { queryOne } from '../db.js';
 import { PAGINATION } from '@blackhole/shared/errors';
 
 /**
@@ -72,9 +77,10 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
     const actor = await requireActiveSession(req);
     const id = parseId((req.params as { id: string }).id);
     const detail = await getProjectDetail(id);
-    // 归属校验：普通用户看别人的项目 → 404（不泄露存在性，§6.3）
+    // 归属校验：归属人 / 项目成员 / 管理员可看，其余 404（不泄露存在性，§6.3 + D-30）
     if (actor.user.role !== 'admin' && detail.project.userId !== actor.user.id) {
-      throw notFound('项目不存在');
+      const member = await isProjectMember(id, actor.user.id);
+      if (!member) throw notFound('项目不存在');
     }
     return ok(reply, detail);
   });
@@ -89,6 +95,48 @@ export async function registerProjectRoutes(app: FastifyInstance): Promise<void>
       reply,
       { project: await updateProject(id, body.data, actor.user.id, actor.user.role === 'admin') },
     );
+  });
+
+  // 30a GET /api/projects/member-candidates —— 选人下拉（登录即可，字段只有 id/姓名/账号）
+  app.get('/api/projects/member-candidates', async (req, reply) => {
+    await requireActiveSession(req);
+    return ok(reply, { items: await listMemberCandidates() });
+  });
+
+  // 30 GET /api/projects/:id/members —— 成员/归属人/管理员都能看
+  app.get('/api/projects/:id/members', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    const row = await queryOne<{ user_id: number }>(
+      'SELECT user_id FROM project WHERE id = $1 AND deleted_at IS NULL',
+      [id],
+    );
+    if (!row) throw notFound('项目不存在');
+    if (
+      actor.user.role !== 'admin' &&
+      Number(row.user_id) !== actor.user.id &&
+      !(await isProjectMember(id, actor.user.id))
+    ) {
+      throw notFound('项目不存在');
+    }
+    return ok(reply, { items: await getProjectMembers(id) });
+  });
+
+  // 31 PUT /api/projects/:id/members —— 整表替换（归属人 / 管理员）
+  app.put('/api/projects/:id/members', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    const body = z
+      .object({ userIds: z.array(z.number().int().positive()).max(200) })
+      .safeParse(req.body);
+    if (!body.success) throw badRequest('参数不合法');
+    const items = await setProjectMembers(
+      id,
+      body.data.userIds,
+      actor.user.id,
+      actor.user.role === 'admin',
+    );
+    return ok(reply, { items });
   });
 
   // 29 DELETE /api/projects/:id

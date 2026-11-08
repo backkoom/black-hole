@@ -295,6 +295,14 @@ export interface FileAsset {
   updatedAt: string;
 }
 
+/** 项目成员（D-30）：isOwner 为归属人，其余为协作者 */
+export interface ProjectMemberInfo {
+  userId: number;
+  name: string;
+  account: string;
+  isOwner: boolean;
+}
+
 /** 站内通知（D-28）：一人一条，readAt 为空表示未读 */
 export type NotificationKind = 'task_due' | 'task_overdue' | 'system';
 

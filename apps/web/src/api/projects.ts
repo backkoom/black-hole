@@ -1,4 +1,4 @@
-import type { Paged, Project, ProjectDetail } from '@blackhole/shared/types';
+import type { Paged, Project, ProjectDetail, ProjectMemberInfo } from '@blackhole/shared/types';
 import { apiDelete, apiGet, apiPost, apiPut } from './client';
 
 /**
@@ -62,6 +62,31 @@ export async function getProjectDetail(id: number): Promise<ProjectDetail> {
 export async function updateProject(id: number, input: UpdateProjectInput): Promise<Project> {
   const data = await apiPut<{ project: Project }>(`/projects/${id}`, input);
   return data.project;
+}
+
+/* ---------------- 项目成员（D-30） ---------------- */
+
+/** 成员列表（归属人 + 协作者） */
+export async function listProjectMembers(projectId: number): Promise<ProjectMemberInfo[]> {
+  const data = await apiGet<{ items: ProjectMemberInfo[] }>(`/projects/${projectId}/members`);
+  return data.items;
+}
+
+/** 整表替换成员名单（只有归属人/管理员能改，服务端 404 兜底） */
+export async function setProjectMembers(
+  projectId: number,
+  userIds: number[],
+): Promise<ProjectMemberInfo[]> {
+  const data = await apiPut<{ items: ProjectMemberInfo[] }>(`/projects/${projectId}/members`, {
+    userIds,
+  });
+  return data.items;
+}
+
+/** 选人下拉的候选（登录即可，只有 id/姓名/账号） */
+export async function listMemberCandidates(): Promise<ProjectMemberInfo[]> {
+  const data = await apiGet<{ items: ProjectMemberInfo[] }>('/projects/member-candidates');
+  return data.items;
 }
 
 /** 删除项目：软删 + 解除任务归属（任务保留） */

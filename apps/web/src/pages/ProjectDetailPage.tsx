@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { App as AntdApp, Button, Card, Empty, Popconfirm, Skeleton, Space } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { App as AntdApp, Avatar, Button, Card, Empty, Modal, Popconfirm, Select, Skeleton, Space, Tooltip } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Task, TaskStatus } from '@blackhole/shared/types';
-import { deleteProject, getProjectDetail, projectsKeys } from '../api/projects';
+import {
+  deleteProject,
+  getProjectDetail,
+  listMemberCandidates,
+  listProjectMembers,
+  projectsKeys,
+  setProjectMembers,
+} from '../api/projects';
 import { deleteTask, tasksKeys, updateTaskStatus } from '../api/tasks';
 import { errorStatus, errorText } from '../api/messages';
 import { useAuth } from '../auth/AuthContext';
@@ -48,6 +55,9 @@ export function ProjectDetailPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [statusPendingId, setStatusPendingId] = useState<number | null>(null);
+  /** 成员管理弹窗（D-30） */
+  const [memberOpen, setMemberOpen] = useState(false);
+  const [memberIds, setMemberIds] = useState<number[]>([]);
 
   const detailQuery = useQuery({
     queryKey: projectsKeys.detail(projectId),
@@ -57,6 +67,33 @@ export function ProjectDetailPage() {
 
   const project = detailQuery.data?.project ?? null;
   const tasks = detailQuery.data?.tasks ?? [];
+
+  /** 成员列表：归属人 + 协作者；只有归属人或管理员能改 */
+  const membersQuery = useQuery({
+    queryKey: ['projects', 'members', projectId],
+    queryFn: () => listProjectMembers(projectId),
+    enabled: validId,
+  });
+  const members = membersQuery.data ?? [];
+  const canManageMembers =
+    project !== null && user !== null && (project.userId === user.id || user.role === 'admin');
+
+  const candidatesQuery = useQuery({
+    queryKey: ['projects', 'member-candidates'],
+    queryFn: listMemberCandidates,
+    enabled: memberOpen,
+    staleTime: 60_000,
+  });
+
+  const saveMembersMutation = useMutation({
+    mutationFn: (ids: number[]) => setProjectMembers(projectId, ids),
+    onSuccess: async (items) => {
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setMemberOpen(false);
+      void message.success(`成员已更新（${items.length} 人）`);
+    },
+    onError: (err) => void message.error(errorText(err)),
+  });
 
   /** 任务变了 → 项目进度/状态也会变，两个都要刷（v2 §6.2「实时算，不依赖缓存」） */
   const invalidateAll = async (): Promise<void> => {
@@ -197,6 +234,50 @@ export function ProjectDetailPage() {
         )}
       </Card>
 
+      <Card className="wb-card-flat">
+        <div className="wb-section-title wb-section-title-row">
+          <span>
+            <TeamOutlined /> 项目成员
+            <span className="wb-muted" style={{ marginLeft: 8, fontWeight: 400 }}>
+              共 {members.length} 人
+            </span>
+          </span>
+          {canManageMembers ? (
+            <Button
+              size="small"
+              onClick={() => {
+                setMemberIds(
+                  members.filter((m) => !m.isOwner).map((m) => m.userId),
+                );
+                setMemberOpen(true);
+              }}
+            >
+              管理成员
+            </Button>
+          ) : null}
+        </div>
+        {members.length === 0 ? (
+          <span className="wb-muted">还没有成员</span>
+        ) : (
+          <div className="wb-member-chips">
+            {members.map((member) => (
+              <Tooltip
+                key={member.userId}
+                title={`${member.name}（${member.account}）${member.isOwner ? ' · 归属人' : ''}`}
+              >
+                <span className="wb-member-chip">
+                  <Avatar size={22} style={{ background: member.isOwner ? '#2563eb' : '#dbe4f5', color: member.isOwner ? '#fff' : '#2563eb', fontSize: 11 }}>
+                    {member.name.slice(0, 1)}
+                  </Avatar>
+                  <span className="wb-member-chip-name">{member.name}</span>
+                  {member.isOwner ? <span className="wb-member-owner">归属人</span> : null}
+                </span>
+              </Tooltip>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card className="wb-card-flat wb-task-card">
         <div className="wb-section-title">项目任务</div>
         <TaskTable
@@ -255,6 +336,37 @@ export function ProjectDetailPage() {
         project={project}
         onClose={() => setProjectFormOpen(false)}
       />
+
+      <Modal
+        title="管理项目成员"
+        open={memberOpen}
+        okText="保存"
+        cancelText="取消"
+        confirmLoading={saveMembersMutation.isPending}
+        onOk={() => saveMembersMutation.mutate(memberIds)}
+        onCancel={() => setMemberOpen(false)}
+        destroyOnClose
+      >
+        <p className="wb-muted" style={{ marginTop: 0, fontSize: 12 }}>
+          成员能看到这个项目及其进度；归属人{project?.owner ? `（${project.owner}）` : ''}始终可见，不用勾选。
+        </p>
+        <Select
+          mode="multiple"
+          allowClear
+          style={{ width: '100%' }}
+          placeholder="选择协作者"
+          loading={candidatesQuery.isPending}
+          value={memberIds}
+          onChange={(value: number[]) => setMemberIds(value)}
+          optionFilterProp="label"
+          options={(candidatesQuery.data ?? [])
+            .filter((candidate) => candidate.userId !== project?.userId)
+            .map((candidate) => ({
+              value: candidate.userId,
+              label: `${candidate.name}（${candidate.account}）`,
+            }))}
+        />
+      </Modal>
     </div>
   );
 }
