@@ -165,7 +165,7 @@
 
   /* 今天 / 日程 / 完成率 */
   .c4{grid-column:span 4}
-  .card.fixh{height:200px;display:flex;flex-direction:column}
+  .card.fixh{height:267px;display:flex;flex-direction:column}
   .card.fixh .list{flex:1;min-height:0;max-height:none}
   .list{display:flex;flex-direction:column;margin-top:8px;max-height:186px}
   .li{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
@@ -196,14 +196,9 @@
 
   /* 堆叠卡：三张并排合成一张，标签切换 + 背后的层层错位边 */
   .stack-card{grid-column:span 4;position:relative;padding:0;background:transparent;border:0;box-shadow:none;min-width:0;
-    display:flex;height:200px}
+    display:flex;height:267px}
   .stack-card .deck{position:relative;display:flex;width:100%}
-  .stack-card .deck::before,
-  .stack-card .deck::after{content:'';position:absolute;height:16px;background:#f2f5fb;
-    border:1px solid #dfe6f2;border-top:0;border-radius:0 0 16px 16px;z-index:0;
-    box-shadow:0 6px 14px -10px rgba(17,26,46,.35)}
-  .stack-card .deck::before{bottom:-12px;left:26px;right:26px}
-  .stack-card .deck::after{bottom:-6px;left:14px;right:14px;background:#fafbfe;border-color:#e4eaf4}
+  /* 底部叠层边按老六要求去掉，只保留一张卡 */
   .stack-inner{position:relative;z-index:1;display:flex;flex-direction:column;width:100%;background:#fff;
     border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
   .stack-head{display:flex;align-items:center;gap:2px;padding:9px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -480,7 +475,6 @@
                   <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
                   <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
                   <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
-                  <div class="pj"><span class="nm">运维巡检自动化</span><span class="pc">71%</span><div class="bar"><i style="width:71%;background:#f59f00"></i></div><span class="due">截止 11-15 · 6 个任务</span></div>
                 </div>
               </div>
               <div class="stack-panel" data-panel="notes">
