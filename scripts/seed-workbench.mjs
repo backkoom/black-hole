@@ -284,7 +284,8 @@ async function main() {
         title: def.title,
         projectId: targets[i % targets.length]?.id ?? null,
         priority: def.priority,
-        dueDate: thisWeek(i + 1),
+        // 周任务排在周三~周六，避免和「今天」撞车（演示时看着更清楚）
+        dueDate: thisWeek(3 + (i % 3)),
         category: '周计划',
         parentId: monthIds[def.parent] ?? null,
       }),

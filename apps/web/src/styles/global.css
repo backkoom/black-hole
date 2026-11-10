@@ -3120,3 +3120,61 @@ body {
 
 /* 任务状态四格：两列对齐更紧凑 */
 .wb-status-cells { gap: 6px 18px; }
+
+/* ============ D-33：工作台垂直节奏统一（实测出的 0 间距修掉） ============ */
+
+/* 数据看板与下方时间卡之间必须留 18px —— 实测这里是 0，两块粘在一起 */
+.wb-page > .wb-charts { margin-bottom: 18px; }
+
+/* 看板标题紧跟页头：页头自己已有 18px 下边距，这里不要再叠 22px */
+.wb-page > .wb-dashboard-heading { margin: 0 0 10px; }
+
+/* 四张卡与三列网格之间：指标卡容器本来有 18px 下边距，这里只兜底不叠加 */
+.wb-page > .wb-hb-grid { margin-top: 0; }
+
+/* 六个模块的内容底部留白统一 16px（原来有的是 12、有的是 0，最后一行看着贴边） */
+.wb-hb-4 > section > div > div[style*='padding: 0 18px'] { padding-bottom: 16px !important; }
+
+/* 任务状态的紧凑块与其它模块内容上下留白对齐 */
+.wb-status-compact { padding: 10px 18px 16px; }
+
+/* 便签区最后一张的下边距别顶到面板边 */
+.wb-hb-4 .wb-sticky-wall { margin-bottom: 2px; }
+
+/* 页面底部动作与网格的间距 */
+.wb-page-foot { margin-top: 12px; }
+
+/* 三列模块内容不足整块高度时，垂直居中 —— 否则「任务状态」这类短内容会顶在上面、
+   下方留一大片空（老六上一轮说的"空白太多"就是这个） */
+.wb-hb-4 > section {
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-hb-4 > section > div:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 但列表型模块要顶对齐：内容少时贴着标题更自然，居中也行，这里取顶对齐 */
+.wb-hb-4 > section > div:last-child > .wb-today-tasks,
+.wb-hb-4 > section > div:last-child > .wb-today-agenda-block,
+.wb-hb-4 > section > div:last-child > .wb-file-block {
+  justify-content: flex-start;
+}
+
+/* 任务状态：四个数字一行排开，把横向空间用满，纵向不留空 */
+.wb-status-compact {
+  min-height: 150px;
+}
+
+.wb-status-cells {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  max-width: 240px;
+}
+
+/* 四格铺满剩余宽度（上一版限了 240px，右边又空出一片） */
+.wb-status-cells { max-width: none; gap: 10px 20px; }
