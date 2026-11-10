@@ -70,20 +70,14 @@
   .tool-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:#fff;display:grid;place-items:center;font-size:14px;color:var(--text-2);position:relative;cursor:pointer}
   .tool-btn:hover{border-color:#cfd8ee;color:var(--brand)}
   .dot-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;border-radius:99px;background:var(--red);color:#fff;font-size:10px;line-height:17px;text-align:center;padding:0 4px;border:2px solid #fff}
-  .btn-ghost{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:11px;border:1px solid var(--line-2);
-    background:#fff;color:var(--text);font-size:12.5px;font-weight:550;cursor:pointer;transition:.15s}
-  .btn-ghost:hover{border-color:#c7d2ff;color:var(--brand);box-shadow:0 6px 16px -12px rgba(84,104,255,.6)}
-  .btn-ghost .gi{font-size:12px;color:var(--brand);opacity:.9}
-  .btn-ghost .gn{font-size:10.5px;color:var(--muted);font-weight:700}
   .btn-primary{height:38px;padding:0 16px;border-radius:11px;border:0;background:linear-gradient(140deg,#5468ff,#6d5bf6);color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 20px -12px rgba(84,104,255,.9)}
 
   .page-head{display:flex;align-items:flex-start;gap:16px}
-  .page-head-main{display:flex;flex-direction:column;gap:10px;min-width:0}
   .page-head h2{margin:0;font-size:25px;font-weight:750;letter-spacing:-.5px}
-  .page-head .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .page-head p{margin:7px 0 0;font-size:13px;color:var(--text-2)}
   .head-right{margin-left:auto;text-align:right}
   .head-right .date{font-size:12px;color:var(--muted)}
-  
+  .head-right .chips{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
   .chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:99px;background:#f7f8fc;border:1px solid var(--line-2);font-size:12px;color:var(--text-2)}
   .chip b{color:var(--text);font-weight:700}
   .sp{width:6px;height:6px;border-radius:50%}
@@ -154,7 +148,7 @@
 
   /* 在办项目（含随记/文件入口） */
   .proj-card{grid-column:span 4;display:flex;flex-direction:column}
-  .pj-list{max-height:206px}
+  .pj-list{max-height:168px}
   .pj{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:10px 0;align-items:center}
   .pj + .pj{border-top:1px solid var(--line)}
   .pj .nm{font-size:12.5px;font-weight:560;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -303,24 +297,23 @@
       <div class="top-tools">
         <button class="tool-btn" title="主题">☾</button>
         <button class="tool-btn" title="通知">🔔<span class="dot-badge">6</span></button>
-        <button class="btn-ghost" id="openNotesTop"><span class="gi">✎</span>随记<span class="gn">5</span></button>
-        <button class="btn-ghost" onclick="alert('跳转到文件资料页（demo 占位）')"><span class="gi">▣</span>文件资料<span class="gn">6</span></button>
         <button class="btn-primary">＋ 新建任务</button>
       </div>
     </div>
 
     <div class="page-head">
-      <div class="page-head-main">
+      <div>
         <h2>工作台 · 11 月</h2>
+        <p>今天做什么、这周推进到哪，一屏看完。</p>
+      </div>
+      <div class="head-right">
+        <div class="date">2026年11月10日 周二 · 10:51 更新</div>
         <div class="chips">
           <span class="chip"><i class="sp" style="background:#5468ff"></i>在办项目 <b>3</b></span>
           <span class="chip"><i class="sp" style="background:#f59f00"></i>今日待办 <b>3</b></span>
           <span class="chip"><i class="sp" style="background:#12b886"></i>今日会议 <b>2</b></span>
           <span class="chip"><i class="sp" style="background:#f04438"></i>已逾期 <b>1</b></span>
         </div>
-      </div>
-      <div class="head-right">
-        <div class="date">2026年11月10日 周二 · 10:51 更新</div>
       </div>
     </div>
 
@@ -429,6 +422,14 @@
           <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
           <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
           <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
+        </div>
+        <div class="quick">
+          <button class="qbtn" id="openNotes">
+            <span class="ic" style="background:#fff7e6;color:#f59f00">✎</span>随记<span class="n">5</span>
+          </button>
+          <button class="qbtn" onclick="alert('跳转到文件资料页（demo 占位）')">
+            <span class="ic" style="background:#eef1ff;color:#5468ff">▣</span>文件资料<span class="n">6</span>
+          </button>
         </div>
       </div>
 
@@ -630,11 +631,7 @@
 
 /* ---------- 便签栈 ---------- */
 const overlay = document.getElementById('notesOverlay');
-// 随记入口：卡片里的按钮已迁到顶栏，这里两个都挂（缺一个也不报错）
-['openNotes', 'openNotesTop'].forEach(id => {
-  const btn = document.getElementById(id);
-  if (btn) btn.addEventListener('click', () => overlay.classList.add('on'));
-});
+document.getElementById('openNotes').addEventListener('click', () => overlay.classList.add('on'));
 document.getElementById('closeNotes').addEventListener('click', () => overlay.classList.remove('on'));
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('on'); });
 
