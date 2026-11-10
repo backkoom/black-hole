@@ -148,7 +148,17 @@
   .lg{display:flex;justify-content:space-between;margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
   .lg div{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-2)}
   .lg b{color:var(--text);font-weight:700}
-  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 12px;border-radius:11px;background:var(--red-soft);font-size:12px;color:#b42318}
+  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:11px;background:var(--red-soft);font-size:12px;color:#b42318}
+  /* 任务状态卡里的风险小节（与状态用一条虚线分隔，不再单独占一格） */
+  .subsec{display:flex;align-items:center;gap:8px;margin:18px 0 2px;padding-top:16px;border-top:1px dashed var(--line-2)}
+  .subsec h4{margin:0;font-size:13px;font-weight:700}
+  .subsec .cnt{font-size:11.5px;color:var(--muted)}
+  .subsec .more{margin-left:auto;font-size:11.5px;color:var(--brand);text-decoration:none}
+  .risk-mini{display:flex;flex-direction:column;margin-top:6px}
+  .rm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 0}
+  .rm + .rm{border-top:1px solid var(--line)}
+  .rm .tt{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rm .pj{font-size:10.5px;color:var(--muted);white-space:nowrap}
 
   /* 三列小卡 */
   .c4{grid-column:span 4}
@@ -193,7 +203,7 @@
   .bc .lb{font-size:10.5px;color:var(--muted);white-space:nowrap}
 
   /* 便签 */
-  .notes{grid-column:span 4}
+  .notes{grid-column:span 6}
   .note-add{display:flex;gap:8px;margin:14px 0 12px}
   .note-add input{flex:1;height:38px;border-radius:11px;border:1px solid var(--line-2);background:#fbfcff;padding:0 13px;font-size:12.5px;outline:none;transition:.15s}
   .note-add input:focus{border-color:#c2cdff;box-shadow:0 0 0 3px rgba(84,104,255,.1);background:#fff}
@@ -204,7 +214,7 @@
   .sticky .f{display:flex;justify-content:space-between;font-size:10.5px;color:#b3a271;margin-top:8px}
 
   /* 文件 */
-  .files{grid-column:span 4}
+  .files{grid-column:span 6}
   .file{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 0}
   .file + .file{border-top:1px solid var(--line)}
   .file .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff}
@@ -384,25 +394,39 @@
       </div>
 
       <div class="card status-card">
-        <div class="card-h"><h3>任务状态</h3><a class="more" href="#">全部 →</a></div>
-        <div class="donut">
-          <svg width="176" height="176" viewBox="0 0 176 176">
-            <circle cx="88" cy="88" r="70" fill="none" stroke="#f2f4fa" stroke-width="20"/>
-            <circle cx="88" cy="88" r="70" fill="none" stroke="#8b5cf6" stroke-width="20" stroke-linecap="round"
-                    stroke-dasharray="227.8 439.8" stroke-dashoffset="0" transform="rotate(-90 88 88)"/>
-            <circle cx="88" cy="88" r="70" fill="none" stroke="#12b886" stroke-width="20" stroke-linecap="round"
-                    stroke-dasharray="97.7 439.8" stroke-dashoffset="-227.8" transform="rotate(-90 88 88)"/>
-            <circle cx="88" cy="88" r="70" fill="none" stroke="#f59f00" stroke-width="20" stroke-linecap="round"
-                    stroke-dasharray="114.3 439.8" stroke-dashoffset="-325.5" transform="rotate(-90 88 88)"/>
+        <div class="card-h"><h3>任务状态</h3><span class="card-sub">26% 已完成</span><a class="more" href="#">全部 →</a></div>
+
+        <div class="donut" style="margin:10px 0 2px">
+          <svg width="152" height="152" viewBox="0 0 152 152">
+            <circle cx="76" cy="76" r="60" fill="none" stroke="#f2f4fa" stroke-width="18"/>
+            <circle cx="76" cy="76" r="60" fill="none" stroke="#8b5cf6" stroke-width="18" stroke-linecap="round"
+                    stroke-dasharray="195.3 377" stroke-dashoffset="0" transform="rotate(-90 76 76)"/>
+            <circle cx="76" cy="76" r="60" fill="none" stroke="#12b886" stroke-width="18" stroke-linecap="round"
+                    stroke-dasharray="83.8 377" stroke-dashoffset="-195.3" transform="rotate(-90 76 76)"/>
+            <circle cx="76" cy="76" r="60" fill="none" stroke="#f59f00" stroke-width="18" stroke-linecap="round"
+                    stroke-dasharray="97.9 377" stroke-dashoffset="-279.1" transform="rotate(-90 76 76)"/>
           </svg>
-          <div class="center"><b>26%</b><span>完成率</span></div>
+          <div class="center"><b style="font-size:26px">27</b><span>总任务</span></div>
         </div>
-        <div class="lg">
+
+        <div class="lg" style="margin-top:8px;padding-top:12px">
           <div><i class="sp" style="background:#f59f00"></i>待处理 <b>14</b></div>
           <div><i class="sp" style="background:#12b886"></i>进行中 <b>6</b></div>
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
-        <div class="warn-strip"><i class="sp" style="background:#f04438"></i>已逾期 1 条 · 建议今天处理</div>
+
+        <div class="subsec">
+          <h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span>
+          <a class="more" href="#">全部 →</a>
+        </div>
+        <div class="risk-mini">
+          <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
+          <div class="rm"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
+          <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
+          <div class="rm"><span class="lv l">低</span><span class="tt">值班表未最终确认</span><span class="pj">运维</span></div>
+        </div>
+
+        <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
       </div>
     </section>
 
@@ -427,20 +451,6 @@
         </div>
       </div>
 
-      <div class="card c4">
-        <div class="card-h"><h3>风险预警</h3><a class="more" href="#">全部 →</a></div>
-        <p class="card-sub">4 条未关闭，2 条高风险</p>
-        <div class="list" style="margin-top:6px">
-          <div class="rk"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
-          <div class="rk"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
-          <div class="rk"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
-          <div class="rk"><span class="lv l">低</span><span class="tt">值班表未最终确认</span><span class="pj">运维</span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 完成率 / 随记 / 文件 -->
-    <section class="row">
       <div class="card rate">
         <div class="card-h"><h3>工作完成率</h3><a class="more" href="#">明细 →</a></div>
         <p class="card-sub">近 4 周完成数</p>
@@ -453,6 +463,10 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- 随记 / 文件（完成率已并入上一行） -->
+    <section class="row">
       <div class="card notes">
         <div class="card-h"><h3>随记</h3><a class="more" href="#">全部 →</a></div>
         <div class="note-add"><input placeholder="贴一张便签，回车保存" /><button>贴上</button></div>
