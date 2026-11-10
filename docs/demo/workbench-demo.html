@@ -115,7 +115,7 @@
 
   /* 甘特图 */
   .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
-  .gantt{position:relative;margin-top:8px;flex:1;min-height:280px}
+  .gantt{position:relative;margin-top:8px;height:377px;flex:none}
   .gantt svg{display:block;width:100%}
   .gantt .tip{position:absolute;pointer-events:none;background:#111a2e;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;
     transform:translate(-50%,-125%);opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(17,26,46,.6)}
@@ -365,8 +365,8 @@
       </div>
     </section>
 
-    <!-- 甘特 + 任务状态(含风险) -->
-    <section class="row">
+    <!-- 甘特 + 任务状态(含风险)：align-items:start，让甘特按内容高度收，不被拉高 -->
+    <section class="row" style="align-items:start">
       <div class="card gantt-card">
         <div class="card-h">
           <h3>工作进度</h3><span class="sub">4 个在办项目 · 10 周</span>
@@ -404,7 +404,7 @@
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
         <div class="subsec"><h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span><a class="more" href="#">全部 →</a></div>
-        <div class="risk-mini hv-scroll">
+        <div class="risk-mini hv-scroll" style="max-height:140px">
           <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
           <div class="rm"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
           <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
