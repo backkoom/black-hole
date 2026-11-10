@@ -7,6 +7,7 @@ import { KanbanPage } from './KanbanPage';
 import { TasksPage } from './TasksPage';
 import { ProgressPage } from './ProgressPage';
 import { RisksPage } from './RisksPage';
+import { AnalyticsPage } from './AnalyticsPage';
 import '../styles/projects-shell.css';
 
 /**
@@ -22,14 +23,16 @@ import '../styles/projects-shell.css';
  * 其他模块（团队/日程/文件/统计）挤到后面。
  *
  * 现在收成一个模块，进去后顶部 tab 切换 5 个视图；URL 用 `?view=`：
- *   /projects?view=projects | board | tasks | progress | risks
+ *   /projects?view=projects | board | tasks | progress | risks | stats（stats 仅管理员）
  * 旧路径（/kanban、/tasks、/progress、/risks）在 App.tsx 里重定向到对应 view，
  * 书签和老链接不会 404。
  *
  * ⚠️ 只做"外壳 + 路由"，五个页面组件本身没改 —— 各自保留 PageHeader 与数据逻辑，
  * 这样出问题时能单独回退某一个视图。
  */
-const VIEWS = ['projects', 'board', 'tasks', 'progress', 'risks'] as const;
+const VIEWS = ['projects', 'board', 'tasks', 'progress', 'risks', 'stats'] as const;
+/** 非管理员能看的视图（年度规划是维护页、统计只给管理者/负责人） */
+const USER_VIEWS = ['board', 'tasks', 'progress', 'risks'] as const;
 type View = (typeof VIEWS)[number];
 
 const LABELS: Record<View, string> = {
@@ -38,6 +41,7 @@ const LABELS: Record<View, string> = {
   tasks: '任务',
   progress: '周进度',
   risks: '问题风险',
+  stats: '统计',
 };
 
 export function ProjectsShell() {
@@ -47,14 +51,14 @@ export function ProjectsShell() {
   const view = useMemo<View>(() => {
     const raw = params.get('view') as View | null;
     // 普通用户没有"项目档案"（那是维护页面，仅管理员）
-    const allowed: View[] = isAdmin ? [...VIEWS] : ['board', 'tasks', 'progress', 'risks'];
+    const allowed: View[] = isAdmin ? [...VIEWS] : [...USER_VIEWS];
     if (raw && allowed.includes(raw)) return raw;
     return isAdmin ? 'projects' : 'board';
   }, [params, isAdmin]);
 
   const items = useMemo(
     () =>
-      (isAdmin ? VIEWS : (['board', 'tasks', 'progress', 'risks'] as View[])).map((key) => ({
+      (isAdmin ? VIEWS : (USER_VIEWS as readonly View[])).map((key) => ({
         key,
         label: LABELS[key],
       })),
@@ -77,6 +81,8 @@ export function ProjectsShell() {
       {view === 'tasks' ? <TasksPage /> : null}
       {view === 'progress' ? <ProgressPage /> : null}
       {view === 'risks' ? <RisksPage /> : null}
+      {/* 统计：任务分类分布 / 趋势 / 团队工作量等，只给管理者看（老六说"统计时才用、部分人用"） */}
+      {view === 'stats' && isAdmin ? <AnalyticsPage embedded /> : null}
     </div>
   );
 }

@@ -79,7 +79,7 @@ export const router = createBrowserRouter([
           },
           { path: 'risks', element: <Navigate to="/projects?view=risks" replace /> },
           // D-24：数据统计并入工作台，独立入口取消；老链接回工作台
-          { path: 'analytics', element: <Navigate to="/" replace /> },
+          { path: 'analytics', element: <Navigate to="/projects?view=stats" replace /> },
           {
             path: 'workspace',
             element: <WorkspacePage />,
