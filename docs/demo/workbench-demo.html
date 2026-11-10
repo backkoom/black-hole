@@ -114,11 +114,9 @@
   .kpi-cell .hint{font-size:10px;color:var(--muted);line-height:1.35}
 
   /* 甘特图 */
-  .gantt-card{grid-column:span 8;display:flex;flex-direction:column;height:426px}
-  .gantt{position:relative;margin-top:8px;flex:1;min-height:0}
+  .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
+  .gantt{position:relative;margin-top:8px;flex:1;min-height:280px}
   .gantt svg{display:block;width:100%}
-  .status-body{flex:1;min-height:0;display:flex;flex-direction:column}
-  .status-body > *{flex:0 0 auto}
   .gantt .tip{position:absolute;pointer-events:none;background:#111a2e;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;
     transform:translate(-50%,-125%);opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(17,26,46,.6)}
   .gantt-legend{display:flex;align-items:center;gap:16px;margin-top:10px;font-size:11px;color:var(--muted)}
@@ -126,19 +124,19 @@
   .gantt-legend i{width:8px;height:8px;border-radius:3px}
 
   /* 任务状态 + 风险 */
-  .status-card{grid-column:span 4;display:flex;flex-direction:column;height:426px}
-  .donut{position:relative;display:grid;place-items:center;margin:2px 0 0}
+  .status-card{grid-column:span 4;display:flex;flex-direction:column}
+  .donut{position:relative;display:grid;place-items:center;margin:8px 0 2px}
   .donut .center{position:absolute;text-align:center}
   .donut .center b{display:block;font-size:26px;font-weight:760;line-height:1;letter-spacing:-.8px}
   .donut .center span{font-size:10.5px;color:var(--muted)}
-  .lg{display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--line);margin-top:4px}
-  .lg div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-2)}
+  .lg{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);margin-top:6px}
+  .lg div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)}
   .lg b{color:var(--text);font-weight:700}
-  .subsec{display:flex;align-items:center;gap:8px;margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line-2)}
+  .subsec{display:flex;align-items:center;gap:8px;margin:14px 0 0;padding-top:14px;border-top:1px dashed var(--line-2)}
   .subsec h4{margin:0;font-size:12.5px;font-weight:700}
   .subsec .cnt{font-size:11px;color:var(--muted)}
   .subsec .more{margin-left:auto;font-size:11px;color:var(--brand);text-decoration:none}
-  .rm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:7px 0}
+  .rm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0}
   .rm + .rm{border-top:1px solid var(--line)}
   .lv{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:700}
   .lv.h{background:var(--red-soft);color:var(--red)}
@@ -146,7 +144,7 @@
   .lv.l{background:#f2f4fa;color:var(--text-2)}
   .rm .tt{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .rm .pj{font-size:10px;color:var(--muted);white-space:nowrap}
-  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 10px;border-radius:9px;background:var(--red-soft);font-size:11px;color:#b42318}
+  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 11px;border-radius:10px;background:var(--red-soft);font-size:11.5px;color:#b42318}
 
   /* 在办项目（含随记/文件入口） */
   .proj-card{grid-column:span 4;display:flex;flex-direction:column}
@@ -374,7 +372,7 @@
           <h3>工作进度</h3><span class="sub">4 个在办项目 · 10 周</span>
           <a class="more" href="#">完整甘特 →</a>
         </div>
-        <div class="gantt hv-scroll" id="ganttBox">
+        <div class="gantt" id="ganttBox">
           <div class="tip" id="gtip">—</div>
           <svg id="gantt" width="100%" height="258"></svg>
         </div>
@@ -388,9 +386,8 @@
 
       <div class="card status-card">
         <div class="card-h"><h3>任务状态</h3><span class="sub">26% 已完成</span><a class="more" href="#">全部 →</a></div>
-        <div class="status-body">
         <div class="donut">
-          <svg width="100" height="100" viewBox="0 0 140 140">
+          <svg width="140" height="140" viewBox="0 0 140 140">
             <circle cx="70" cy="70" r="55" fill="none" stroke="#f2f4fa" stroke-width="17"/>
             <circle cx="70" cy="70" r="55" fill="none" stroke="#8b5cf6" stroke-width="17" stroke-linecap="round"
                     stroke-dasharray="179 345.6" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
@@ -407,14 +404,13 @@
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
         <div class="subsec"><h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span><a class="more" href="#">全部 →</a></div>
-        <div class="risk-mini hv-scroll" style="max-height:140px">
+        <div class="risk-mini hv-scroll">
           <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
           <div class="rm"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
           <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
           <div class="rm"><span class="lv l">低</span><span class="tt">测试环境磁盘余量告警</span><span class="pj">运维</span></div>
         </div>
         <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
-        </div>
       </div>
     </section>
 
@@ -541,10 +537,8 @@
 
   function render() {
     const W = Math.max(560, box.clientWidth);
+    const H = Math.max(240, box.clientHeight);
     const rows = projects.length;
-    // 行高不低于 64：容器压矮时宁可滚动，也不把 4 行压成一条
-    const minH = TOP + rows * 66 + BOTTOM;
-    const H = Math.max(minH, box.clientHeight);
     const rowH = (H - TOP - BOTTOM) / rows;
     const X = t => LEFT + ((t - minT) / span) * (W - LEFT - RIGHT);
 
