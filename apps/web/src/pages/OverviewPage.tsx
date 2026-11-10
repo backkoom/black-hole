@@ -15,24 +15,23 @@ import { PageHeader } from '../components/PageHeader';
 import { StateBlock } from '../components/user/StateBlock';
 import { TodayTasks, TodayAgenda } from '../components/workbench/TodayPanel';
 import { StickyNotes, type StickyNotesHandle } from '../components/workbench/StickyNotes';
-import { WorkbenchCharts } from '../components/workbench/WorkbenchCharts';
+import { WorkProgressPanel, WorkCompletionPanel } from '../components/workbench/WorkbenchCharts';
 import { RecentFiles } from '../components/workbench/RecentFiles';
 
 /**
- * 工作台（D-32 按老六的规划图重排）。
+ * 工作台（D-34 定版：两行四块）。
  *
- * 版式就是老六给的那五行，从上到下：
- *   工作台（标题）
- *   数据看板                                   ← 提到最上面
- *   本周  本月  本季  本年                      ← 四张时间卡（去掉「今日」，今日是独立模块）
- *   今天   任务状态   风险预警
- *   日程   随记      文件资料
+ * 版式（老六给的）：
+ *   工作台
+ *   本周  本月  本季  本年
+ *   工作进度  任务状态  工作完成率  风险预警
+ *   今天      日程      随记        文件资料
  *
- * 三处关键改动：
- * - **添加框并进「今天」**：原来顶部那条大输入框和随记的输入框长得一样、功能都在"记一句话"，
- *   现在收进「今天」做成行内添加（点「加一条」就地出现输入行），随记只管便签；
- * - **任务状态紧凑化**：小环 + 2×2 数字格，不再是一大片空白；
- * - **新增文件资料模块**：最近 6 个文件，点进文件页。
+ * 与 D-32 的差别：
+ * - 去掉「数据看板」这四个字的标题（老六点名删）；
+ * - 看板不再是一整排三块，而是**拆成两个模块**（工作进度 / 工作完成率）混排进四块一行；
+ * - 「工作类别」没有位置了，直接去掉；
+ * - 每块只占 1/4 宽（`wb-hb-3`），所以两块看板都改成了窄卡紧凑版。
  */
 export function OverviewPage() {
   const navigate = useNavigate();
@@ -42,7 +41,7 @@ export function OverviewPage() {
   const { counts: taskCounts, query: taskCountsQuery } = useTaskCounts();
   const projects = projectsQuery.data?.items ?? [];
 
-  /** 四个时间区间 + 逾期（今日不进卡，它是独立模块） */
+  /** 四个时间区间 + 逾期（今日是独立模块，不进卡） */
   const rangeQuery = useQuery({
     queryKey: ['workbench', 'ranges'],
     queryFn: async () => {
@@ -74,23 +73,18 @@ export function OverviewPage() {
   }, [risksQuery.data]);
   const highRisks = risks.filter((risk) => risk.level === 'high').length;
 
-  /** 任务状态的紧凑格子：待处理 / 进行中 / 已完成 / 逾期 */
   const statusCells = [
-    { label: '待处理', value: taskCounts.todo, color: designVars.orange },
-    { label: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
-    { label: '已完成', value: taskCounts.done, color: designVars.statusDone },
-    { label: '已逾期', value: ranges.overdue, color: designVars.red },
+    { label: '待处理', value: taskCounts.todo, color: designVars.orange, link: '/projects?view=tasks&status=todo' },
+    { label: '进行中', value: taskCounts.doing, color: designVars.statusDoing, link: '/projects?view=tasks&status=doing' },
+    { label: '已完成', value: taskCounts.done, color: designVars.statusDone, link: '/projects?view=tasks&status=done' },
+    { label: '已逾期', value: ranges.overdue, color: designVars.red, link: '/projects?view=tasks&due=overdue' },
   ];
 
   return (
     <div className="wb-page">
       <PageHeader title="工作台" subtitle="一屏看清今天、这周和手头的项目。" />
 
-      {/* ① 数据看板 */}
-      <div className="wb-dashboard-heading">数据看板</div>
-      <WorkbenchCharts />
-
-      {/* ② 四张时间卡 */}
+      {/* ① 四张时间卡 */}
       <div className="wb-metric-row wb-metric-row-4">
         <MetricCard
           label="本周"
@@ -126,22 +120,13 @@ export function OverviewPage() {
         />
       </div>
 
-      {/* ③ 今天 / 任务状态 / 风险预警 */}
+      {/* ② 工作进度 / 任务状态 / 工作完成率 / 风险预警 */}
       <div className="wb-hb-grid">
-        <div className="wb-hb-4">
-          <Panel
-            title="今天"
-            more="全部任务"
-            onMore={() => void navigate('/projects?view=tasks&due=today')}
-            flush
-          >
-            <div style={{ padding: '0 18px 12px' }}>
-              <TodayTasks projects={projects} />
-            </div>
-          </Panel>
+        <div className="wb-hb-3">
+          <WorkProgressPanel />
         </div>
 
-        <div className="wb-hb-4">
+        <div className="wb-hb-3">
           <Panel title="任务状态" flush>
             <StateBlock
               loading={taskCountsQuery.isPending}
@@ -150,45 +135,43 @@ export function OverviewPage() {
               isEmpty={taskCounts.total === 0}
               emptyText="还没有任务"
             >
-            <div className="wb-status-compact">
-              <DonutChart
-                segments={[
-                  { name: '待处理', value: taskCounts.todo, color: designVars.orange },
-                  { name: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
-                  { name: '已完成', value: taskCounts.done, color: designVars.statusDone },
-                ]}
-                centerValue={taskCounts.total}
-                centerLabel="任务"
-                size={84}
-                thickness={11}
-              />
-              <div className="wb-status-cells">
-                {statusCells.map((cell) => (
-                  <button
-                    key={cell.label}
-                    type="button"
-                    className="wb-status-cell"
-                    onClick={() =>
-                      void navigate(
-                        cell.label === '已逾期'
-                          ? '/projects?view=tasks&due=overdue'
-                          : `/projects?view=tasks${cell.label === '待处理' ? '&status=todo' : cell.label === '进行中' ? '&status=doing' : '&status=done'}`,
-                      )
-                    }
-                  >
-                    <span className="wb-status-cell-value" style={{ color: cell.color }}>
-                      {cell.value}
-                    </span>
-                    <span className="wb-status-cell-label">{cell.label}</span>
-                  </button>
-                ))}
+              <div className="wb-status-compact">
+                <DonutChart
+                  segments={[
+                    { name: '待处理', value: taskCounts.todo, color: designVars.orange },
+                    { name: '进行中', value: taskCounts.doing, color: designVars.statusDoing },
+                    { name: '已完成', value: taskCounts.done, color: designVars.statusDone },
+                  ]}
+                  centerValue={taskCounts.total}
+                  centerLabel="任务"
+                  size={76}
+                  thickness={10}
+                />
+                <div className="wb-status-cells">
+                  {statusCells.map((cell) => (
+                    <button
+                      key={cell.label}
+                      type="button"
+                      className="wb-status-cell"
+                      onClick={() => void navigate(cell.link)}
+                    >
+                      <span className="wb-status-cell-value" style={{ color: cell.color }}>
+                        {cell.value}
+                      </span>
+                      <span className="wb-status-cell-label">{cell.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
             </StateBlock>
           </Panel>
         </div>
 
-        <div className="wb-hb-4">
+        <div className="wb-hb-3">
+          <WorkCompletionPanel />
+        </div>
+
+        <div className="wb-hb-3">
           <Panel title="风险预警" more="全部风险" onMore={() => void navigate('/projects?view=risks')} flush>
             <div style={{ padding: '0 18px 12px' }}>
               <StateBlock
@@ -225,8 +208,16 @@ export function OverviewPage() {
           </Panel>
         </div>
 
-        {/* ④ 日程 / 随记 / 文件资料 */}
-        <div className="wb-hb-4">
+        {/* ③ 今天 / 日程 / 随记 / 文件资料 */}
+        <div className="wb-hb-3">
+          <Panel title="今天" more="全部任务" onMore={() => void navigate('/projects?view=tasks&due=today')} flush>
+            <div style={{ padding: '0 18px 12px' }}>
+              <TodayTasks projects={projects} />
+            </div>
+          </Panel>
+        </div>
+
+        <div className="wb-hb-3">
           <Panel title="日程" more="去日历" onMore={() => void navigate('/calendar')} flush>
             <div style={{ padding: '0 18px 12px' }}>
               <TodayAgenda />
@@ -234,7 +225,7 @@ export function OverviewPage() {
           </Panel>
         </div>
 
-        <div className="wb-hb-4">
+        <div className="wb-hb-3">
           <Panel title="随记" more="全部随记" onMore={() => void navigate('/workspace')} flush>
             <div style={{ padding: '0 18px 12px' }}>
               <StickyNotes ref={stickyRef} limit={2} />
@@ -242,7 +233,7 @@ export function OverviewPage() {
           </Panel>
         </div>
 
-        <div className="wb-hb-4">
+        <div className="wb-hb-3">
           <Panel title="文件资料" more="全部文件" onMore={() => void navigate('/files')} flush>
             <div style={{ padding: '0 18px 12px' }}>
               <RecentFiles />

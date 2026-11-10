@@ -38,21 +38,15 @@ await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(2600);
 
 /* 版式：看板在最上 → 四卡 → 六个模块 */
-const chartCards = await page.locator('.wb-charts-card').count();
-const titles = [];
-for (let i = 0; i < chartCards; i += 1) {
-  titles.push((await page.locator('.wb-charts-card h4').nth(i).innerText()).trim());
-}
 const cards = page.locator('.wb-metric-row > div');
 const cardCount = await cards.count();
 const readings = [];
 for (let i = 0; i < cardCount; i += 1) {
   readings.push((await cards.nth(i).innerText()).replace(/\s+/g, ' ').trim());
 }
-const panelTitles = await page.locator('.wb-hb-4 > section > header > h3').allInnerTexts();
-console.log(`${chartCards === 3 ? '✓' : '✗'} 数据看板 ${chartCards} 块：${titles.join(' / ')}`);
+const panelTitles = await page.locator('.wb-hb-3 > section > header > h3').allInnerTexts();
 console.log(`${cardCount === 4 ? '✓' : '✗'} 时间卡 ${cardCount} 张：${readings.join(' | ')}`);
-console.log(`模块：${panelTitles.map((t) => t.trim()).join(' / ') || '（未取到标题）'}`);
+console.log(`模块（应为 8 块）：${panelTitles.map((t) => t.trim()).join(' / ') || '（未取到标题）'}`);
 
 /* 「今天」行内添加一条任务 */
 const beforeTodos = await page.locator('.wb-todo-item').count();

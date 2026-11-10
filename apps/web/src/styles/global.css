@@ -3178,3 +3178,143 @@ body {
 
 /* 四格铺满剩余宽度（上一版限了 240px，右边又空出一片） */
 .wb-status-cells { max-width: none; gap: 10px 20px; }
+
+/* ============ D-34：两行四块（每块 1/4 宽） ============ */
+
+.wb-hb-3 { grid-column: span 3; min-width: 0; }
+
+.wb-hb-3 > section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-hb-3 > section > div:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 窄卡里的"大数字 + 说明"（工作进度 / 工作完成率共用一个样式） */
+.wb-mini-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 18px 10px;
+}
+
+.wb-mini-stat-text b,
+.wb-mini-rate b {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-mini-rate b {
+  color: var(--primary);
+}
+
+.wb-mini-stat-text span,
+.wb-mini-rate span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* 项目进度行：名字 + 百分比一行，进度条独占下一行（窄卡放三列会挤） */
+.wb-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 18px 14px;
+}
+
+.wb-mini-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.wb-mini-row > :last-child {
+  grid-column: 1 / -1;
+}
+
+.wb-mini-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.wb-mini-value {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 近 4 周完成数：四根小柱 */
+.wb-mini-bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  padding: 0 18px 14px;
+}
+
+.wb-mini-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.wb-mini-bar-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 46px;
+  border-radius: 4px;
+  background: var(--soft-gray);
+}
+
+.wb-mini-bar-fill {
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #7aa5f5 0%, var(--primary) 100%);
+}
+
+.wb-mini-bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.wb-mini-bar-label {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* 任务状态：76 的小环 + 2×2 数字，间距收紧 */
+.wb-status-compact {
+  gap: 12px;
+  padding: 8px 18px 14px;
+  min-height: 118px;
+}
+
+.wb-status-cells { gap: 8px 12px; }
+.wb-status-cell-value { font-size: 18px; }
+
+/* 四列在窄屏收成两列 / 一列 */
+@media (max-width: 1440px) {
+  .wb-hb-3 { grid-column: span 6; }
+}
+
+@media (max-width: 1180px) {
+  .wb-hb-3 { grid-column: span 12; }
+}
