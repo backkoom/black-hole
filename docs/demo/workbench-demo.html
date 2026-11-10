@@ -178,7 +178,7 @@
   .bc .lb{font-size:10px;color:var(--muted);white-space:nowrap}
 
   /* 表格 */
-  .table-card{grid-column:span 8;padding-bottom:6px}
+  .table-card{grid-column:span 12;padding-bottom:6px}
   .tb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
   .tb-head h3{margin:0;font-size:15px;font-weight:720}
   .tb-head .sub{font-size:11.5px;color:var(--muted)}
@@ -405,35 +405,25 @@
       </div>
     </section>
 
-    <!-- 完成率 + 表格 -->
+    <!-- 最近的到期任务（通栏） -->
     <section class="row">
-      <div class="card c4">
-        <div class="card-h"><h3>工作完成率</h3><span class="sub">近 4 周</span></div>
-        <div class="rate-num"><b>26%</b><span>7 / 27 已完成</span></div>
-        <div class="bars">
-          <div class="bc"><span class="v">0</span><div class="tk"><i style="height:5%"></i></div><span class="lb">3 周前</span></div>
-          <div class="bc"><span class="v">0</span><div class="tk"><i style="height:5%"></i></div><span class="lb">2 周前</span></div>
-          <div class="bc"><span class="v">1</span><div class="tk"><i style="height:20%"></i></div><span class="lb">1 周前</span></div>
-          <div class="bc"><span class="v">6</span><div class="tk"><i style="height:100%"></i></div><span class="lb">本周</span></div>
-        </div>
-      </div>
-
       <div class="card table-card">
         <div class="tb-head">
-          <h3>最近的到期任务</h3><span class="sub">共 27 条</span>
+          <h3>最近的到期任务</h3><span class="sub">共 27 条 · 显示最近 6 条</span>
           <div class="seg"><button class="on">全部</button><button>我负责</button><button>已逾期</button></div>
         </div>
         <table class="tbl">
-          <thead><tr><th>任务</th><th>项目</th><th>负责人</th><th>到期</th><th>优先级</th><th style="text-align:right">状态</th></tr></thead>
+          <thead><tr><th>任务</th><th>项目</th><th>分类</th><th>负责人</th><th>到期</th><th>剩余</th><th>优先级</th><th style="text-align:right">状态</th></tr></thead>
           <tbody>
-            <tr><td>整理客户反馈清单</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td><td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
-            <tr><td>巡检脚本补日志</td><td>移动端适配改造</td><td><div class="who"><span class="av" style="background:#12b886">王</span>王强</div></td><td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
-            <tr><td>支付回调联调</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td><td>11-12</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
-            <tr><td>门户改版视觉走查</td><td>客户运营门户</td><td><div class="who"><span class="av" style="background:#f59f00">赵</span>赵敏</div></td><td>11-13</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
-            <tr><td>月度指标口径对齐</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#f04438">周</span>周涛</div></td><td>11-05</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt late">已逾期</span></td></tr>
+            <tr><td>整理客户反馈清单</td><td>企业数据中台</td><td><span style="color:#5b6580">日常</span></td><td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td><td>11-10</td><td><span style="color:#98a2b8">今天</span></td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
+            <tr><td>巡检脚本补日志</td><td>移动端适配改造</td><td><span style="color:#5b6580">日常</span></td><td><div class="who"><span class="av" style="background:#12b886">王</span>王强</div></td><td>11-10</td><td><span style="color:#98a2b8">今天</span></td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
+            <tr><td>支付回调联调</td><td>企业数据中台</td><td><span style="color:#5b6580">周计划</span></td><td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td><td>11-12</td><td><span style="color:#98a2b8">2 天</span></td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>门户改版视觉走查</td><td>客户运营门户</td><td><span style="color:#5b6580">周计划</span></td><td><div class="who"><span class="av" style="background:#f59f00">赵</span>赵敏</div></td><td>11-13</td><td><span style="color:#98a2b8">3 天</span></td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>月度指标口径对齐</td><td>企业数据中台</td><td><span style="color:#5b6580">月度</span></td><td><div class="who"><span class="av" style="background:#f04438">周</span>周涛</div></td><td>11-05</td><td><span style="color:#f04438;font-weight:600">逾期 5 天</span></td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt late">已逾期</span></td></tr>
+            <tr><td>值班表排班确认</td><td>运维巡检自动化</td><td><span style="color:#5b6580">周计划</span></td><td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td><td>11-16</td><td><span style="color:#98a2b8">6 天</span></td><td><span class="pri l"><i></i>低</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
           </tbody>
         </table>
-        <div class="pager"><span>第 1 / 6 页</span><span>每页 5 条</span></div>
+        <div class="pager"><span>第 1 / 6 页</span><span>每页 6 条</span></div>
       </div>
     </section>
 
