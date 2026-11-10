@@ -192,6 +192,33 @@
   .bc .tk i{width:100%;border-radius:8px;background:linear-gradient(180deg,#94a8ff,#5468ff)}
   .bc .lb{font-size:10px;color:var(--muted);white-space:nowrap}
 
+  /* 堆叠卡：三张并排合成一张，标签切换 + 背后的层层错位边 */
+  .stack-card{grid-column:span 12;position:relative;padding:0;background:transparent;border:0;box-shadow:none}
+  .stack-card .deck{position:relative}
+  .stack-card .deck::before,
+  .stack-card .deck::after{content:'';position:absolute;height:16px;background:#f2f5fb;
+    border:1px solid #dfe6f2;border-top:0;border-radius:0 0 16px 16px;z-index:0;
+    box-shadow:0 6px 14px -10px rgba(17,26,46,.35)}
+  .stack-card .deck::before{bottom:-12px;left:26px;right:26px}
+  .stack-card .deck::after{bottom:-6px;left:14px;right:14px;background:#fafbfe;border-color:#e4eaf4}
+  .stack-inner{position:relative;z-index:1;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .stack-head{display:flex;align-items:center;gap:6px;padding:11px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .stack-tab{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:9px;border:0;background:transparent;
+    font-size:12.5px;font-weight:550;color:var(--text-2);cursor:pointer;transition:.15s}
+  .stack-tab:hover{background:#f5f7fc;color:var(--text)}
+  .stack-tab.on{background:var(--brand-soft);color:var(--brand);font-weight:650}
+  .stack-tab .cnt{font-size:10.5px;color:var(--muted);font-weight:700}
+  .stack-tab.on .cnt{color:var(--brand);opacity:.75}
+  .stack-head .more{margin-left:auto;font-size:11.5px;color:var(--brand);text-decoration:none}
+  .stack-body{padding:12px 18px 14px;height:186px;overflow-y:auto}
+  .stack-panel{display:none}
+  .stack-panel.on{display:block}
+  .stack-2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 30px}
+  .stack-2col .li:nth-child(2),.stack-2col .ev:nth-child(2){border-top:0}
+  .stack-note{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .stack-note .sticky{min-height:86px}
+  .stack-empty{display:grid;place-items:center;height:150px;color:var(--muted);font-size:12.5px}
+
   /* 表格 */
   .table-card{grid-column:span 12;padding-bottom:6px}
   .tb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -414,41 +441,70 @@
       </div>
     </section>
 
-    <!-- 在办项目(含随记/文件) | 今天 | 日程 -->
+    <!-- 堆叠卡：今天 / 日程 / 在办项目 / 随记 / 文件资料，标签切换 -->
     <section class="row">
-      <div class="card proj-card">
-        <div class="card-h"><h3>在办项目</h3><span class="sub">3 个</span><a class="more" href="#">全部 →</a></div>
-        <div class="hv-scroll pj-list">
-          <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
-          <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
-          <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
-        </div>
-        <div class="quick">
-          <button class="qbtn" id="openNotes">
-            <span class="ic" style="background:#fff7e6;color:#f59f00">✎</span>随记<span class="n">5</span>
-          </button>
-          <button class="qbtn" onclick="alert('跳转到文件资料页（demo 占位）')">
-            <span class="ic" style="background:#eef1ff;color:#5468ff">▣</span>文件资料<span class="n">6</span>
-          </button>
-        </div>
-      </div>
+      <div class="stack-card">
+        <div class="deck">
+          <div class="stack-inner">
+            <div class="stack-head">
+              <button class="stack-tab on" data-tab="today">今天 <span class="cnt">3/5</span></button>
+              <button class="stack-tab" data-tab="agenda">日程 <span class="cnt">2</span></button>
+              <button class="stack-tab" data-tab="projects">在办项目 <span class="cnt">3</span></button>
+              <button class="stack-tab" data-tab="notes">随记 <span class="cnt">5</span></button>
+              <button class="stack-tab" data-tab="files">文件资料 <span class="cnt">6</span></button>
+              <a class="more" id="stackMore" href="#">全部 →</a>
+            </div>
 
-      <div class="card c4">
-        <div class="card-h"><h3>今天</h3><span class="sub">1/3 完成</span><a class="more" href="#">＋ 加一条</a></div>
-        <div class="list hv-scroll">
-          <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">整理客户反馈清单</span><span class="mt">企业数据中台 · 日常</span></div><span class="st hot">高</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">门户首页资源压缩</span><span class="mt">客户运营门户 · 周计划</span></div><span class="st">待处理</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">周报初稿</span><span class="mt">未挂项目 · 日常</span></div><span class="st">待处理</span></div>
-        </div>
-      </div>
+            <div class="stack-body hv-scroll">
+              <!-- 今天 -->
+              <div class="stack-panel on" data-panel="today">
+                <div class="stack-2col">
+                  <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
+                  <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
+                  <div class="li"><span class="ck"></span><div><span class="tt">整理客户反馈清单</span><span class="mt">企业数据中台 · 日常</span></div><span class="st hot">高</span></div>
+                  <div class="li"><span class="ck"></span><div><span class="tt">门户首页资源压缩</span><span class="mt">客户运营门户 · 周计划</span></div><span class="st">待处理</span></div>
+                  <div class="li"><span class="ck"></span><div><span class="tt">周报初稿</span><span class="mt">未挂项目 · 日常</span></div><span class="st">待处理</span></div>
+                </div>
+              </div>
 
-      <div class="card c4">
-        <div class="card-h"><h3>日程</h3><span class="sub">今天 2 场</span><a class="more" href="#">去日历 →</a></div>
-        <div class="list hv-scroll">
-          <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
-          <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
+              <!-- 日程 -->
+              <div class="stack-panel" data-panel="agenda">
+                <div class="stack-2col">
+                  <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
+                  <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
+                </div>
+              </div>
+
+              <!-- 在办项目 -->
+              <div class="stack-panel" data-panel="projects">
+                <div class="stack-2col">
+                  <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
+                  <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
+                  <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
+                  <div class="pj"><span class="nm">运维巡检自动化</span><span class="pc">71%</span><div class="bar"><i style="width:71%;background:#f59f00"></i></div><span class="due">截止 11-15 · 6 个任务</span></div>
+                </div>
+              </div>
+
+              <!-- 随记 -->
+              <div class="stack-panel" data-panel="notes">
+                <div class="stack-note">
+                  <div class="sticky"><div class="t">客户提出报表要能按月对比</div><div class="f"><span>11-08</span><span>删</span></div></div>
+                  <div class="sticky"><div class="t">门户首页加载慢，看看首屏资源</div><div class="f"><span>11-08</span><span>删</span></div></div>
+                  <div class="sticky"><div class="t">把审批流里的驳回原因做成必填</div><div class="f"><span>11-07</span><span>删</span></div></div>
+                </div>
+              </div>
+
+              <!-- 文件资料 -->
+              <div class="stack-panel" data-panel="files">
+                <div class="stack-2col">
+                  <div class="file"><span class="ic" style="background:#12b886">X</span><div><div class="nm">需求清单-1108.xlsx</div><div class="mt">11-08 更新</div></div><span class="sz">21.6 KB</span></div>
+                  <div class="file"><span class="ic" style="background:#5468ff">D</span><div><div class="nm">门户改版视觉稿.docx</div><div class="mt">11-07 更新</div></div><span class="sz">1.2 MB</span></div>
+                  <div class="file"><span class="ic" style="background:#f04438">P</span><div><div class="nm">接口联调记录.pdf</div><div class="mt">11-06 更新</div></div><span class="sz">486 KB</span></div>
+                  <div class="file"><span class="ic" style="background:#8b5cf6">Z</span><div><div class="nm">巡检脚本备份.zip</div><div class="mt">11-05 更新</div></div><span class="sz">3.4 MB</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -631,8 +687,12 @@
 
 /* ---------- 便签栈 ---------- */
 const overlay = document.getElementById('notesOverlay');
-document.getElementById('openNotes').addEventListener('click', () => overlay.classList.add('on'));
-document.getElementById('closeNotes').addEventListener('click', () => overlay.classList.remove('on'));
+['openNotes', 'openNotesTop'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) btn.addEventListener('click', () => overlay.classList.add('on'));
+});
+const closeBtn = document.getElementById('closeNotes');
+if (closeBtn) closeBtn.addEventListener('click', () => overlay.classList.remove('on'));
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('on'); });
 
 const stack = document.getElementById('stack');
@@ -671,6 +731,27 @@ document.querySelectorAll('.hv-scroll').forEach(box => {
     box._t = setTimeout(() => box.classList.remove('is-hover'), 900);
   }, { passive: true });
 });
+
+/* ---------- 堆叠卡：标签切换 ---------- */
+(() => {
+  const tabs = [...document.querySelectorAll('.stack-tab')];
+  const panels = [...document.querySelectorAll('.stack-panel')];
+  const more = document.getElementById('stackMore');
+  const moreMap = {
+    today: '/projects?view=tasks&due=today',
+    agenda: '/calendar',
+    projects: '/projects?view=projects',
+    notes: '#',
+    files: '/files',
+  };
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.toggle('on', t === tab));
+    const key = tab.dataset.tab;
+    panels.forEach(p => p.classList.toggle('on', p.dataset.panel === key));
+    if (more) more.textContent = '全部 →';
+    more?.setAttribute('data-view', key);
+  }));
+})();
 
 /* ---------- 待办勾选 / 分段 ---------- */
 document.querySelectorAll('.ck').forEach(el => {
