@@ -91,27 +91,27 @@
   .card-h .more:hover{text-decoration:underline}
 
   /* KPI 概览条：四格合一，不再四张空卡 */
-  .kpi-strip{grid-column:span 12;display:flex;align-items:stretch;gap:14px}
-  .kpi-side{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-  .kpi-cell{flex:0 0 262px;width:262px;padding:13px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);min-width:0;
+  .kpi-strip{grid-column:span 12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .kpi-side{display:none}
+  .kpi-cell{padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);min-width:0;
     display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"lab num" "hint num" "bar bar";
-    gap:2px 10px;align-items:center}
+    gap:1px 10px;align-items:center}
   .kpi-cell .k-top{grid-area:lab;display:flex;align-items:center;gap:7px}
-  .kpi-cell .hint{grid-area:hint;margin-top:4px}
-  .kpi-cell .track{grid-area:bar;margin-top:10px}
+  .kpi-cell .hint{grid-area:hint;margin-top:1px}
+  .kpi-cell .track{grid-area:bar;margin-top:7px}
   .kpi-cell .lab{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2)}
   .kpi-cell .lab i{width:6px;height:6px;border-radius:50%}
-  .kpi-cell .line{grid-area:num;display:flex;flex-direction:column;align-items:flex-end;gap:5px;justify-self:end}
-  .kpi-cell .line b{font-size:28px;line-height:1;font-weight:760;letter-spacing:-1.2px;font-variant-numeric:tabular-nums}
+  .kpi-cell .line{grid-area:num;display:flex;flex-direction:column;align-items:flex-end;gap:3px;justify-self:end}
+  .kpi-cell .line b{font-size:24px;line-height:1;font-weight:760;letter-spacing:-1px;font-variant-numeric:tabular-nums}
   .kpi-cell .line .u{font-size:11px;color:var(--muted)}
   .kpi-cell .num{display:inline-flex;align-items:baseline;gap:5px}
   .kpi-cell .pill{display:inline-flex;align-items:center;gap:3px;height:19px;padding:0 6px;border-radius:99px;font-size:10px;font-weight:700}
   .pill.up{background:var(--red-soft);color:var(--red)}
   .pill.down{background:var(--green-soft);color:#0f9d76}
   .pill.flat{background:#f1f3f9;color:var(--text-2)}
-  .kpi-cell .track{height:5px;border-radius:99px;background:#f2f4fa;overflow:hidden}
+  .kpi-cell .track{height:4px;border-radius:99px;background:#f2f4fa;overflow:hidden}
   .kpi-cell .track i{display:block;height:100%;border-radius:99px}
-  .kpi-cell .hint{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .kpi-cell .hint{font-size:10px;color:var(--muted);line-height:1.35}
 
   /* 甘特图 */
   .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
@@ -308,6 +308,11 @@
       </div>
       <div class="head-right">
         <div class="date">2026年11月10日 周二 · 10:51 更新</div>
+        <div class="chips">
+          <span class="chip"><i class="sp" style="background:#5468ff"></i>在办项目 <b>3</b></span>
+          <span class="chip"><i class="sp" style="background:#f59f00"></i>今日待办 <b>3</b></span>
+          <span class="chip"><i class="sp" style="background:#f04438"></i>已逾期 <b>1</b></span>
+        </div>
       </div>
     </div>
 
