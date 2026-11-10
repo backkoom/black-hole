@@ -114,8 +114,8 @@
   .kpi-cell .hint{font-size:10px;color:var(--muted);line-height:1.35}
 
   /* 甘特图 */
-  .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
-  .gantt{position:relative;margin-top:8px;height:377px;flex:none}
+  .gantt-card{grid-column:span 8;display:flex;flex-direction:column;height:400px}
+  .gantt{position:relative;margin-top:8px;height:290px;flex:none}
   .gantt svg{display:block;width:100%}
   .gantt .tip{position:absolute;pointer-events:none;background:#111a2e;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;
     transform:translate(-50%,-125%);opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(17,26,46,.6)}
@@ -124,7 +124,7 @@
   .gantt-legend i{width:8px;height:8px;border-radius:3px}
 
   /* 任务状态 + 风险 */
-  .status-card{grid-column:span 4;display:flex;flex-direction:column}
+  .status-card{grid-column:span 4;display:flex;flex-direction:column;height:400px}
   .donut{position:relative;display:grid;place-items:center;margin:8px 0 2px}
   .donut .center{position:absolute;text-align:center}
   .donut .center b{display:block;font-size:26px;font-weight:760;line-height:1;letter-spacing:-.8px}
@@ -412,6 +412,7 @@
 
       <div class="card status-card">
         <div class="card-h"><h3>任务状态</h3><span class="sub">26% 已完成</span><a class="more" href="#">全部 →</a></div>
+        <div class="status-body hv-scroll">
         <div class="donut">
           <svg width="140" height="140" viewBox="0 0 140 140">
             <circle cx="70" cy="70" r="55" fill="none" stroke="#f2f4fa" stroke-width="17"/>
@@ -429,6 +430,7 @@
           <div><i class="sp" style="background:#12b886"></i>进行中 <b>6</b></div>
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
+        <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
         <div class="subsec"><h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span><a class="more" href="#">全部 →</a></div>
         <div class="risk-mini hv-scroll" style="max-height:140px">
           <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
@@ -436,7 +438,7 @@
           <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
           <div class="rm"><span class="lv l">低</span><span class="tt">测试环境磁盘余量告警</span><span class="pj">运维</span></div>
         </div>
-        <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
+        </div>
       </div>
     </section>
 
