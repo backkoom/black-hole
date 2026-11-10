@@ -18,7 +18,14 @@ import { StateBlock } from '../user/StateBlock';
  * 所以这里只留待办，并且**把添加框收进来**（原来顶上那条大输入框和随记的输入框重合，
  * 现在改成行内添加：点「加一条」就地出现输入行，写完回车即建）。
  */
-export function TodayTasks({ projects }: { projects: Project[] }): JSX.Element {
+export function TodayTasks({
+  projects,
+  hideHead = false,
+}: {
+  projects: Project[];
+  /** 外层已有标题时隐藏自带表头（工作台用） */
+  hideHead?: boolean;
+}): JSX.Element {
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
   const today = todayShanghaiDate();
@@ -75,7 +82,7 @@ export function TodayTasks({ projects }: { projects: Project[] }): JSX.Element {
 
   return (
     <div className="wb-today-tasks">
-      <div className="wb-today-head">
+      <div className="wb-today-head" style={hideHead ? { display: 'none' } : undefined}>
         <span className="wb-today-title">
           待办
           <span className="wb-today-count">
@@ -158,7 +165,7 @@ export function TodayTasks({ projects }: { projects: Project[] }): JSX.Element {
 }
 
 /** 「日程」独立模块：只看今天的会（原来和待办挤在一块） */
-export function TodayAgenda(): JSX.Element {
+export function TodayAgenda({ hideHead = false }: { hideHead?: boolean }): JSX.Element {
   const navigate = useNavigate();
   const today = todayShanghaiDate();
   const meetingsQuery = useQuery({
@@ -170,7 +177,7 @@ export function TodayAgenda(): JSX.Element {
 
   return (
     <div className="wb-today-agenda-block">
-      <div className="wb-today-head">
+      <div className="wb-today-head" style={hideHead ? { display: 'none' } : undefined}>
         <span className="wb-today-title">
           今天的会
           <span className="wb-today-count">{meetings.length}</span>

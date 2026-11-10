@@ -3,31 +3,21 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/**
- * 工作台实拍 + 交互验证（D-32 版式）。
- *
- * 按老六的规划图逐项验：数据看板在标题下、四张时间卡、今天/任务状态/风险预警、
- * 日程/随记/文件资料；另外真写一条任务、一张便签（验完删掉）。
- */
-
+/** 工作台（D-36 定稿版）实拍 + 结构校验。 */
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = join(ROOT, 'docs', 'screenshots');
 mkdirSync(OUT, { recursive: true });
 
 const BASE = process.env.SHOT_BASE ?? 'http://localhost:5173';
 const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? '';
-if (!PASSWORD) {
-  console.error('缺少 SEED_ADMIN_PASSWORD');
-  process.exit(2);
-}
+if (!PASSWORD) { console.error('缺少 SEED_ADMIN_PASSWORD'); process.exit(2); }
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({
-  viewport: { width: 1880, height: 1080 },
-  locale: 'zh-CN',
-  ignoreHTTPSErrors: process.env.SHOT_INSECURE === '1',
-});
+const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, locale: 'zh-CN', ignoreHTTPSErrors: process.env.SHOT_INSECURE === '1' });
 const page = await ctx.newPage();
+const errs = [];
+page.on('pageerror', (e) => errs.push(String(e)));
+page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
 
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
 await page.getByPlaceholder(/用户名|账号/).first().fill('admin');
@@ -37,62 +27,33 @@ await page.waitForTimeout(2500);
 await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(2600);
 
-/* 版式：看板在最上 → 四卡 → 六个模块 */
-const cards = page.locator('.wb-metric-row > div');
-const cardCount = await cards.count();
-const readings = [];
-for (let i = 0; i < cardCount; i += 1) {
-  readings.push((await cards.nth(i).innerText()).replace(/\s+/g, ' ').trim());
+const kpi = await page.locator('.wb-kpi-label').allInnerTexts();
+const kpiNums = await page.locator('.wb-kpi-num b').allInnerTexts();
+console.log(`KPI ${kpi.length} 张：${kpi.map((t) => t.trim()).join(' / ')} → ${kpiNums.join(' / ')}`);
+
+const chips = await page.locator('.wb-hero-chip').allInnerTexts();
+console.log('胶囊：', chips.map((t) => t.replace(/\s+/g, ' ').trim()).join(' | '));
+
+const ganttRows = await page.locator('.wb-gantt svg g').count();
+const donut = await page.locator('.wb-status-donut svg').count();
+const riskRows = await page.locator('.wb-risk-row').count();
+console.log(`甘特分组 ${ganttRows} / 环图 ${donut} / 风险 ${riskRows} 条`);
+
+const stackTabs = await page.locator('.wb-stack-tab').allInnerTexts();
+console.log('项目栈标签：', stackTabs.map((t) => t.replace(/\s+/g, ' ').trim()).join(' | '));
+for (const idx of [0, 1, 2]) {
+  await page.locator('.wb-stack-tab').nth(idx).click();
+  await page.waitForTimeout(220);
+  const n = await page.locator('.wb-stack-body > *').count();
+  console.log(`  切换第 ${idx + 1} 页 → 内容块 ${n}`);
 }
-const panelTitles = await page.locator('.wb-hb-3 > section > header > h3').allInnerTexts();
-console.log(`${cardCount === 4 ? '✓' : '✗'} 时间卡 ${cardCount} 张：${readings.join(' | ')}`);
-console.log(`模块（应为 8 块）：${panelTitles.map((t) => t.trim()).join(' / ') || '（未取到标题）'}`);
 
-/* 「今天」行内添加一条任务 */
-const beforeTodos = await page.locator('.wb-todo-item').count();
-await page.getByRole('button', { name: /加一条/ }).click();
-const inline = page.locator('.wb-inline-add input').first();
-await inline.fill('E2E 行内添加验证');
-await inline.press('Enter');
-await page.waitForTimeout(2200);
-const afterTodos = await page.locator('.wb-todo-item').count();
-console.log(`${afterTodos > beforeTodos ? '✓' : '✗'} 今天·行内添加：待办 ${beforeTodos} → ${afterTodos} 条`);
+const rows = await page.locator('.wb-table tbody tr').count();
+console.log(`任务表 ${rows} 行`);
 
-/* 随记便签 */
-const notesBefore = await page.locator('.wb-sticky-note').count();
-const noteInput = page.locator('.wb-sticky-input textarea');
-await noteInput.fill('E2E 便签验证');
-await noteInput.press('Enter');
-await page.waitForTimeout(2000);
-const notesAfter = await page.locator('.wb-sticky-note').count();
-const newestNote = (await page.locator('.wb-sticky-text').first().innerText().catch(() => '')).trim();
-console.log(
-  `${newestNote.includes('E2E') ? '✓' : '✗'} 随记便签：墙上有 ${notesBefore} → ${notesAfter} 张，最新一张是「${newestNote}」`,
-);
-
-/* 日程 / 文件资料 有没有内容 */
-const agenda = await page.locator('.wb-agenda-item').count();
-const files = await page.locator('.wb-file-row').count();
-const risks = await page.locator('.wb-risk-item').count();
-const statusCells = await page.locator('.wb-status-cell').count();
-console.log(
-  `${agenda > 0 && files > 0 && risks > 0 && statusCells === 4 ? '✓' : '✗'} 模块有数：日程 ${agenda} 场 / 文件 ${files} 个 / 风险 ${risks} 条 / 状态格 ${statusCells} 个`,
-);
-
-/* 清理 E2E 数据 */
-const tasks = await (await page.request.get(`${BASE}/api/tasks?page=1&pageSize=100&keyword=E2E`)).json();
-for (const task of tasks.data?.items ?? []) await page.request.delete(`${BASE}/api/tasks/${task.id}`);
-const ideas = await (await page.request.get(`${BASE}/api/ideas?page=1&pageSize=100`)).json();
-for (const idea of ideas.data?.items ?? []) {
-  if (idea.content.includes('E2E')) await page.request.delete(`${BASE}/api/ideas/${idea.id}`);
-}
-console.log('已清理 E2E 验证数据');
-
-/* 刷回干净状态再截图（否则会拍到 E2E 临时数据） */
-await page.reload({ waitUntil: 'networkidle' });
-await page.waitForTimeout(2600);
-await page.screenshot({ path: join(OUT, '52-工作台-首屏.png') });
-await page.screenshot({ path: join(OUT, '53-工作台-整页.png') });
-console.log('截图 ✓ 52-工作台-首屏 / 53-工作台-整页');
-
+await page.screenshot({ path: join(OUT, '55-工作台-定稿.png'), fullPage: false });
+await page.evaluate(() => { const c = document.querySelector('.wb-content'); if (c) c.scrollTop = c.scrollHeight; });
+await page.waitForTimeout(400);
+await page.screenshot({ path: join(OUT, '56-工作台-定稿-下半.png') });
+console.log('错误：', errs.length ? errs.slice(0, 3) : '无');
 await browser.close();
