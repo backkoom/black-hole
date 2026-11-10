@@ -165,6 +165,8 @@
 
   /* 今天 / 日程 / 完成率 */
   .c4{grid-column:span 4}
+  .card.fixh{height:200px;display:flex;flex-direction:column}
+  .card.fixh .list{flex:1;min-height:0;max-height:none}
   .list{display:flex;flex-direction:column;margin-top:8px;max-height:186px}
   .li{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
   .li + .li{border-top:1px solid var(--line)}
@@ -194,7 +196,7 @@
 
   /* 堆叠卡：三张并排合成一张，标签切换 + 背后的层层错位边 */
   .stack-card{grid-column:span 4;position:relative;padding:0;background:transparent;border:0;box-shadow:none;min-width:0;
-    display:flex;height:100%}
+    display:flex;height:200px}
   .stack-card .deck{position:relative;display:flex;width:100%}
   .stack-card .deck::before,
   .stack-card .deck::after{content:'';position:absolute;height:16px;background:#f2f5fb;
@@ -445,6 +447,24 @@
 
     <!-- 在办项目 / 随记 / 文件资料：堆叠卡；今天、日程 仍各自独立 -->
     <section class="row">
+      <div class="card c4 fixh">
+        <div class="card-h"><h3>今天</h3><span class="sub">1/3 完成</span><a class="more" href="#">＋ 加一条</a></div>
+        <div class="list hv-scroll">
+          <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">整理客户反馈清单</span><span class="mt">企业数据中台 · 日常</span></div><span class="st hot">高</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">门户首页资源压缩</span><span class="mt">客户运营门户 · 周计划</span></div><span class="st">待处理</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">周报初稿</span><span class="mt">未挂项目 · 日常</span></div><span class="st">待处理</span></div>
+        </div>
+      </div>
+
+      <div class="card c4 fixh">
+        <div class="card-h"><h3>日程</h3><span class="sub">今天 2 场</span><a class="more" href="#">去日历 →</a></div>
+        <div class="list hv-scroll">
+          <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
+          <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
+        </div>
+      </div>
       <div class="stack-card">
         <div class="deck">
           <div class="stack-inner">
@@ -483,24 +503,6 @@
         </div>
       </div>
 
-      <div class="card c4">
-        <div class="card-h"><h3>今天</h3><span class="sub">1/3 完成</span><a class="more" href="#">＋ 加一条</a></div>
-        <div class="list hv-scroll">
-          <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">整理客户反馈清单</span><span class="mt">企业数据中台 · 日常</span></div><span class="st hot">高</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">门户首页资源压缩</span><span class="mt">客户运营门户 · 周计划</span></div><span class="st">待处理</span></div>
-          <div class="li"><span class="ck"></span><div><span class="tt">周报初稿</span><span class="mt">未挂项目 · 日常</span></div><span class="st">待处理</span></div>
-        </div>
-      </div>
-
-      <div class="card c4">
-        <div class="card-h"><h3>日程</h3><span class="sub">今天 2 场</span><a class="more" href="#">去日历 →</a></div>
-        <div class="list hv-scroll">
-          <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
-          <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
-        </div>
-      </div>
     </section>
 
     <!-- 最近的到期任务（通栏） -->
