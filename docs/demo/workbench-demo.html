@@ -21,6 +21,7 @@
   html,body{height:100%}
   body{
     margin:0;padding:18px;
+    height:100vh;overflow:hidden;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
     color:var(--text);
     background:
@@ -29,11 +30,12 @@
       linear-gradient(180deg,var(--bg1),var(--bg2));
     -webkit-font-smoothing:antialiased;
   }
-  .shell{display:flex;min-height:calc(100vh - 36px);background:#fff;border:1px solid rgba(255,255,255,.85);border-radius:26px;
+  .shell{display:flex;height:calc(100vh - 36px);background:#fff;border:1px solid rgba(255,255,255,.85);border-radius:26px;
     box-shadow:0 40px 90px -50px rgba(24,35,64,.55),0 2px 6px rgba(24,35,64,.04);overflow:hidden}
 
   /* 左栏 */
-  .side{width:252px;flex:0 0 252px;background:var(--side);border-right:1px solid var(--line);padding:22px 16px 18px;display:flex;flex-direction:column;gap:20px}
+  .side{width:252px;flex:0 0 252px;height:100%;background:var(--side);border-right:1px solid var(--line);
+    padding:22px 16px 18px;display:flex;flex-direction:column;gap:18px;overflow-y:auto;overscroll-behavior:contain}
   .brand{display:flex;align-items:center;gap:11px;padding:2px 6px}
   .logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(145deg,#5468ff,#8a5cf6);display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px;box-shadow:0 10px 20px -10px rgba(84,104,255,.9)}
   .brand h1{margin:0;font-size:16px;font-weight:750;letter-spacing:-.2px}
@@ -54,7 +56,14 @@
   .side-card .hint{font-size:10.5px;color:var(--muted);margin-top:8px}
 
   /* 主区 */
-  .main{flex:1;min-width:0;padding:24px 28px 26px;display:flex;flex-direction:column;gap:18px;background:#fff}
+  .main{flex:1;min-width:0;height:100%;overflow-y:auto;overscroll-behavior:contain;
+    padding:24px 28px 26px;display:flex;flex-direction:column;gap:18px;background:#fff;scrollbar-gutter:stable}
+  .main::-webkit-scrollbar{width:10px}
+  .main::-webkit-scrollbar-thumb{background:#c9d2e4;border-radius:99px;border:2px solid #fff}
+  .main::-webkit-scrollbar-thumb:hover{background:#aab5cc}
+  .main::-webkit-scrollbar-track{background:#f7f8fa;border-radius:99px}
+  .side::-webkit-scrollbar{width:6px}
+  .side::-webkit-scrollbar-thumb{background:#e2e6f0;border-radius:99px}
   .topbar{display:flex;align-items:center;gap:12px}
   .avatar-sm{width:34px;height:34px;border-radius:50%;background:#e9edff;color:var(--brand);display:grid;place-items:center;font-size:13px;font-weight:700}
   .top-tools{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -82,22 +91,27 @@
   .card-h .more:hover{text-decoration:underline}
 
   /* KPI 概览条：四格合一，不再四张空卡 */
-  .kpi-strip{grid-column:span 12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);
-    border-radius:var(--r);background:#fff;box-shadow:var(--shadow);overflow:hidden}
-  .kpi-cell{padding:16px 22px;position:relative}
-  .kpi-cell + .kpi-cell{border-left:1px solid var(--line)}
+  .kpi-strip{grid-column:span 12;display:flex;align-items:stretch;gap:14px}
+  .kpi-side{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .kpi-cell{flex:0 0 262px;width:262px;padding:13px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow);min-width:0;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"lab num" "hint num" "bar bar";
+    gap:2px 10px;align-items:center}
+  .kpi-cell .k-top{grid-area:lab;display:flex;align-items:center;gap:7px}
+  .kpi-cell .hint{grid-area:hint;margin-top:4px}
+  .kpi-cell .track{grid-area:bar;margin-top:10px}
   .kpi-cell .lab{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2)}
   .kpi-cell .lab i{width:6px;height:6px;border-radius:50%}
-  .kpi-cell .line{display:flex;align-items:baseline;gap:9px;margin-top:8px}
+  .kpi-cell .line{grid-area:num;display:flex;flex-direction:column;align-items:flex-end;gap:5px;justify-self:end}
   .kpi-cell .line b{font-size:28px;line-height:1;font-weight:760;letter-spacing:-1.2px;font-variant-numeric:tabular-nums}
-  .kpi-cell .line .u{font-size:11.5px;color:var(--muted)}
-  .kpi-cell .pill{display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 7px;border-radius:99px;font-size:10.5px;font-weight:700;margin-left:auto}
+  .kpi-cell .line .u{font-size:11px;color:var(--muted)}
+  .kpi-cell .num{display:inline-flex;align-items:baseline;gap:5px}
+  .kpi-cell .pill{display:inline-flex;align-items:center;gap:3px;height:19px;padding:0 6px;border-radius:99px;font-size:10px;font-weight:700}
   .pill.up{background:var(--red-soft);color:var(--red)}
   .pill.down{background:var(--green-soft);color:#0f9d76}
   .pill.flat{background:#f1f3f9;color:var(--text-2)}
-  .kpi-cell .track{margin-top:10px;height:5px;border-radius:99px;background:#f2f4fa;overflow:hidden}
+  .kpi-cell .track{height:5px;border-radius:99px;background:#f2f4fa;overflow:hidden}
   .kpi-cell .track i{display:block;height:100%;border-radius:99px}
-  .kpi-cell .hint{margin-top:7px;font-size:10.5px;color:var(--muted)}
+  .kpi-cell .hint{font-size:10.5px;color:var(--muted);line-height:1.4}
 
   /* 甘特图 */
   .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
@@ -134,6 +148,7 @@
 
   /* 在办项目（含随记/文件入口） */
   .proj-card{grid-column:span 4;display:flex;flex-direction:column}
+  .pj-list{max-height:168px}
   .pj{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:10px 0;align-items:center}
   .pj + .pj{border-top:1px solid var(--line)}
   .pj .nm{font-size:12.5px;font-weight:560;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -150,7 +165,7 @@
 
   /* 今天 / 日程 / 完成率 */
   .c4{grid-column:span 4}
-  .list{display:flex;flex-direction:column;margin-top:8px}
+  .list{display:flex;flex-direction:column;margin-top:8px;max-height:186px}
   .li{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
   .li + .li{border-top:1px solid var(--line)}
   .ck{width:16px;height:16px;border-radius:50%;border:1.6px solid #ccd5e8;margin-top:1px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:9px;cursor:pointer}
@@ -185,6 +200,7 @@
   .seg{margin-left:auto;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f4f6fb}
   .seg button{border:0;background:transparent;font-size:11px;color:var(--text-2);padding:4px 10px;border-radius:8px;cursor:pointer}
   .seg button.on{background:#fff;color:var(--text);font-weight:650;box-shadow:0 1px 2px rgba(17,26,46,.08)}
+  .tbl-wrap{max-height:320px}
   .tbl{width:100%;border-collapse:collapse}
   .tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   .tbl td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:12px}
@@ -201,6 +217,16 @@
   .stt.done{background:var(--green-soft);color:#0f9d76}
   .stt.late{background:var(--red-soft);color:var(--red)}
   .pager{display:flex;justify-content:space-between;padding:12px 8px 6px;font-size:11px;color:var(--muted)}
+  /* 卡片内容区：默认隐藏滚动条，鼠标移上去才出现（防任务多把卡片撑长） */
+  .hv-scroll{overflow-y:auto;overscroll-behavior:contain}
+  .hv-scroll::-webkit-scrollbar{width:6px}
+  .hv-scroll::-webkit-scrollbar-thumb{background:transparent;border-radius:99px;transition:background .15s}
+  /* JS 打上 .is-hover 或原生 hover 时都显现 */
+  .hv-scroll:hover::-webkit-scrollbar-thumb,
+  .hv-scroll.is-hover::-webkit-scrollbar-thumb{background:#c9d2e4}
+  .hv-scroll.is-hover::-webkit-scrollbar-thumb:hover{background:#aab5cc}
+  .hv-scroll::-webkit-scrollbar-track{background:transparent}
+
   .foot{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);padding:0 4px}
   .foot .k{color:var(--text-2);font-weight:600}
 
@@ -282,11 +308,6 @@
       </div>
       <div class="head-right">
         <div class="date">2026年11月10日 周二 · 10:51 更新</div>
-        <div class="chips">
-          <span class="chip"><i class="sp" style="background:#5468ff"></i>在办项目 <b>3</b></span>
-          <span class="chip"><i class="sp" style="background:#f59f00"></i>今日 <b>3</b></span>
-          <span class="chip"><i class="sp" style="background:#f04438"></i>逾期 <b>1</b></span>
-        </div>
       </div>
     </div>
 
@@ -294,28 +315,46 @@
     <section class="row">
       <div class="kpi-strip">
         <div class="kpi-cell">
-          <div class="lab"><i style="background:#5468ff"></i>本周到期</div>
-          <div class="line"><b>9</b><span class="u">件事</span><span class="pill up">↑ 2</span></div>
-          <div class="track"><i style="width:39%;background:#5468ff"></i></div>
+          <div class="k-top"><i class="sp" style="background:#5468ff"></i>本周到期</div>
+          <div class="line">
+            <span class="pill up">↑ 2</span>
+            <span class="num"><b>9</b><span class="u">件事</span></span>
+          </div>
           <div class="hint">占本月 60% · 已完成 4 件</div>
+          <div class="track"><i style="width:39%;background:#5468ff"></i></div>
         </div>
         <div class="kpi-cell">
-          <div class="lab"><i style="background:#8b5cf6"></i>本月到期</div>
-          <div class="line"><b>15</b><span class="u">件事</span><span class="pill flat">持平</span></div>
-          <div class="track"><i style="width:65%;background:#8b5cf6"></i></div>
+          <div class="k-top"><i class="sp" style="background:#8b5cf6"></i>本月到期</div>
+          <div class="line">
+            <span class="pill flat">持平</span>
+            <span class="num"><b>15</b><span class="u">件事</span></span>
+          </div>
           <div class="hint">占本季 68% · 已完成 7 件</div>
+          <div class="track"><i style="width:65%;background:#8b5cf6"></i></div>
         </div>
         <div class="kpi-cell">
-          <div class="lab"><i style="background:#12b886"></i>本季到期</div>
-          <div class="line"><b>22</b><span class="u">件事</span><span class="pill down">↓ 3</span></div>
-          <div class="track"><i style="width:85%;background:#12b886"></i></div>
+          <div class="k-top"><i class="sp" style="background:#12b886"></i>本季到期</div>
+          <div class="line">
+            <span class="pill down">↓ 3</span>
+            <span class="num"><b>22</b><span class="u">件事</span></span>
+          </div>
           <div class="hint">占本年 96% · 已完成 9 件</div>
+          <div class="track"><i style="width:85%;background:#12b886"></i></div>
         </div>
         <div class="kpi-cell">
-          <div class="lab"><i style="background:#96a0b8"></i>本年到期</div>
-          <div class="line"><b>23</b><span class="u">件事</span><span class="pill up">↑ 1</span></div>
-          <div class="track"><i style="width:77%;background:#96a0b8"></i></div>
+          <div class="k-top"><i class="sp" style="background:#96a0b8"></i>本年到期</div>
+          <div class="line">
+            <span class="pill up">↑ 1</span>
+            <span class="num"><b>23</b><span class="u">件事</span></span>
+          </div>
           <div class="hint">年度目标 30 件 · 还差 7 件</div>
+          <div class="track"><i style="width:77%;background:#96a0b8"></i></div>
+        </div>
+
+        <div class="kpi-side">
+          <span class="chip"><i class="sp" style="background:#5468ff"></i>在办项目 <b>3</b></span>
+          <span class="chip"><i class="sp" style="background:#f59f00"></i>今日待办 <b>3</b></span>
+          <span class="chip"><i class="sp" style="background:#f04438"></i>已逾期 <b>1</b></span>
         </div>
       </div>
     </section>
@@ -359,10 +398,11 @@
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
         <div class="subsec"><h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span><a class="more" href="#">全部 →</a></div>
-        <div>
+        <div class="risk-mini hv-scroll">
           <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
           <div class="rm"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
           <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
+          <div class="rm"><span class="lv l">低</span><span class="tt">测试环境磁盘余量告警</span><span class="pj">运维</span></div>
         </div>
         <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
       </div>
@@ -372,7 +412,7 @@
     <section class="row">
       <div class="card proj-card">
         <div class="card-h"><h3>在办项目</h3><span class="sub">3 个</span><a class="more" href="#">全部 →</a></div>
-        <div>
+        <div class="hv-scroll pj-list">
           <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
           <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
           <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
@@ -389,16 +429,18 @@
 
       <div class="card c4">
         <div class="card-h"><h3>今天</h3><span class="sub">1/3 完成</span><a class="more" href="#">＋ 加一条</a></div>
-        <div class="list">
+        <div class="list hv-scroll">
           <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
           <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
           <div class="li"><span class="ck"></span><div><span class="tt">整理客户反馈清单</span><span class="mt">企业数据中台 · 日常</span></div><span class="st hot">高</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">门户首页资源压缩</span><span class="mt">客户运营门户 · 周计划</span></div><span class="st">待处理</span></div>
+          <div class="li"><span class="ck"></span><div><span class="tt">周报初稿</span><span class="mt">未挂项目 · 日常</span></div><span class="st">待处理</span></div>
         </div>
       </div>
 
       <div class="card c4">
         <div class="card-h"><h3>日程</h3><span class="sub">今天 2 场</span><a class="more" href="#">去日历 →</a></div>
-        <div class="list">
+        <div class="list hv-scroll">
           <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
           <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
         </div>
@@ -412,6 +454,7 @@
           <h3>最近的到期任务</h3><span class="sub">共 27 条 · 显示最近 6 条</span>
           <div class="seg"><button class="on">全部</button><button>我负责</button><button>已逾期</button></div>
         </div>
+        <div class="tbl-wrap hv-scroll">
         <table class="tbl">
           <thead><tr><th>任务</th><th>项目</th><th>分类</th><th>负责人</th><th>到期</th><th>剩余</th><th>优先级</th><th style="text-align:right">状态</th></tr></thead>
           <tbody>
@@ -421,8 +464,11 @@
             <tr><td>门户改版视觉走查</td><td>客户运营门户</td><td><span style="color:#5b6580">周计划</span></td><td><div class="who"><span class="av" style="background:#f59f00">赵</span>赵敏</div></td><td>11-13</td><td><span style="color:#98a2b8">3 天</span></td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
             <tr><td>月度指标口径对齐</td><td>企业数据中台</td><td><span style="color:#5b6580">月度</span></td><td><div class="who"><span class="av" style="background:#f04438">周</span>周涛</div></td><td>11-05</td><td><span style="color:#f04438;font-weight:600">逾期 5 天</span></td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt late">已逾期</span></td></tr>
             <tr><td>值班表排班确认</td><td>运维巡检自动化</td><td><span style="color:#5b6580">周计划</span></td><td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td><td>11-16</td><td><span style="color:#98a2b8">6 天</span></td><td><span class="pri l"><i></i>低</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>接口文档补齐</td><td>企业数据中台</td><td><span style="color:#5b6580">月度</span></td><td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td><td>11-18</td><td><span style="color:#98a2b8">8 天</span></td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>周报初稿</td><td>未挂项目</td><td><span style="color:#5b6580">日常</span></td><td><div class="who"><span class="av" style="background:#12b886">王</span>王强</div></td><td>11-19</td><td><span style="color:#98a2b8">9 天</span></td><td><span class="pri l"><i></i>低</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
           </tbody>
         </table>
+        </div>
         <div class="pager"><span>第 1 / 6 页</span><span>每页 6 条</span></div>
       </div>
     </section>
@@ -607,6 +653,17 @@ document.getElementById('noteBtn').addEventListener('click', () => {
   input.value = '';
   const total = stack.querySelectorAll('.note').length;
   stack.querySelector('.stack-hint').textContent = '共 ' + total + ' 张 · 点击翻看';
+});
+
+/* ---------- 卡片内滚动：hover 时显形（原生 overlay 滚动条截图拍不到，用类兜底） ---------- */
+document.querySelectorAll('.hv-scroll').forEach(box => {
+  box.addEventListener('mouseenter', () => box.classList.add('is-hover'));
+  box.addEventListener('mouseleave', () => box.classList.remove('is-hover'));
+  box.addEventListener('scroll', () => {
+    box.classList.add('is-hover');
+    clearTimeout(box._t);
+    box._t = setTimeout(() => box.classList.remove('is-hover'), 900);
+  }, { passive: true });
 });
 
 /* ---------- 待办勾选 / 分段 ---------- */
