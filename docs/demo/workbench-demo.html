@@ -3,31 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>工作台重设计 Demo · 方案 B（大气版）</title>
+<title>工作台重设计 Demo · 方案 C（甘特 + 精简 KPI）</title>
 <style>
   :root{
     --bg1:#eef1f8; --bg2:#e7ebf6;
-    --shell:#ffffff;
-    --side:#f7f8fc;
-    --line:#eceff6;
-    --line-2:#e3e8f2;
-    --text:#111a2e;
-    --text-2:#5b6580;
-    --muted:#98a2b8;
-    --brand:#5468ff;
-    --brand-2:#7b5cf5;
-    --brand-soft:#eef1ff;
+    --side:#f7f8fc; --line:#eceff6; --line-2:#e3e8f2;
+    --text:#111a2e; --text-2:#5b6580; --muted:#98a2b8;
+    --brand:#5468ff; --brand-2:#7b5cf5; --brand-soft:#eef1ff;
     --green:#12b886; --green-soft:#e7f8f2;
     --amber:#f59f00; --amber-soft:#fff7e6;
     --red:#f04438;  --red-soft:#fff1f0;
     --violet:#8b5cf6; --violet-soft:#f3edff;
-    --r-card:16px;
-    --shadow-card:0 1px 2px rgba(17,26,46,.03), 0 8px 24px -16px rgba(17,26,46,.18);
+    --r:16px;
+    --shadow:0 1px 2px rgba(17,26,46,.03), 0 8px 24px -16px rgba(17,26,46,.18);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; padding:18px;
+    margin:0;padding:18px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
     color:var(--text);
     background:
@@ -36,41 +29,23 @@
       linear-gradient(180deg,var(--bg1),var(--bg2));
     -webkit-font-smoothing:antialiased;
   }
+  .shell{display:flex;min-height:calc(100vh - 36px);background:#fff;border:1px solid rgba(255,255,255,.85);border-radius:26px;
+    box-shadow:0 40px 90px -50px rgba(24,35,64,.55),0 2px 6px rgba(24,35,64,.04);overflow:hidden}
 
-  /* 整体容器：像参考图那样"一整块面板浮在背景上" */
-  .shell{
-    display:flex; min-height:calc(100vh - 36px);
-    background:var(--shell);
-    border:1px solid rgba(255,255,255,.85);
-    border-radius:26px;
-    box-shadow:0 40px 90px -50px rgba(24,35,64,.55), 0 2px 6px rgba(24,35,64,.04);
-    overflow:hidden;
-  }
-
-  /* ---------------- 左栏 ---------------- */
-  .side{
-    width:252px; flex:0 0 252px;
-    background:var(--side);
-    border-right:1px solid var(--line);
-    padding:22px 16px 18px;
-    display:flex; flex-direction:column; gap:20px;
-  }
-  .brand{display:flex; align-items:center; gap:11px; padding:2px 6px 2px}
+  /* 左栏 */
+  .side{width:252px;flex:0 0 252px;background:var(--side);border-right:1px solid var(--line);padding:22px 16px 18px;display:flex;flex-direction:column;gap:20px}
+  .brand{display:flex;align-items:center;gap:11px;padding:2px 6px}
   .logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(145deg,#5468ff,#8a5cf6);display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px;box-shadow:0 10px 20px -10px rgba(84,104,255,.9)}
   .brand h1{margin:0;font-size:16px;font-weight:750;letter-spacing:-.2px}
   .brand span{display:block;font-size:10px;letter-spacing:1.6px;color:var(--muted);text-transform:uppercase;font-weight:600}
-
   .side-search{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:11px;background:#fff;border:1px solid var(--line-2);color:var(--muted);font-size:12.5px}
   .side-search kbd{margin-left:auto;font:inherit;font-size:10px;color:#aab2c5;border:1px solid var(--line-2);border-radius:5px;padding:1px 5px}
-
   .nav-group{display:flex;flex-direction:column;gap:3px}
   .nav-group .gt{font-size:10.5px;letter-spacing:1.2px;color:#aab2c5;font-weight:700;padding:0 10px 7px}
   .nav-group a{display:flex;align-items:center;gap:10px;height:38px;padding:0 11px;border-radius:11px;color:var(--text-2);text-decoration:none;font-size:13px;font-weight:500;transition:.15s}
   .nav-group a:hover{background:#fff;color:var(--text)}
   .nav-group a.on{background:#fff;color:var(--brand);font-weight:650;box-shadow:0 1px 2px rgba(17,26,46,.05),0 6px 16px -12px rgba(17,26,46,.4)}
   .nav-group a .ic{width:18px;height:18px;display:grid;place-items:center;font-size:13px;opacity:.85}
-  .nav-group a .tag{margin-left:auto;font-size:9.5px;font-weight:700;color:#fff;background:var(--brand);border-radius:6px;padding:2px 6px}
-
   .side-card{margin-top:auto;background:#fff;border:1px solid var(--line-2);border-radius:14px;padding:14px}
   .side-card .row{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--muted)}
   .side-card b{display:block;font-size:13px;color:var(--text);margin:6px 0 10px;font-weight:700}
@@ -78,17 +53,15 @@
   .side-card .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#5468ff,#8a5cf6)}
   .side-card .hint{font-size:10.5px;color:var(--muted);margin-top:8px}
 
-  /* ---------------- 主区 ---------------- */
-  .main{flex:1;min-width:0;padding:24px 28px 28px;display:flex;flex-direction:column;gap:20px;background:#fff}
-
+  /* 主区 */
+  .main{flex:1;min-width:0;padding:24px 28px 26px;display:flex;flex-direction:column;gap:18px;background:#fff}
   .topbar{display:flex;align-items:center;gap:12px}
   .avatar-sm{width:34px;height:34px;border-radius:50%;background:#e9edff;color:var(--brand);display:grid;place-items:center;font-size:13px;font-weight:700}
   .top-tools{margin-left:auto;display:flex;align-items:center;gap:8px}
-  .tool-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:#fff;display:grid;place-items:center;font-size:14px;color:var(--text-2);position:relative;cursor:pointer;transition:.15s}
+  .tool-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:#fff;display:grid;place-items:center;font-size:14px;color:var(--text-2);position:relative;cursor:pointer}
   .tool-btn:hover{border-color:#cfd8ee;color:var(--brand)}
   .dot-badge{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;border-radius:99px;background:var(--red);color:#fff;font-size:10px;line-height:17px;text-align:center;padding:0 4px;border:2px solid #fff}
   .btn-primary{height:38px;padding:0 16px;border-radius:11px;border:0;background:linear-gradient(140deg,#5468ff,#6d5bf6);color:#fff;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 10px 20px -12px rgba(84,104,255,.9)}
-  .btn-primary:hover{filter:brightness(1.05)}
 
   .page-head{display:flex;align-items:flex-start;gap:16px}
   .page-head h2{margin:0;font-size:25px;font-weight:750;letter-spacing:-.5px}
@@ -100,173 +73,177 @@
   .chip b{color:var(--text);font-weight:700}
   .sp{width:6px;height:6px;border-radius:50%}
 
-  /* ---------------- KPI ---------------- */
-  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-  .kpi{position:relative;border:1px solid var(--line);border-radius:var(--r-card);padding:18px 20px;background:#fff;box-shadow:var(--shadow-card)}
-  .kpi .top{display:flex;align-items:center;gap:10px}
-  .kpi .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:14px}
-  .kpi .lab{font-size:13px;color:var(--text-2);font-weight:500}
-  .kpi .num{display:flex;align-items:baseline;gap:9px;margin:14px 0 0}
-  .kpi .num b{font-size:34px;line-height:1;font-weight:760;letter-spacing:-1.4px;font-variant-numeric:tabular-nums}
-  .kpi .num .u{font-size:12px;color:var(--muted)}
-  .kpi .foot{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;color:var(--muted)}
-  .pill-up{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:700}
-  .pill-up.up{background:var(--red-soft);color:var(--red)}
-  .pill-up.down{background:var(--green-soft);color:#0f9d76}
-  .pill-up.flat{background:#f1f3f9;color:var(--text-2)}
-
-  /* ---------------- 卡片通用 ---------------- */
   .row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
-  .card{border:1px solid var(--line);border-radius:var(--r-card);background:#fff;box-shadow:var(--shadow-card);padding:20px 22px;min-width:0}
-  .card-h{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-  .card-h h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.1px}
-  .card-h .more{margin-left:auto;font-size:12px;color:var(--brand);text-decoration:none;font-weight:500}
+  .card{border:1px solid var(--line);border-radius:var(--r);background:#fff;box-shadow:var(--shadow);padding:18px 20px;min-width:0}
+  .card-h{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+  .card-h h3{margin:0;font-size:14.5px;font-weight:700}
+  .card-h .sub{font-size:11.5px;color:var(--muted)}
+  .card-h .more{margin-left:auto;font-size:11.5px;color:var(--brand);text-decoration:none;font-weight:500}
   .card-h .more:hover{text-decoration:underline}
-  .card-sub{font-size:12px;color:var(--muted);margin:4px 0 0}
 
-  /* 主图卡 */
-  .chart-card{grid-column:span 8;display:flex;flex-direction:column}
-  .chart-top{display:flex;align-items:flex-end;gap:14px;margin:12px 0 6px}
-  .chart-top .sum{font-size:30px;font-weight:760;letter-spacing:-1.2px;font-variant-numeric:tabular-nums;line-height:1}
-  .chart-top .delta{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:99px;padding:3px 8px}
-  .chart-top .vs{font-size:11.5px;color:var(--muted);text-decoration:line-through}
-  .seg{margin-left:auto;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f4f6fb}
-  .seg button{border:0;background:transparent;font-size:11.5px;color:var(--text-2);padding:5px 11px;border-radius:8px;cursor:pointer}
-  .seg button.on{background:#fff;color:var(--text);font-weight:650;box-shadow:0 1px 2px rgba(17,26,46,.08)}
-  .chart{position:relative;margin-top:8px;flex:1;display:flex;flex-direction:column}
-  .chart svg{display:block;width:100%;height:100%;min-height:230px;overflow:visible}
-  .tip{position:absolute;pointer-events:none;background:#111a2e;color:#fff;padding:8px 11px;border-radius:10px;font-size:11.5px;line-height:1.5;transform:translate(-50%,-118%);opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(17,26,46,.6)}
-  .tip b{font-size:13px;font-weight:700}
-  .xaxis{display:flex;justify-content:space-between;margin-top:2px;font-size:11px;color:var(--muted)}
+  /* KPI 概览条：四格合一，不再四张空卡 */
+  .kpi-strip{grid-column:span 12;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);
+    border-radius:var(--r);background:#fff;box-shadow:var(--shadow);overflow:hidden}
+  .kpi-cell{padding:16px 22px;position:relative}
+  .kpi-cell + .kpi-cell{border-left:1px solid var(--line)}
+  .kpi-cell .lab{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-2)}
+  .kpi-cell .lab i{width:6px;height:6px;border-radius:50%}
+  .kpi-cell .line{display:flex;align-items:baseline;gap:9px;margin-top:8px}
+  .kpi-cell .line b{font-size:28px;line-height:1;font-weight:760;letter-spacing:-1.2px;font-variant-numeric:tabular-nums}
+  .kpi-cell .line .u{font-size:11.5px;color:var(--muted)}
+  .kpi-cell .pill{display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 7px;border-radius:99px;font-size:10.5px;font-weight:700;margin-left:auto}
+  .pill.up{background:var(--red-soft);color:var(--red)}
+  .pill.down{background:var(--green-soft);color:#0f9d76}
+  .pill.flat{background:#f1f3f9;color:var(--text-2)}
+  .kpi-cell .track{margin-top:10px;height:5px;border-radius:99px;background:#f2f4fa;overflow:hidden}
+  .kpi-cell .track i{display:block;height:100%;border-radius:99px}
+  .kpi-cell .hint{margin-top:7px;font-size:10.5px;color:var(--muted)}
 
-  /* 环图卡 */
+  /* 甘特图 */
+  .gantt-card{grid-column:span 8;display:flex;flex-direction:column}
+  .gantt{position:relative;margin-top:8px;flex:1;min-height:280px}
+  .gantt svg{display:block;width:100%}
+  .gantt .tip{position:absolute;pointer-events:none;background:#111a2e;color:#fff;padding:7px 10px;border-radius:9px;font-size:11px;
+    transform:translate(-50%,-125%);opacity:0;transition:opacity .12s;white-space:nowrap;box-shadow:0 10px 24px -10px rgba(17,26,46,.6)}
+  .gantt-legend{display:flex;align-items:center;gap:16px;margin-top:10px;font-size:11px;color:var(--muted)}
+  .gantt-legend span{display:flex;align-items:center;gap:6px}
+  .gantt-legend i{width:8px;height:8px;border-radius:3px}
+
+  /* 任务状态 + 风险 */
   .status-card{grid-column:span 4;display:flex;flex-direction:column}
-  .donut{position:relative;display:grid;place-items:center;margin:14px 0 6px}
+  .donut{position:relative;display:grid;place-items:center;margin:8px 0 2px}
   .donut .center{position:absolute;text-align:center}
-  .donut .center b{display:block;font-size:30px;font-weight:760;line-height:1;letter-spacing:-1px}
-  .donut .center span{font-size:11px;color:var(--muted)}
-  .lg{display:flex;justify-content:space-between;margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
-  .lg div{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-2)}
+  .donut .center b{display:block;font-size:26px;font-weight:760;line-height:1;letter-spacing:-.8px}
+  .donut .center span{font-size:10.5px;color:var(--muted)}
+  .lg{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);margin-top:6px}
+  .lg div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)}
   .lg b{color:var(--text);font-weight:700}
-  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:11px;background:var(--red-soft);font-size:12px;color:#b42318}
-  /* 任务状态卡里的风险小节（与状态用一条虚线分隔，不再单独占一格） */
-  .subsec{display:flex;align-items:center;gap:8px;margin:18px 0 2px;padding-top:16px;border-top:1px dashed var(--line-2)}
-  .subsec h4{margin:0;font-size:13px;font-weight:700}
-  .subsec .cnt{font-size:11.5px;color:var(--muted)}
-  .subsec .more{margin-left:auto;font-size:11.5px;color:var(--brand);text-decoration:none}
-  .risk-mini{display:flex;flex-direction:column;margin-top:6px}
-  .rm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 0}
+  .subsec{display:flex;align-items:center;gap:8px;margin:14px 0 0;padding-top:14px;border-top:1px dashed var(--line-2)}
+  .subsec h4{margin:0;font-size:12.5px;font-weight:700}
+  .subsec .cnt{font-size:11px;color:var(--muted)}
+  .subsec .more{margin-left:auto;font-size:11px;color:var(--brand);text-decoration:none}
+  .rm{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0}
   .rm + .rm{border-top:1px solid var(--line)}
-  .rm .tt{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rm .pj{font-size:10.5px;color:var(--muted);white-space:nowrap}
-
-  /* 三列小卡 */
-  .c4{grid-column:span 4}
-  .list{display:flex;flex-direction:column;margin-top:10px}
-  .li{display:flex;align-items:flex-start;gap:11px;padding:11px 0}
-  .li + .li{border-top:1px solid var(--line)}
-  .ck{width:17px;height:17px;border-radius:50%;border:1.6px solid #ccd5e8;margin-top:1px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:9.5px;cursor:pointer;transition:.15s}
-  .li.done .ck{background:var(--green);border-color:var(--green)}
-  .li.done .tt{color:var(--muted);text-decoration:line-through}
-  .li .tt{font-size:13px;font-weight:520;line-height:1.45}
-  .li .mt{display:block;font-size:11px;color:var(--muted);margin-top:3px}
-  .li .st{margin-left:auto;font-size:10.5px;padding:3px 8px;border-radius:99px;background:#f4f6fb;color:var(--text-2);white-space:nowrap;font-weight:600}
-  .li .st.hot{background:var(--red-soft);color:var(--red)}
-  .li .st.ok{background:var(--violet-soft);color:var(--violet)}
-
-  .ev{display:grid;grid-template-columns:58px minmax(0,1fr);gap:12px;padding:11px 0;align-items:start}
-  .ev + .ev{border-top:1px solid var(--line)}
-  .ev .tm{font-size:12px;font-weight:750;color:var(--brand);font-variant-numeric:tabular-nums}
-  .ev .nm{font-size:13px;font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ev .lc{font-size:11px;color:var(--muted);margin-top:3px}
-  .ev.live .tm{color:var(--green)}
-
-  .rk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 0}
-  .rk + .rk{border-top:1px solid var(--line)}
-  .lv{font-size:10.5px;padding:3px 8px;border-radius:99px;font-weight:700}
+  .lv{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:700}
   .lv.h{background:var(--red-soft);color:var(--red)}
   .lv.m{background:var(--amber-soft);color:#b7791f}
   .lv.l{background:#f2f4fa;color:var(--text-2)}
-  .rk .tt{font-size:13px;font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rk .pj{font-size:11px;color:var(--muted);white-space:nowrap}
+  .rm .tt{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rm .pj{font-size:10px;color:var(--muted);white-space:nowrap}
+  .warn-strip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 11px;border-radius:10px;background:var(--red-soft);font-size:11.5px;color:#b42318}
 
-  /* 完成率 */
-  .rate{grid-column:span 4}
-  .rate-num{display:flex;align-items:baseline;gap:10px;margin:14px 0 0}
-  .rate-num b{font-size:34px;font-weight:760;letter-spacing:-1.2px;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1}
-  .rate-num span{font-size:11.5px;color:var(--muted)}
-  .bars{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end;height:118px;margin-top:18px}
-  .bc{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
-  .bc .v{font-size:11.5px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
-  .bc .tk{width:100%;height:62px;border-radius:9px;background:#f3f5fb;display:flex;align-items:flex-end;overflow:hidden}
-  .bc .tk i{width:100%;border-radius:9px;background:linear-gradient(180deg,#94a8ff,#5468ff)}
-  .bc .lb{font-size:10.5px;color:var(--muted);white-space:nowrap}
+  /* 在办项目（含随记/文件入口） */
+  .proj-card{grid-column:span 4;display:flex;flex-direction:column}
+  .pj{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:10px 0;align-items:center}
+  .pj + .pj{border-top:1px solid var(--line)}
+  .pj .nm{font-size:12.5px;font-weight:560;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pj .pc{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .pj .bar{grid-column:1/-1;height:5px;border-radius:99px;background:#f2f4fa;overflow:hidden}
+  .pj .bar i{display:block;height:100%;border-radius:99px}
+  .pj .due{grid-column:1/-1;font-size:10.5px;color:var(--muted)}
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:14px;border-top:1px dashed var(--line-2)}
+  .qbtn{display:flex;align-items:center;gap:9px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line-2);background:#fbfcff;
+    font-size:12.5px;color:var(--text);cursor:pointer;text-align:left;transition:.15s}
+  .qbtn:hover{border-color:#c7d2ff;background:#fff;box-shadow:0 6px 16px -12px rgba(84,104,255,.6)}
+  .qbtn .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px}
+  .qbtn .n{margin-left:auto;font-size:11px;color:var(--muted);font-weight:600}
 
-  /* 便签 */
-  .notes{grid-column:span 6}
-  .note-add{display:flex;gap:8px;margin:14px 0 12px}
-  .note-add input{flex:1;height:38px;border-radius:11px;border:1px solid var(--line-2);background:#fbfcff;padding:0 13px;font-size:12.5px;outline:none;transition:.15s}
-  .note-add input:focus{border-color:#c2cdff;box-shadow:0 0 0 3px rgba(84,104,255,.1);background:#fff}
-  .note-add button{height:38px;padding:0 15px;border-radius:11px;border:0;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}
-  .sticky-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .sticky{padding:14px 14px 10px;border-radius:12px;background:linear-gradient(180deg,#fffdf4,#fbf4d9);border:1px solid #f4e9c4;font-size:12.5px;line-height:1.55;color:#6b5a1e;min-height:92px;display:flex;flex-direction:column}
-  .sticky .t{flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .sticky .f{display:flex;justify-content:space-between;font-size:10.5px;color:#b3a271;margin-top:8px}
+  /* 今天 / 日程 / 完成率 */
+  .c4{grid-column:span 4}
+  .list{display:flex;flex-direction:column;margin-top:8px}
+  .li{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
+  .li + .li{border-top:1px solid var(--line)}
+  .ck{width:16px;height:16px;border-radius:50%;border:1.6px solid #ccd5e8;margin-top:1px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:9px;cursor:pointer}
+  .li.done .ck{background:var(--green);border-color:var(--green)}
+  .li.done .tt{color:var(--muted);text-decoration:line-through}
+  .li .tt{font-size:12.5px;line-height:1.45}
+  .li .mt{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .li .st{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:99px;background:#f4f6fb;color:var(--text-2);white-space:nowrap;font-weight:600}
+  .li .st.hot{background:var(--red-soft);color:var(--red)}
+  .li .st.ok{background:var(--violet-soft);color:var(--violet)}
+  .ev{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:10px 0}
+  .ev + .ev{border-top:1px solid var(--line)}
+  .ev .tm{font-size:11.5px;font-weight:750;color:var(--brand);font-variant-numeric:tabular-nums}
+  .ev .nm{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ev .lc{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .ev.live .tm{color:var(--green)}
+  .rate-num{display:flex;align-items:baseline;gap:9px;margin-top:10px}
+  .rate-num b{font-size:30px;font-weight:760;letter-spacing:-1.1px;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1}
+  .rate-num span{font-size:11px;color:var(--muted)}
+  .bars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end;height:96px;margin-top:16px}
+  .bc{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .bc .v{font-size:11px;font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .bc .tk{width:100%;height:54px;border-radius:8px;background:#f3f5fb;display:flex;align-items:flex-end;overflow:hidden}
+  .bc .tk i{width:100%;border-radius:8px;background:linear-gradient(180deg,#94a8ff,#5468ff)}
+  .bc .lb{font-size:10px;color:var(--muted);white-space:nowrap}
 
-  /* 文件 */
-  .files{grid-column:span 6}
-  .file{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 0}
-  .file + .file{border-top:1px solid var(--line)}
-  .file .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff}
-  .file .nm{font-size:12.5px;font-weight:520;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .file .mt{font-size:10.5px;color:var(--muted);margin-top:2px}
-  .file .sz{font-size:11px;color:var(--muted);white-space:nowrap}
-
-  /* 底部表格 */
-  .table-card{grid-column:span 12;padding-bottom:8px}
-  .tb-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .tb-head h3{margin:0;font-size:16px;font-weight:720}
-  .tb-head .sub{font-size:12px;color:var(--muted)}
+  /* 表格 */
+  .table-card{grid-column:span 8;padding-bottom:6px}
+  .tb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .tb-head h3{margin:0;font-size:15px;font-weight:720}
+  .tb-head .sub{font-size:11.5px;color:var(--muted)}
+  .seg{margin-left:auto;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f4f6fb}
+  .seg button{border:0;background:transparent;font-size:11px;color:var(--text-2);padding:4px 10px;border-radius:8px;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--text);font-weight:650;box-shadow:0 1px 2px rgba(17,26,46,.08)}
   .tbl{width:100%;border-collapse:collapse}
-  .tbl th{text-align:left;font-size:11.5px;font-weight:600;color:var(--muted);padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-  .tbl td{padding:13px 10px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--text)}
+  .tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .tbl td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:12px}
   .tbl tr:last-child td{border-bottom:0}
   .tbl tbody tr:hover{background:#fbfcff}
-  .tbl .who{display:flex;align-items:center;gap:9px}
-  .tbl .who .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
-  .pri{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
+  .who{display:flex;align-items:center;gap:8px}
+  .who .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#fff}
+  .pri{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2)}
   .pri i{width:6px;height:6px;border-radius:50%}
-  .pri.h i{background:var(--red)} .pri.m i{background:var(--amber)} .pri.l i{background:#c3cbdc}
-  .stt{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:4px 9px;border-radius:99px;font-weight:600}
+  .pri.h i{background:var(--red)}.pri.m i{background:var(--amber)}.pri.l i{background:#c3cbdc}
+  .stt{display:inline-flex;align-items:center;font-size:11px;padding:3px 8px;border-radius:99px;font-weight:600}
   .stt.todo{background:#f2f4fa;color:var(--text-2)}
   .stt.doing{background:var(--amber-soft);color:#b7791f}
   .stt.done{background:var(--green-soft);color:#0f9d76}
   .stt.late{background:var(--red-soft);color:var(--red)}
-  .pager{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 8px;font-size:11.5px;color:var(--muted)}
-
-  .foot{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);padding:2px 4px 0}
+  .pager{display:flex;justify-content:space-between;padding:12px 8px 6px;font-size:11px;color:var(--muted)}
+  .foot{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);padding:0 4px}
   .foot .k{color:var(--text-2);font-weight:600}
+
+  /* 便签弹层（点「随记」弹出，栈签效果） */
+  .overlay{position:fixed;inset:0;background:rgba(17,26,46,.32);backdrop-filter:blur(3px);display:none;place-items:center;z-index:50}
+  .overlay.on{display:grid}
+  .stickies-modal{width:520px;max-width:92vw;background:#fff;border-radius:20px;padding:20px 22px 22px;box-shadow:0 40px 90px -40px rgba(17,26,46,.6)}
+  .sm-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .sm-head h3{margin:0;font-size:16px;font-weight:740}
+  .sm-head .close{margin-left:auto;width:30px;height:30px;border-radius:9px;border:1px solid var(--line-2);background:#fff;cursor:pointer;color:var(--text-2)}
+  .sm-sub{font-size:11.5px;color:var(--muted);margin:0 0 16px}
+  .note-add{display:flex;gap:8px;margin-bottom:18px}
+  .note-add input{flex:1;height:38px;border-radius:11px;border:1px solid var(--line-2);background:#fbfcff;padding:0 13px;font-size:12.5px;outline:none}
+  .note-add input:focus{border-color:#c2cdff;box-shadow:0 0 0 3px rgba(84,104,255,.1);background:#fff}
+  .note-add button{height:38px;padding:0 15px;border-radius:11px;border:0;background:var(--brand);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer}
+  .stack{position:relative;min-height:210px;padding:12px 6px 4px}
+  .note{position:absolute;left:50%;width:300px;padding:16px 18px 12px;border-radius:14px;background:linear-gradient(180deg,#fffdf4,#fbf3d6);
+    border:1px solid #f2e6bf;box-shadow:0 18px 36px -22px rgba(111,89,22,.55);font-size:13px;line-height:1.6;color:#6b5a1e;
+    transform-origin:center bottom;transition:transform .18s, box-shadow .18s;cursor:pointer}
+  .note .f{display:flex;justify-content:space-between;margin-top:10px;font-size:10.5px;color:#b3a271}
+  .note:nth-child(1){transform:translate(-50%,0) rotate(-4deg) scale(.92);z-index:1;opacity:.75}
+  .note:nth-child(2){transform:translate(-50%,-14px) rotate(2.5deg) scale(.96);z-index:2;opacity:.9}
+  .note:nth-child(3){transform:translate(-50%,-28px) rotate(0deg);z-index:3}
+  .note.top{transform:translate(-50%,-34px) rotate(0deg) scale(1.02);z-index:9;box-shadow:0 30px 50px -26px rgba(111,89,22,.65)}
+  .stack-hint{position:absolute;bottom:-2px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--muted)}
 
   @media (max-width:1400px){
     .side{width:220px;flex-basis:220px;padding:20px 12px}
-    .chart-card{grid-column:span 12}
-    .status-card{grid-column:span 6}
-    .c4,.rate,.notes,.files{grid-column:span 6}
-    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .gantt-card,.status-card,.proj-card,.c4,.table-card{grid-column:span 12}
+    .kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .kpi-cell:nth-child(3){border-left:0;border-top:1px solid var(--line)}
+    .kpi-cell:nth-child(4){border-top:1px solid var(--line)}
   }
 </style>
 </head>
 <body>
 <div class="shell">
-  <!-- 左栏 -->
   <aside class="side">
     <div class="brand">
       <div class="logo">B</div>
       <div><h1>Black Hole</h1><span>Team Workbench</span></div>
     </div>
-
     <div class="side-search">🔍 搜索任务、项目、文件 <kbd>⌘K</kbd></div>
-
     <nav class="nav-group">
       <div class="gt">工作</div>
       <a class="on" href="#"><span class="ic">◧</span>工作台</a>
@@ -275,13 +252,11 @@
       <a href="#"><span class="ic">▦</span>日程安排</a>
       <a href="#"><span class="ic">▣</span>文件资料</a>
     </nav>
-
     <nav class="nav-group">
       <div class="gt">系统</div>
       <a href="#"><span class="ic">⚙</span>设置</a>
       <a href="#"><span class="ic">◎</span>账号与权限</a>
     </nav>
-
     <div class="side-card">
       <div class="row"><span>本月完成</span><span>26%</span></div>
       <b>7 / 27 件</b>
@@ -290,12 +265,11 @@
     </div>
   </aside>
 
-  <!-- 主区 -->
   <main class="main">
     <div class="topbar">
       <div class="avatar-sm">陈</div>
       <div class="top-tools">
-        <button class="tool-btn" title="浅色/深色">☾</button>
+        <button class="tool-btn" title="主题">☾</button>
         <button class="tool-btn" title="通知">🔔<span class="dot-badge">6</span></button>
         <button class="btn-primary">＋ 新建任务</button>
       </div>
@@ -316,125 +290,105 @@
       </div>
     </div>
 
-    <!-- KPI -->
-    <section class="kpis">
-      <div class="kpi">
-        <div class="top">
-          <div class="ic" style="background:#eef1ff;color:#5468ff">▤</div>
-          <div class="lab">本周到期</div>
+    <!-- KPI：四格合一，每格带占比条 -->
+    <section class="row">
+      <div class="kpi-strip">
+        <div class="kpi-cell">
+          <div class="lab"><i style="background:#5468ff"></i>本周到期</div>
+          <div class="line"><b>9</b><span class="u">件事</span><span class="pill up">↑ 2</span></div>
+          <div class="track"><i style="width:39%;background:#5468ff"></i></div>
+          <div class="hint">占本月 60% · 已完成 4 件</div>
         </div>
-        <div class="num"><b>9</b><span class="u">件事</span></div>
-        <div class="foot"><span class="pill-up up">↑ 2</span> 较上周</div>
-      </div>
-      <div class="kpi">
-        <div class="top">
-          <div class="ic" style="background:#f3edff;color:#8b5cf6">▦</div>
-          <div class="lab">本月到期</div>
+        <div class="kpi-cell">
+          <div class="lab"><i style="background:#8b5cf6"></i>本月到期</div>
+          <div class="line"><b>15</b><span class="u">件事</span><span class="pill flat">持平</span></div>
+          <div class="track"><i style="width:65%;background:#8b5cf6"></i></div>
+          <div class="hint">占本季 68% · 已完成 7 件</div>
         </div>
-        <div class="num"><b>15</b><span class="u">件事</span></div>
-        <div class="foot"><span class="pill-up flat">持平</span> 较上月</div>
-      </div>
-      <div class="kpi">
-        <div class="top">
-          <div class="ic" style="background:#e7f8f2;color:#12b886">◍</div>
-          <div class="lab">本季到期</div>
+        <div class="kpi-cell">
+          <div class="lab"><i style="background:#12b886"></i>本季到期</div>
+          <div class="line"><b>22</b><span class="u">件事</span><span class="pill down">↓ 3</span></div>
+          <div class="track"><i style="width:85%;background:#12b886"></i></div>
+          <div class="hint">占本年 96% · 已完成 9 件</div>
         </div>
-        <div class="num"><b>22</b><span class="u">件事</span></div>
-        <div class="foot"><span class="pill-up down">↓ 3</span> 较上季</div>
-      </div>
-      <div class="kpi">
-        <div class="top">
-          <div class="ic" style="background:#f4f6fb;color:#5b6580">◎</div>
-          <div class="lab">本年到期</div>
+        <div class="kpi-cell">
+          <div class="lab"><i style="background:#96a0b8"></i>本年到期</div>
+          <div class="line"><b>23</b><span class="u">件事</span><span class="pill up">↑ 1</span></div>
+          <div class="track"><i style="width:77%;background:#96a0b8"></i></div>
+          <div class="hint">年度目标 30 件 · 还差 7 件</div>
         </div>
-        <div class="num"><b>23</b><span class="u">件事</span></div>
-        <div class="foot"><span class="pill-up up">↑ 1</span> 年度目标 30 件</div>
       </div>
     </section>
 
-    <!-- 主图 + 状态 -->
+    <!-- 甘特 + 任务状态(含风险) -->
     <section class="row">
-      <div class="card chart-card">
+      <div class="card gantt-card">
         <div class="card-h">
-          <h3>工作进度</h3>
-          <span class="card-sub">近 12 周完成情况</span>
-          <a class="more" href="#">查看甘特图 →</a>
+          <h3>工作进度</h3><span class="sub">4 个在办项目 · 10 周</span>
+          <a class="more" href="#">完整甘特 →</a>
         </div>
-        <div class="chart-top">
-          <span class="sum">52</span>
-          <span class="delta">▲ 18.6%</span>
-          <span class="vs">上期 43.8 件</span>
-          <div class="seg"><button class="on">12 周</button><button>本月</button><button>本季</button></div>
+        <div class="gantt" id="ganttBox">
+          <div class="tip" id="gtip">—</div>
+          <svg id="gantt" width="100%" height="258"></svg>
         </div>
-        <div class="chart" id="chartBox">
-          <div class="tip" id="tip">—</div>
-          <svg id="area" viewBox="0 0 820 260" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#7b5cf5" stop-opacity=".26"/>
-                <stop offset="55%" stop-color="#7b5cf5" stop-opacity=".10"/>
-                <stop offset="100%" stop-color="#7b5cf5" stop-opacity="0"/>
-              </linearGradient>
-              <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#9d7bff"/><stop offset="60%" stop-color="#7b5cf5"/><stop offset="100%" stop-color="#5468ff"/>
-              </linearGradient>
-            </defs>
-            <g stroke="#f1f4fa" stroke-width="1">
-              <line x1="0" y1="40" x2="820" y2="40"/><line x1="0" y1="86" x2="820" y2="86"/>
-              <line x1="0" y1="132" x2="820" y2="132"/><line x1="0" y1="178" x2="820" y2="178"/>
-              <line x1="0" y1="224" x2="820" y2="224"/>
-            </g>
-            <line id="avg" x1="0" y1="0" x2="820" y2="0" stroke="#dfe5f2" stroke-width="1.4" stroke-dasharray="6 6"/>
-            <path id="areaPath" fill="url(#fill)" d=""/>
-            <path id="linePath" fill="none" stroke="url(#stroke)" stroke-width="3" stroke-linecap="round"/>
-            <g id="dots"></g>
-          </svg>
-          <div class="xaxis" id="xaxis"></div>
+        <div class="gantt-legend">
+          <span><i style="background:#5468ff"></i>进行中</span>
+          <span><i style="background:#c9d3ea"></i>剩余工期</span>
+          <span>◆ 里程碑</span>
+          <span style="color:#f04438">┆ 今天</span>
         </div>
       </div>
 
       <div class="card status-card">
-        <div class="card-h"><h3>任务状态</h3><span class="card-sub">26% 已完成</span><a class="more" href="#">全部 →</a></div>
-
-        <div class="donut" style="margin:10px 0 2px">
-          <svg width="152" height="152" viewBox="0 0 152 152">
-            <circle cx="76" cy="76" r="60" fill="none" stroke="#f2f4fa" stroke-width="18"/>
-            <circle cx="76" cy="76" r="60" fill="none" stroke="#8b5cf6" stroke-width="18" stroke-linecap="round"
-                    stroke-dasharray="195.3 377" stroke-dashoffset="0" transform="rotate(-90 76 76)"/>
-            <circle cx="76" cy="76" r="60" fill="none" stroke="#12b886" stroke-width="18" stroke-linecap="round"
-                    stroke-dasharray="83.8 377" stroke-dashoffset="-195.3" transform="rotate(-90 76 76)"/>
-            <circle cx="76" cy="76" r="60" fill="none" stroke="#f59f00" stroke-width="18" stroke-linecap="round"
-                    stroke-dasharray="97.9 377" stroke-dashoffset="-279.1" transform="rotate(-90 76 76)"/>
+        <div class="card-h"><h3>任务状态</h3><span class="sub">26% 已完成</span><a class="more" href="#">全部 →</a></div>
+        <div class="donut">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="55" fill="none" stroke="#f2f4fa" stroke-width="17"/>
+            <circle cx="70" cy="70" r="55" fill="none" stroke="#8b5cf6" stroke-width="17" stroke-linecap="round"
+                    stroke-dasharray="179 345.6" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="55" fill="none" stroke="#12b886" stroke-width="17" stroke-linecap="round"
+                    stroke-dasharray="76.8 345.6" stroke-dashoffset="-179" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="55" fill="none" stroke="#f59f00" stroke-width="17" stroke-linecap="round"
+                    stroke-dasharray="89.8 345.6" stroke-dashoffset="-255.8" transform="rotate(-90 70 70)"/>
           </svg>
-          <div class="center"><b style="font-size:26px">27</b><span>总任务</span></div>
+          <div class="center"><b>27</b><span>总任务</span></div>
         </div>
-
-        <div class="lg" style="margin-top:8px;padding-top:12px">
+        <div class="lg">
           <div><i class="sp" style="background:#f59f00"></i>待处理 <b>14</b></div>
           <div><i class="sp" style="background:#12b886"></i>进行中 <b>6</b></div>
           <div><i class="sp" style="background:#8b5cf6"></i>已完成 <b>7</b></div>
         </div>
-
-        <div class="subsec">
-          <h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span>
-          <a class="more" href="#">全部 →</a>
-        </div>
-        <div class="risk-mini">
+        <div class="subsec"><h4>风险预警</h4><span class="cnt">4 条未关闭 · 2 条高</span><a class="more" href="#">全部 →</a></div>
+        <div>
           <div class="rm"><span class="lv h">高</span><span class="tt">接口联调依赖第三方排期</span><span class="pj">数据中台</span></div>
           <div class="rm"><span class="lv h">高</span><span class="tt">门户首屏加载超 3s</span><span class="pj">运营门户</span></div>
           <div class="rm"><span class="lv m">中</span><span class="tt">巡检脚本缺少执行日志</span><span class="pj">移动端</span></div>
-          <div class="rm"><span class="lv l">低</span><span class="tt">值班表未最终确认</span><span class="pj">运维</span></div>
         </div>
-
         <div class="warn-strip"><i class="sp" style="background:#f04438"></i>另有 1 条任务已逾期 · 建议今天处理</div>
       </div>
     </section>
 
-    <!-- 今天 / 日程 / 风险 -->
+    <!-- 在办项目(含随记/文件) | 今天 | 日程 -->
     <section class="row">
+      <div class="card proj-card">
+        <div class="card-h"><h3>在办项目</h3><span class="sub">3 个</span><a class="more" href="#">全部 →</a></div>
+        <div>
+          <div class="pj"><span class="nm">移动端适配改造</span><span class="pc">33%</span><div class="bar"><i style="width:33%;background:#5468ff"></i></div><span class="due">截止 11-27 · 13 个任务</span></div>
+          <div class="pj"><span class="nm">企业数据中台</span><span class="pc">29%</span><div class="bar"><i style="width:29%;background:#8b5cf6"></i></div><span class="due">截止 2027-02-26 · 9 个任务</span></div>
+          <div class="pj"><span class="nm">客户运营门户</span><span class="pc">14%</span><div class="bar"><i style="width:14%;background:#12b886"></i></div><span class="due">截止 12-18 · 5 个任务</span></div>
+        </div>
+        <div class="quick">
+          <button class="qbtn" id="openNotes">
+            <span class="ic" style="background:#fff7e6;color:#f59f00">✎</span>随记<span class="n">5</span>
+          </button>
+          <button class="qbtn" onclick="alert('跳转到文件资料页（demo 占位）')">
+            <span class="ic" style="background:#eef1ff;color:#5468ff">▣</span>文件资料<span class="n">6</span>
+          </button>
+        </div>
+      </div>
+
       <div class="card c4">
-        <div class="card-h"><h3>今天</h3><a class="more" href="#">＋ 加一条</a></div>
-        <p class="card-sub">1 / 3 已完成</p>
+        <div class="card-h"><h3>今天</h3><span class="sub">1/3 完成</span><a class="more" href="#">＋ 加一条</a></div>
         <div class="list">
           <div class="li done"><span class="ck">✓</span><div><span class="tt">周会纪要归档</span><span class="mt">移动端适配 · 日常</span></div><span class="st ok">已完成</span></div>
           <div class="li"><span class="ck"></span><div><span class="tt">巡检脚本补日志</span><span class="mt">移动端适配 · 日常</span></div><span class="st">进行中</span></div>
@@ -443,17 +397,18 @@
       </div>
 
       <div class="card c4">
-        <div class="card-h"><h3>日程</h3><a class="more" href="#">去日历 →</a></div>
-        <p class="card-sub">今天 2 场</p>
-        <div class="list" style="margin-top:6px">
+        <div class="card-h"><h3>日程</h3><span class="sub">今天 2 场</span><a class="more" href="#">去日历 →</a></div>
+        <div class="list">
           <div class="ev"><span class="tm">09:30</span><div><div class="nm">周例会 · 进度对齐</div><div class="lc">3F 小会议室 · 45 分钟</div></div></div>
           <div class="ev live"><span class="tm">14:00</span><div><div class="nm">门户改版视觉走查</div><div class="lc">线上 · 腾讯会议 · 60 分钟</div></div></div>
         </div>
       </div>
+    </section>
 
-      <div class="card rate">
-        <div class="card-h"><h3>工作完成率</h3><a class="more" href="#">明细 →</a></div>
-        <p class="card-sub">近 4 周完成数</p>
+    <!-- 完成率 + 表格 -->
+    <section class="row">
+      <div class="card c4">
+        <div class="card-h"><h3>工作完成率</h3><span class="sub">近 4 周</span></div>
         <div class="rate-num"><b>26%</b><span>7 / 27 已完成</span></div>
         <div class="bars">
           <div class="bc"><span class="v">0</span><div class="tk"><i style="height:5%"></i></div><span class="lb">3 周前</span></div>
@@ -463,142 +418,208 @@
         </div>
       </div>
 
-    </section>
-
-    <!-- 随记 / 文件（完成率已并入上一行） -->
-    <section class="row">
-      <div class="card notes">
-        <div class="card-h"><h3>随记</h3><a class="more" href="#">全部 →</a></div>
-        <div class="note-add"><input placeholder="贴一张便签，回车保存" /><button>贴上</button></div>
-        <div class="sticky-wrap">
-          <div class="sticky"><div class="t">客户提出报表要能按月对比</div><div class="f"><span>11-08</span><span>删</span></div></div>
-          <div class="sticky"><div class="t">门户首页加载慢，看看首屏资源</div><div class="f"><span>11-08</span><span>删</span></div></div>
-        </div>
-      </div>
-
-      <div class="card files">
-        <div class="card-h"><h3>文件资料</h3><a class="more" href="#">全部 →</a></div>
-        <p class="card-sub">最近 4 个</p>
-        <div class="list" style="margin-top:6px">
-          <div class="file"><span class="ic" style="background:#12b886">X</span><div><div class="nm">需求清单-1108.xlsx</div><div class="mt">11-08 更新</div></div><span class="sz">21.6 KB</span></div>
-          <div class="file"><span class="ic" style="background:#5468ff">D</span><div><div class="nm">门户改版视觉稿.docx</div><div class="mt">11-07 更新</div></div><span class="sz">1.2 MB</span></div>
-          <div class="file"><span class="ic" style="background:#f04438">P</span><div><div class="nm">接口联调记录.pdf</div><div class="mt">11-06 更新</div></div><span class="sz">486 KB</span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 底部表格 -->
-    <section class="row">
       <div class="card table-card">
         <div class="tb-head">
-          <h3>最近的到期任务</h3>
-          <span class="sub">共 27 条 · 显示最近 6 条</span>
-          <div class="seg" style="margin-left:auto"><button class="on">全部</button><button>我负责</button><button>已逾期</button></div>
+          <h3>最近的到期任务</h3><span class="sub">共 27 条</span>
+          <div class="seg"><button class="on">全部</button><button>我负责</button><button>已逾期</button></div>
         </div>
         <table class="tbl">
-          <thead>
-            <tr><th>任务</th><th>项目</th><th>负责人</th><th>到期日</th><th>优先级</th><th style="text-align:right">状态</th></tr>
-          </thead>
+          <thead><tr><th>任务</th><th>项目</th><th>负责人</th><th>到期</th><th>优先级</th><th style="text-align:right">状态</th></tr></thead>
           <tbody>
-            <tr>
-              <td>整理客户反馈清单</td><td>企业数据中台</td>
-              <td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td>
-              <td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td>
-            </tr>
-            <tr>
-              <td>巡检脚本补日志</td><td>移动端适配改造</td>
-              <td><div class="who"><span class="av" style="background:#12b886">王</span>王强</div></td>
-              <td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td>
-            </tr>
-            <tr>
-              <td>支付回调联调</td><td>企业数据中台</td>
-              <td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td>
-              <td>11-12</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td>
-            </tr>
-            <tr>
-              <td>门户改版视觉走查</td><td>客户运营门户</td>
-              <td><div class="who"><span class="av" style="background:#f59f00">赵</span>赵敏</div></td>
-              <td>11-13</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td>
-            </tr>
-            <tr>
-              <td>列表页适配</td><td>移动端适配改造</td>
-              <td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td>
-              <td>11-14</td><td><span class="pri l"><i></i>低</span></td><td style="text-align:right"><span class="stt done">已完成</span></td>
-            </tr>
-            <tr>
-              <td>月度指标口径对齐</td><td>企业数据中台</td>
-              <td><div class="who"><span class="av" style="background:#f04438">周</span>周涛</div></td>
-              <td>11-05</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt late">已逾期</span></td>
-            </tr>
+            <tr><td>整理客户反馈清单</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#5468ff">陈</span>陈贵刚</div></td><td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
+            <tr><td>巡检脚本补日志</td><td>移动端适配改造</td><td><div class="who"><span class="av" style="background:#12b886">王</span>王强</div></td><td>11-10</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt doing">进行中</span></td></tr>
+            <tr><td>支付回调联调</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#8b5cf6">李</span>李静</div></td><td>11-12</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>门户改版视觉走查</td><td>客户运营门户</td><td><div class="who"><span class="av" style="background:#f59f00">赵</span>赵敏</div></td><td>11-13</td><td><span class="pri m"><i></i>中</span></td><td style="text-align:right"><span class="stt todo">待处理</span></td></tr>
+            <tr><td>月度指标口径对齐</td><td>企业数据中台</td><td><div class="who"><span class="av" style="background:#f04438">周</span>周涛</div></td><td>11-05</td><td><span class="pri h"><i></i>高</span></td><td style="text-align:right"><span class="stt late">已逾期</span></td></tr>
           </tbody>
         </table>
-        <div class="pager"><span>第 1 / 5 页</span><span>每页 6 条</span></div>
+        <div class="pager"><span>第 1 / 6 页</span><span>每页 5 条</span></div>
       </div>
     </section>
 
-    <div class="foot"><span class="k">数据口径</span>所有数字来自真实接口（任务 / 项目 / 风险 / 会议 / 文件），空态不造假 · <span class="k">最后刷新 10:51</span></div>
+    <div class="foot"><span class="k">数据口径</span>数字全部来自真实接口（任务 / 项目 / 风险 / 会议 / 文件）· <span class="k">最后刷新 10:51</span></div>
   </main>
 </div>
 
-<script>
-/* 面积图：12 周完成数，手绘 SVG + 悬停气泡 */
-(function () {
-  const weeks = ['8/18','8/25','9/1','9/8','9/15','9/22','9/29','10/6','10/13','10/20','10/27','11/3'];
-  const values = [2, 3, 5, 4, 6, 9, 11, 7, 5, 8, 12, 9];
-  const W = 820, H = 260, TOP = 16, BOTTOM = 18;
-  const max = Math.max.apply(null, values) * 1.25;
-  const stepX = W / (values.length - 1);
-  const x = i => i * stepX;
-  const y = v => H - BOTTOM - (v / max) * (H - TOP - BOTTOM);
+<!-- 随记弹层：栈签效果 -->
+<div class="overlay" id="notesOverlay">
+  <div class="stickies-modal">
+    <div class="sm-head"><h3>随记</h3><button class="close" id="closeNotes">✕</button></div>
+    <p class="sm-sub">点最上面那张翻到下一张 · 共 5 张</p>
+    <div class="note-add"><input id="noteInput" placeholder="贴一张便签，回车保存" /><button id="noteBtn">贴上</button></div>
+    <div class="stack" id="stack">
+      <div class="note"><div class="t">客户提出报表要能按月对比</div><div class="f"><span>11-08</span><span>删</span></div></div>
+      <div class="note"><div class="t">门户首页加载慢，看看首屏资源</div><div class="f"><span>11-08</span><span>删</span></div></div>
+      <div class="note"><div class="t">把审批流里的驳回原因做成必填</div><div class="f"><span>11-07</span><span>删</span></div></div>
+      <div class="stack-hint">共 3 张 · 点击翻看</div>
+    </div>
+  </div>
+</div>
 
-  function smooth(pts) {
-    let d = 'M' + pts[0][0] + ',' + pts[0][1];
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
-      d += ' C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + p2[0] + ',' + p2[1];
+<script>
+/* ---------- 甘特图：时间轴按数据自适应，行高按容器高度分配 ---------- */
+(function () {
+  const LEFT = 156, RIGHT = 18, TOP = 30, BOTTOM = 26, BAR_H = 16;
+  const dayMs = 86400000;
+  const D = s => new Date(s + 'T00:00:00');
+
+  const projects = [
+    { name: '移动端适配改造', color: '#5468ff', s: '2026-10-13', e: '2026-11-27', p: 33 },
+    { name: '企业数据中台',   color: '#8b5cf6', s: '2026-11-01', e: '2026-12-20', p: 29 },
+    { name: '客户运营门户',   color: '#12b886', s: '2026-10-20', e: '2026-12-05', p: 14 },
+    { name: '运维巡检自动化', color: '#f59f00', s: '2026-09-22', e: '2026-11-15', p: 71 },
+  ];
+  const milestones = [
+    { label: '接口联调', date: '2026-11-20', row: 0, done: false },
+    { label: '视觉定稿', date: '2026-12-10', row: 1, done: false },
+    { label: '灰度上线', date: '2026-11-28', row: 2, done: false },
+    { label: '一期验收', date: '2026-11-10', row: 3, done: true },
+  ];
+
+  // 时间轴 = 最早开始 - 6 天 ~ 最晚截止 + 12 天，保证所有条都在范围内
+  const starts = projects.map(p => D(p.s).getTime());
+  const ends = projects.map(p => D(p.e).getTime());
+  const minT = Math.min(...starts) - 6 * dayMs;
+  const maxT = Math.max(...ends) + 12 * dayMs;
+  const span = maxT - minT;
+
+  const svg = document.getElementById('gantt');
+  const box = document.getElementById('ganttBox');
+  const tip = document.getElementById('gtip');
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => {
+    const n = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+    return n;
+  };
+
+  function render() {
+    const W = Math.max(560, box.clientWidth);
+    const H = Math.max(240, box.clientHeight);
+    const rows = projects.length;
+    const rowH = (H - TOP - BOTTOM) / rows;
+    const X = t => LEFT + ((t - minT) / span) * (W - LEFT - RIGHT);
+
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('height', H);
+    svg.innerHTML = '';
+
+    // 月份分界 + 标签（按自然月画竖线）
+    const monthCursor = new Date(minT);
+    monthCursor.setDate(1);
+    for (let m = 0; m < 6; m++) {
+      const d = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + m, 1);
+      if (d.getTime() < minT || d.getTime() > maxT) continue;
+      const x = X(d.getTime());
+      svg.appendChild(el('line', { x1: x, y1: TOP - 14, x2: x, y2: TOP + rows * rowH, stroke: '#f1f4fa', 'stroke-width': 1 }));
+      const t = el('text', { x: x + 7, y: 14, 'font-size': 11, fill: '#98a2b8' });
+      t.textContent = (d.getMonth() + 1) + ' 月';
+      svg.appendChild(t);
     }
-    return d;
+
+    // 今天
+    const tx = X(D('2026-11-10').getTime());
+    svg.appendChild(el('line', { x1: tx, y1: TOP - 12, x2: tx, y2: TOP + rows * rowH, stroke: '#f04438', 'stroke-width': 1.4, 'stroke-dasharray': '4 4', opacity: .85 }));
+    const tdt = el('text', { x: tx, y: TOP + rows * rowH + 17, 'font-size': 10.5, fill: '#f04438', 'text-anchor': 'middle' });
+    tdt.textContent = '今天';
+    svg.appendChild(tdt);
+
+    // 项目行
+    projects.forEach((p, i) => {
+      const cy = TOP + i * rowH;
+      const y = cy + (rowH - BAR_H) / 2;
+      const nm = el('text', { x: 4, y: cy + rowH / 2 + 4.5, 'font-size': 12.5, fill: '#111a2e', 'font-weight': 550 });
+      nm.textContent = p.name;
+      svg.appendChild(nm);
+
+      const bx = X(D(p.s).getTime());
+      const bw = Math.max(10, X(D(p.e).getTime()) - bx);
+      svg.appendChild(el('rect', { x: bx, y, width: bw, height: BAR_H, rx: 5, fill: '#eef1f8' }));
+      svg.appendChild(el('rect', { x: bx, y, width: Math.max(4, bw * p.p / 100), height: BAR_H, rx: 5, fill: p.color, opacity: .95 }));
+
+      const wide = bw >= 46;
+      const pc = el('text', {
+        x: wide ? bx + bw - 7 : bx + bw + 7,
+        y: y + 11.5,
+        'font-size': 10,
+        fill: wide ? '#ffffff' : '#98a2b8',
+        'text-anchor': wide ? 'end' : 'start',
+        'font-weight': wide ? 600 : 400,
+      });
+      pc.textContent = p.p + '%';
+      svg.appendChild(pc);
+
+      const hit = el('rect', { x: bx, y: y - 7, width: Math.max(10, bw), height: BAR_H + 14, fill: 'transparent' });
+      hit.style.cursor = 'pointer';
+      hit.addEventListener('mouseenter', () => {
+        tip.innerHTML = p.name + '<br>' + p.s + ' → ' + p.e + ' · ' + p.p + '%';
+        tip.style.left = (bx + bw / 2) + 'px';
+        tip.style.top = (y + BAR_H) + 'px';
+        tip.style.opacity = 1;
+      });
+      hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+      svg.appendChild(hit);
+    });
+
+    // 里程碑
+    milestones.forEach(m => {
+      const x = X(D(m.date).getTime());
+      const y = TOP + m.row * rowH + rowH / 2;
+      const d = `M${x},${y - 6} L${x + 6},${y} L${x},${y + 6} L${x - 6},${y} Z`;
+      svg.appendChild(el('path', { d, fill: m.done ? '#f59f00' : '#fff', stroke: '#f59f00', 'stroke-width': 1.6 }));
+      const lb = el('text', {
+        x,
+        y: y - 11,
+        'font-size': 10,
+        fill: '#b7791f',
+        'text-anchor': 'middle',
+        'font-weight': 600,
+        stroke: '#ffffff',
+        'stroke-width': 3,
+        'paint-order': 'stroke',
+      });
+      lb.textContent = m.label;
+      svg.appendChild(lb);
+    });
   }
 
-  const pts = values.map((v, i) => [x(i), y(v)]);
-  const line = smooth(pts);
-  document.getElementById('linePath').setAttribute('d', line);
-  document.getElementById('areaPath').setAttribute('d', line + ' L' + x(values.length - 1) + ',' + (H - BOTTOM) + ' L0,' + (H - BOTTOM) + ' Z');
-
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  const avgLine = document.getElementById('avg');
-  avgLine.setAttribute('y1', y(avg)); avgLine.setAttribute('y2', y(avg));
-
-  document.getElementById('xaxis').innerHTML = weeks.map(w => '<span>' + w + '</span>').join('');
-
-  const dots = document.getElementById('dots');
-  const tip = document.getElementById('tip');
-  const box = document.getElementById('chartBox');
-  pts.forEach((p, i) => {
-    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    hit.setAttribute('x', p[0] - stepX / 2); hit.setAttribute('y', 0);
-    hit.setAttribute('width', stepX); hit.setAttribute('height', H);
-    hit.setAttribute('fill', 'transparent'); hit.style.cursor = 'crosshair';
-    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    dot.setAttribute('cx', p[0]); dot.setAttribute('cy', p[1]); dot.setAttribute('r', 4);
-    dot.setAttribute('fill', '#fff'); dot.setAttribute('stroke', '#7b5cf5'); dot.setAttribute('stroke-width', '2.5');
-    dot.style.transition = 'r .12s';
-    hit.addEventListener('mouseenter', () => {
-      dot.setAttribute('r', 6);
-      const r = box.getBoundingClientRect();
-      tip.innerHTML = weeks[i] + ' 周<br><b>' + values[i] + ' 件</b> 已完成';
-      tip.style.left = (p[0] / W) * r.width + 'px';
-      tip.style.top = (p[1] / H) * r.height + 'px';
-      tip.style.opacity = 1;
-    });
-    hit.addEventListener('mouseleave', () => { dot.setAttribute('r', 4); tip.style.opacity = 0; });
-    dots.appendChild(hit); dots.appendChild(dot);
-  });
+  render();
+  window.addEventListener('resize', render);
 })();
 
-/* 演示交互 */
+/* ---------- 便签栈 ---------- */
+const overlay = document.getElementById('notesOverlay');
+document.getElementById('openNotes').addEventListener('click', () => overlay.classList.add('on'));
+document.getElementById('closeNotes').addEventListener('click', () => overlay.classList.remove('on'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('on'); });
+
+const stack = document.getElementById('stack');
+stack.addEventListener('click', e => {
+  const note = e.target.closest('.note');
+  if (!note) return;
+  const notes = [...stack.querySelectorAll('.note')];
+  const idx = notes.indexOf(note);
+  if (idx === notes.length - 1) return;      // 已是顶层
+  // 把被点的这张挪到顶层：其余顺次后移
+  const order = [...notes.slice(0, idx), ...notes.slice(idx + 1), note];
+  order.forEach((n, i) => { n.style.zIndex = i + 1; n.style.opacity = i === order.length - 1 ? 1 : .75 + i * .07; });
+});
+
+document.getElementById('noteBtn').addEventListener('click', () => {
+  const input = document.getElementById('noteInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const note = document.createElement('div');
+  note.className = 'note';
+  note.innerHTML = '<div class="t"></div><div class="f"><span>今天</span><span>删</span></div>';
+  note.querySelector('.t').textContent = text;
+  stack.appendChild(note);
+  input.value = '';
+  const total = stack.querySelectorAll('.note').length;
+  stack.querySelector('.stack-hint').textContent = '共 ' + total + ' 张 · 点击翻看';
+});
+
+/* ---------- 待办勾选 / 分段 ---------- */
 document.querySelectorAll('.ck').forEach(el => {
   el.addEventListener('click', () => {
     const li = el.closest('.li');
@@ -612,19 +633,6 @@ document.querySelectorAll('.seg button').forEach(b => {
     b.classList.add('on');
   });
 });
-const noteBtn = document.querySelector('.note-add button');
-const noteInput = document.querySelector('.note-add input');
-noteBtn.addEventListener('click', () => {
-  const text = noteInput.value.trim();
-  if (!text) return;
-  const el = document.createElement('div');
-  el.className = 'sticky';
-  el.innerHTML = '<div class="t"></div><div class="f"><span>今天</span><span>删</span></div>';
-  el.querySelector('.t').textContent = text;
-  document.querySelector('.sticky-wrap').prepend(el);
-  noteInput.value = '';
-});
-noteInput.addEventListener('keydown', e => { if (e.key === 'Enter') noteBtn.click(); });
 </script>
 </body>
 </html>
