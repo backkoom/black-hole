@@ -1,7 +1,9 @@
 import { useMemo, type ReactNode } from 'react';
-import { Avatar, Button, Layout, Menu, Tag } from 'antd';
+import { Avatar, Button, Dropdown, Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import {
+  SearchOutlined,
+  PlusOutlined,
   AppstoreOutlined,
   CalendarOutlined,
   ClusterOutlined,
@@ -15,6 +17,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { designVars } from '../styles/theme';
 import { NotificationBell } from './layout/NotificationBell';
+import { MonthlyDoneCard } from './layout/MonthlyDoneCard';
 
 const { Sider, Header, Content } = Layout;
 
@@ -72,12 +75,6 @@ const NAV_GROUPS: NavGroup[] = [
  * - 「项目管理」→「项目档案」：和「项目看板」只差两字，一个是列表维护、一个是看板视图；
  * - 「工作台」→「自定义工作台」：和「项目总览」都像首页，实际这里是模块拖拽编辑器。
  */
-const ADMIN_GROUP: NavGroup = {
-  title: '系统管理',
-  items: [
-    { key: '/workspace', match: '/workspace', icon: <AppstoreOutlined />, label: '自定义工作台' },
-  ],
-};
 
 /** 贴底固定项：设置。落地页是个人资料（不是修改密码）。 */
 const SETTINGS_ITEM: NavItem = {
@@ -107,13 +104,22 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const groups = useMemo(
-    () => (isAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS),
-    [isAdmin],
-  );
+  const groups = useMemo(() => {
+    // 系统下面只有两项：设置、账号与权限（D-37：自定义工作台已下线）
+    const systemItems: NavItem[] = [{ ...SETTINGS_ITEM }];
+    if (isAdmin) {
+      systemItems.push({
+        key: '/settings/users',
+        match: '/settings/users',
+        icon: <TeamOutlined />,
+        label: '账号与权限',
+      });
+    }
+    return [...NAV_GROUPS, { title: '系统', items: systemItems }];
+  }, [isAdmin]);
 
   const allItems = useMemo(
-    () => [...groups.flatMap((g) => g.items), SETTINGS_ITEM],
+    () => groups.flatMap((g) => g.items),
     [groups],
   );
 
@@ -151,9 +157,26 @@ export function AppShell() {
     <Layout className="wb-layout">
       <Sider width={designVars.siderWidth} className="wb-sider" theme="light">
         <div className="wb-brand">
-          {/* 横版商标（标记 + BLACKHOLE + 标语），设计稿直接切出的透明底原图 */}
-          <img className="wb-brand-lockup" src="/brand/blackhole-horizontal.png" alt="Black Hole" />
+          {/* demo 的品牌：渐变方块 + 两行字（横版图片在浅色底上发灰，换成纯样式） */}
+          <span className="wb-brand-mark">B</span>
+          <span className="wb-brand-text">
+            <b>Black Hole</b>
+            <i>TEAM WORKBENCH</i>
+          </span>
         </div>
+
+        {/* 搜索框：回车跳到任务列表按关键词搜（demo 里的 ⌘K 位置） */}
+        <form
+          className="wb-sider-search"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const keyword = (event.currentTarget.elements.namedItem('q') as HTMLInputElement | null)?.value.trim();
+            if (keyword) void navigate(`/projects?view=tasks&keyword=${encodeURIComponent(keyword)}`);
+          }}
+        >
+          <SearchOutlined />
+          <input name="q" placeholder="搜索任务、项目、文件" aria-label="搜索" />
+        </form>
 
         <Menu
           theme="light"
@@ -164,35 +187,42 @@ export function AppShell() {
           onClick={({ key }) => void navigate(key)}
         />
 
-        {/* 贴底：设置不随菜单滚动跑掉 */}
-        <div className="wb-sider-foot">
-          <Menu
-            theme="light"
-            mode="inline"
-            className="wb-sider-menu"
-            selectedKeys={[selectedKey]}
-            items={[toMenuItem(SETTINGS_ITEM)]}
-            onClick={({ key }) => void navigate(key)}
-          />
-        </div>
+        <MonthlyDoneCard />
+
       </Sider>
 
       <Layout className="wb-main">
         <Header className="wb-header">
           <div className="wb-header-right">
             <NotificationBell />
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              className="wb-header-new"
+              onClick={() => void navigate('/projects?view=tasks')}
+            >
+              新建任务
+            </Button>
             {user ? (
-              <>
-                <Avatar size={30} className="wb-avatar">
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: [
+                    { key: 'who', label: `${user.name} · ${roleLabel(user.role, user.isSuper)}`, disabled: true },
+                    { type: 'divider' as const },
+                    { key: 'logout', icon: <LogoutOutlined />, label: '退出登录' },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'logout') void handleLogout();
+                  },
+                }}
+              >
+                <Avatar size={30} className="wb-avatar" style={{ cursor: 'pointer' }}>
                   {user.name.slice(0, 1)}
                 </Avatar>
-                <span className="wb-user-name">{user.name}</span>
-                <Tag className="wb-role-tag">{roleLabel(user.role, user.isSuper)}</Tag>
-              </>
+              </Dropdown>
             ) : null}
-            <Button type="text" icon={<LogoutOutlined />} onClick={() => void handleLogout()}>
-              退出
-            </Button>
           </div>
         </Header>
 

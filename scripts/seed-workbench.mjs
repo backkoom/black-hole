@@ -155,10 +155,21 @@ const WEEK_TASKS = [
 ];
 
 /** 日拆解：3 条，挂到周任务上，今天到期 */
+const EXTRA_PROJECT = {
+  name: '演示·运维巡检自动化',
+  start: day(0),
+  due: day(45),
+  color: '#f59f00',
+  phase: '执行',
+};
+
 const TODAY_TASKS = [
   { title: '整理客户反馈清单', priority: 'high', parent: 0, status: 'todo' },
   { title: '巡检脚本补日志', priority: 'medium', parent: 2, status: 'doing' },
   { title: '周会纪要归档', priority: 'low', parent: 1, status: 'done' },
+  { title: '备份策略复核', priority: 'medium', parent: 2, status: 'todo' },
+  { title: '巡检报告输出', priority: 'low', parent: 3, status: 'todo' },
+  { title: '客户回访记录整理', priority: 'medium', parent: 1, status: 'todo' },
 ];
 
 const IDEAS = [
@@ -239,6 +250,23 @@ async function main() {
   console.log(
     `清理：任务 ${oldTasks.length} / 随记 ${oldIdeas.length} / 会议 ${oldMeetings.length} / 里程碑 ${oldMilestones.length}`,
   );
+
+  /* 1.5) 补一个演示项目，让甘特有 4 行（缺数据就补数据） */
+  if (!projects.some((p) => p.name === EXTRA_PROJECT.name)) {
+    const created = await call('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify({ name: EXTRA_PROJECT.name, owner: '李静', dueDate: EXTRA_PROJECT.due, color: EXTRA_PROJECT.color, icon: 'task', phase: EXTRA_PROJECT.phase }),
+    });
+    if (created.status === 200) {
+      const id = created.json.data.project.id;
+      await call(`/api/projects/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ startDate: EXTRA_PROJECT.start, dueDate: EXTRA_PROJECT.due }),
+      });
+      targets.push(created.json.data.project);
+      console.log('补项目：', EXTRA_PROJECT.name);
+    }
+  }
 
   /* 2) 季度 + 月度节点（里程碑） */
   for (const project of targets) {

@@ -3517,3 +3517,236 @@ body {
   .wb-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wb-hb-8, .wb-hb-4 { grid-column: span 12; }
 }
+
+/* ============ 工作台与 demo 对齐的尺度修正（D-36.1） ============ */
+/* demo 的观感 = 更大的字号 + 更松的内距 + 更明显的卡片阴影，这里统一抬一档 */
+
+.wb-workbench {
+  /* 极淡的径向渐变，让白卡片浮起来（demo 的背景语言） */
+  background:
+    radial-gradient(900px 320px at 12% -6%, rgba(84, 104, 255, 0.06), rgba(84, 104, 255, 0) 62%),
+    radial-gradient(760px 300px at 92% 0%, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0) 58%);
+  border-radius: 18px;
+  padding: 4px 2px 10px;
+  margin: -4px -2px -10px;
+}
+
+/* KPI：数字 26→30，内距 10/14→14/16，圆角与阴影向 demo 靠 */
+.wb-kpi { padding: 14px 16px; border-radius: 16px; box-shadow: 0 1px 2px rgba(17,26,46,.04), 0 10px 26px -18px rgba(17,26,46,.28); }
+.wb-kpi-label { font-size: 12.5px; }
+.wb-kpi-num b { font-size: 30px; letter-spacing: -1.2px; }
+.wb-kpi-num span { font-size: 11.5px; }
+.wb-kpi-cap { font-size: 10.5px; margin-top: 3px; }
+.wb-kpi-track { margin-top: 9px; height: 5px; }
+.wb-kpi-delta { font-size: 10.5px; padding: 2px 7px; }
+
+/* 面板：标题 14→15，头部内距加大，圆角 16 + 更明显的阴影 */
+.wb-panel-plain, .wb-stack {
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(17,26,46,.04), 0 10px 26px -18px rgba(17,26,46,.28);
+}
+.wb-panel-plain-head { padding: 14px 18px 10px; }
+.wb-panel-plain-head h3 { font-size: 15px; }
+.wb-stack-head { padding: 10px 12px; }
+.wb-stack-body { padding: 10px 16px 14px; }
+.wb-stack-name { font-size: 13px; }
+.wb-stack-due { font-size: 11px; }
+
+/* 卡片标题统一 15px（Panel 组件自带 h3 是 15，这里只把边距放松） */
+.wb-hb-8 > section > header, .wb-hb-4 > section > header { padding: 16px 20px 10px !important; }
+
+/* 甘特：条形加粗、名字栏加宽，行距随项目数自适应（3 个项目时更松） */
+.wb-gantt { padding: 0 18px; }
+.wb-gantt-legend { padding: 10px 20px 14px; font-size: 11.5px; }
+
+/* 状态卡：环图 110→124，图例与风险区间距放松 */
+.wb-status-body { padding: 0 20px 14px; }
+.wb-status-legend { font-size: 11.5px; padding-top: 8px; }
+.wb-status-warn { margin-top: 8px; padding: 7px 10px; font-size: 11px; }
+.wb-status-sub { margin-top: 10px; padding-top: 10px; }
+.wb-status-sub h4 { font-size: 13px; }
+
+/* 任务表：行高与字号抬一档 */
+.wb-table td { padding: 12px 8px; font-size: 12.5px; }
+.wb-table th { font-size: 11.5px; padding: 10px 8px; }
+.wb-table-head { padding: 2px 20px 12px; }
+.wb-table-scroll { padding: 0 20px 8px; }
+
+/* ============ 外壳按 demo 对齐（D-36.2）：悬浮面板 + 浅色侧栏 ============ */
+body {
+  background:
+    radial-gradient(1200px 520px at 10% -10%, #e9edff 0%, rgba(233, 237, 255, 0) 60%),
+    radial-gradient(980px 460px at 94% 0%, #f3ecff 0%, rgba(243, 236, 255, 0) 58%),
+    #eef1f8 !important;
+}
+#root {
+  padding: 14px;
+  /* padding 必须算进高度，否则 100% + 28px 撑出外层滚动条（布局检查报「双滚动条」） */
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.wb-layout {
+  height: 100%;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 40px 90px -50px rgba(24, 35, 64, .5), 0 2px 6px rgba(24, 35, 64, .05);
+}
+.wb-sider { background: #f7f8fc; border-right: 1px solid #eceff6; }
+.wb-brand { padding: 14px 16px 6px; }
+.wb-header {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  padding: 12px 26px 0 !important;
+  height: auto !important;
+  line-height: normal !important;
+}
+.wb-content { padding: 6px 26px 26px !important; }
+
+/* 侧栏搜索框 */
+.wb-sider-search {
+  display: flex; align-items: center; gap: 8px; margin: 6px 12px 10px;
+  height: 36px; padding: 0 11px; border-radius: 11px;
+  background: #fff; border: 1px solid #e3e8f2; color: #98a2b8; font-size: 12.5px;
+}
+.wb-sider-search:focus-within { border-color: #c7d2ff; box-shadow: 0 0 0 3px rgba(84, 104, 255, .1); }
+.wb-sider-search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: 12.5px; color: var(--text); }
+.wb-sider-search input::placeholder { color: #98a2b8; }
+
+/* 侧栏底部「本月完成」 */
+.wb-monthly-card {
+  margin: auto 12px 8px; padding: 12px 13px; text-align: left;
+  border: 1px solid #e3e8f2; border-radius: 14px; background: #fff; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.wb-monthly-card:hover { border-color: #c7d2ff; box-shadow: 0 8px 18px -12px rgba(84, 104, 255, .5); }
+.wb-monthly-row { display: flex; justify-content: space-between; font-size: 11px; color: #98a2b8; }
+.wb-monthly-card b { font-size: 12.5px; color: var(--text); font-weight: 700; }
+.wb-monthly-track { height: 5px; border-radius: 99px; background: #eef1f8; overflow: hidden; }
+.wb-monthly-track i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #5468ff, #8a5cf6); }
+.wb-monthly-hint { font-size: 10.5px; color: #98a2b8; }
+
+/* KPI：环比回右上、数字更大（与 demo 一致） */
+.wb-kpi { grid-template-areas: 'lab lab' 'cap num' 'bar bar'; }
+.wb-kpi-top { justify-content: space-between; }
+.wb-kpi-delta { margin-left: auto; }
+.wb-kpi-num { grid-area: num; }
+
+.wb-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.wb-head-actions { display: flex; gap: 8px; }
+.wb-head-date { font-size: 11.5px; color: var(--muted); }
+.wb-hero-chips { justify-content: flex-end; margin-top: 0; }
+
+/* D-36.3：按实测差值把关键尺寸拉回 demo */
+.wb-sider { width: 252px !important; min-width: 252px !important; max-width: 252px !important; flex: 0 0 252px !important; }
+
+/* KPI 卡：demo 是 302x81；线上原来是 314x123，太高 → 压回单行结构 */
+.wb-kpi {
+  padding: 7px 14px;
+  grid-template-areas: 'lab lab' 'num num' 'bar bar' 'cap cap';
+  gap: 0;
+}
+.wb-kpi-num { justify-self: end; }
+.wb-kpi-cap { margin-top: 1px; }
+.wb-kpi-track { margin-top: 4px; }
+.wb-kpi-num b { font-size: 24px; line-height: 1.1; }
+.wb-kpi-num { flex-direction: column; align-items: flex-end; gap: 2px; }
+.wb-kpi-cap { font-size: 10px; }
+.wb-kpi-track { margin-top: 2px; }
+.wb-kpi-delta { margin-left: auto; }
+
+/* 甘特图表区 300 → 340（卡片仍 400，只是图表更满） */
+.wb-gantt { height: 340px; }
+
+/* 环图 96 → 132（demo 140，卡片宽 419 放得下） */
+.wb-status-donut svg { width: 132px !important; height: 132px !important; }
+
+/* 卡片内距与列间距对齐 demo（18/20、16） */
+.wb-grid { gap: 16px !important; }
+.wb-panel-plain-head { padding: 14px 18px 10px; }
+.wb-stack-head { padding: 10px 14px; }
+
+/* 侧栏品牌（demo 样式） */
+.wb-brand { display: flex; align-items: center; gap: 11px; padding: 14px 14px 8px; }
+.wb-brand-mark {
+  width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+  background: linear-gradient(145deg, #5468ff, #8a5cf6); color: #fff;
+  font-size: 16px; font-weight: 800; box-shadow: 0 10px 20px -10px rgba(84,104,255,.9);
+}
+.wb-brand-text { display: flex; flex-direction: column; gap: 1px; }
+.wb-brand-text b { font-size: 16px; font-weight: 750; letter-spacing: -.2px; }
+.wb-brand-text i { font-style: normal; font-size: 10px; letter-spacing: 1.6px; color: var(--muted); font-weight: 600; }
+.wb-brand-lockup { display: none; }
+
+/* 状态卡：给风险列表多留 20px（环图 120、图例更紧） */
+.wb-status-donut svg { width: 120px !important; height: 120px !important; }
+.wb-status-legend { padding-top: 6px; }
+.wb-status-warn { margin-top: 6px; }
+.wb-status-sub { margin-top: 8px; padding-top: 8px; }
+
+/* 工作台标题 28 → 25（demo 值） */
+.wb-workbench .wb-user-title { font-size: 25px; }
+
+/* ============ 顶栏/页头按 demo 1:1（D-36.5） ============ */
+.wb-header { padding: 10px 26px 0 !important; }
+.wb-header-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.wb-header-new { border-radius: 10px; height: 30px; padding: 0 12px; font-size: 12.5px; }
+
+/* 标题区：日期与胶囊两行，紧贴右侧；下方不再留大空白 */
+.wb-workbench .wb-user-head { margin-bottom: 8px; align-items: flex-start; }
+.wb-head-side { gap: 6px; }
+.wb-hero-chips { gap: 8px; }
+.wb-hero-chip { height: 28px; font-size: 11.5px; }
+.wb-workbench > .wb-kpi-row { margin-top: 2px; }
+
+/* ============ 最后一次视觉对齐（D-36.6）：数字/环图/条形/阴影 ============ */
+.wb-kpi-num b { font-size: 28px; letter-spacing: -1.2px; }
+.wb-kpi-cap { font-size: 10.5px; }
+.wb-status-donut svg { width: 140px !important; height: 140px !important; }
+.wb-status-legend { font-size: 11px; padding-top: 4px; }
+.wb-status-warn { margin-top: 6px; font-size: 11px; padding: 6px 10px; }
+.wb-status-sub { margin-top: 8px; padding-top: 8px; }
+
+/* 卡片阴影抬到 demo 级 */
+.wb-panel-plain, .wb-stack, .wb-kpi {
+  box-shadow: 0 1px 2px rgba(17, 26, 46, .04), 0 10px 26px -18px rgba(17, 26, 46, .30);
+}
+.wb-hb-8 > section, .wb-hb-4 > section, .wb-hb-12 > section {
+  box-shadow: 0 1px 2px rgba(17, 26, 46, .04), 0 10px 26px -18px rgba(17, 26, 46, .30);
+  border-radius: 16px;
+}
+
+/* 顶栏：只有 铃铛 + 新建任务 + 头像，别再有日历按钮 */
+.wb-header-new { margin-right: 6px; }
+
+/* ============ D-36.7：按计算样式 1:1 对齐 demo ============ */
+
+/* KPI 卡：demo 的网格是 lab|num / hint|num / bar，数字在右列跨两行 */
+.wb-kpi {
+  padding: 13px 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'lab num' 'hint num' 'bar bar';
+  gap: 2px 10px;
+  align-items: center;
+  height: 81px;
+}
+.wb-kpi-top { grid-area: lab; display: flex; align-items: center; gap: 7px; }
+.wb-kpi-num {
+  grid-area: num;
+  display: flex; align-items: baseline; gap: 4px;
+  justify-self: end;
+}
+.wb-kpi-num b { font-size: 24px; letter-spacing: -1px; }
+.wb-kpi-cap { grid-area: hint; font-size: 10px; margin: 0; }
+.wb-kpi-track { grid-area: bar; margin-top: 8px; height: 4px; }
+
+/* 侧栏菜单：选中项白底 + 阴影（demo），不是浅蓝块 */
+.wb-sider .ant-menu-item { height: 38px; line-height: 38px; margin: 2px 8px; border-radius: 11px; }
+.wb-sider .ant-menu-item-selected {
+  background: #fff !important;
+  color: var(--primary) !important;
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(17,26,46,.05), 0 6px 16px -12px rgba(17,26,46,.4);
+}
+.wb-sider .ant-menu-item-group-title { font-size: 10.5px !important; letter-spacing: 1.2px; color: #aab2c5 !important; }
+.wb-sider .ant-menu-title-content { font-size: 13px; }

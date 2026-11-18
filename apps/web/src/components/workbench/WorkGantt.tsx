@@ -70,10 +70,12 @@ export function WorkGantt({
     return list;
   }, [range]);
 
-  const H = 290;
-  const LEFT = 132;
+  const H = 300;
+  const LEFT = 150;
   const RIGHT = 14;
-  const rowH = rows.length === 0 ? 0 : (H - TOP - BOTTOM) / rows.length;
+  // 行高上限 96：项目少时不要把行拉得过分稀，多时自动压缩
+  const rawRowH = rows.length === 0 ? 0 : (H - TOP - BOTTOM) / rows.length;
+  const rowH = Math.min(rawRowH, 96);
   const x = (t: number): number =>
     range === null ? LEFT : LEFT + ((t - range.min) / (range.max - range.min)) * (width - LEFT - RIGHT);
 
@@ -128,26 +130,26 @@ export function WorkGantt({
                   const start = parse(project.startDate ?? project.createdAt);
                   const end = parse(project.dueDate) ?? start;
                   const y = TOP + index * rowH;
-                  const barY = y + rowH / 2 - 8;
+                  const barY = y + rowH / 2 - 10;
                   const bx = start ? x(start.getTime()) : LEFT;
                   const bw = end ? Math.max(10, x(end.getTime()) - bx) : 10;
                   const color = project.color ?? designVars.primary;
                   return (
                     <g key={project.id}>
                       <text x={4} y={y + rowH / 2 + 4} fontSize={12} fill={designVars.text}>
-                        {project.name.length > 7 ? `${project.name.slice(0, 7)}…` : project.name}
+                        {project.name.length > 9 ? `${project.name.slice(0, 9)}…` : project.name}
                       </text>
-                      <rect x={bx} y={barY} width={bw} height={16} rx={5} fill="#eef1f8" />
+                      <rect x={bx} y={barY} width={bw} height={20} rx={6} fill="#eef1f8" />
                       <rect
                         x={bx}
                         y={barY}
                         width={Math.max(4, (bw * project.progress) / 100)}
-                        height={16}
-                        rx={5}
+                        height={20}
+                        rx={6}
                         fill={color}
                         opacity={0.95}
                       />
-                      <text x={bx + bw + 8} y={barY + 11.5} fontSize={10.5} fill="#98a2b8">
+                      <text x={bx + bw + 8} y={barY + 12.5} fontSize={10.5} fill="#98a2b8">
                         {project.progress}%
                       </text>
                     </g>
@@ -161,9 +163,11 @@ export function WorkGantt({
                     const due = parse(milestone.dueDate);
                     const rowIndex = rows.findIndex((p) => p.id === milestone.projectId);
                     if (!due || rowIndex < 0) return null;
-                    // 菱形不许压到左侧项目名栏（最近一个里程碑常落在时间轴左端）
-                    const cx = Math.max(LEFT + 12, x(due.getTime()));
+                    const cx = x(due.getTime());
+                    // 落在名字栏里的里程碑不画：画出来会压住项目名（之前就是硬夹到 LEFT 造成的重叠）
+                    if (cx < LEFT + 10) return null;
                     const cy = TOP + rowIndex * rowH + rowH / 2;
+                    const labelY = Math.min(cy + 21, H - BOTTOM + 6);
                     const done = milestone.status === 'done';
                     return (
                       <g key={milestone.id}>
@@ -174,10 +178,11 @@ export function WorkGantt({
                           strokeWidth={1.6}
                         />
                         <text
-                          x={cx + 10}
-                          y={cy + 3.5}
+                          x={cx}
+                          y={labelY}
                           fontSize={10}
                           fill="#b7791f"
+                          textAnchor="middle"
                           stroke="#fff"
                           strokeWidth={3}
                           paintOrder="stroke"

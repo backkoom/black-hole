@@ -109,13 +109,13 @@ export function WorkbenchKpi({ tasks }: { tasks: Task[] }): JSX.Element {
                 <i style={{ background: tone.dot }} />
                 {card.label}
               </span>
-            </div>
-            <div className="wb-kpi-num">
               {delta !== undefined ? (
                 <span className={`wb-kpi-delta ${delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}`}>
                   {delta > 0 ? `↑ ${delta}` : delta < 0 ? `↓ ${Math.abs(delta)}` : '持平'}
                 </span>
               ) : null}
+            </div>
+            <div className="wb-kpi-num">
               <span className="wb-kpi-value">
                 <b>{card.total}</b>
                 <span>件</span>

@@ -50,7 +50,7 @@ export function StatusRiskCard({
             ]}
             centerValue={counts.total}
             centerLabel="总任务"
-            size={110}
+            size={140}
             thickness={16}
           />
         </div>

@@ -35,7 +35,8 @@ const PAGES = [
 ];
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+const ctx = await browser.newContext({
+  ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
 
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
@@ -69,10 +70,16 @@ for (const route of PAGES) {
     const doc = document.documentElement;
     const pageOverflow = doc.scrollWidth > doc.clientWidth + 1;
 
-    // 统计可滚动的竖向容器（排除元素自身可滚但高度未被撑开的情况）
+    // 只统计「页面级」滚动容器：卡片内部的列表滚动是刻意设计（hv-scroll），不算双滚动条
+    const PAGE_SCROLLERS = ['html', 'body', '.wb-content', '.wb-main', '.ant-layout'];
     const scrollers = [...document.querySelectorAll('*')].filter((el) => {
       const st = getComputedStyle(el);
       if (!(st.overflowY === 'auto' || st.overflowY === 'scroll')) return false;
+      const isPageLevel =
+        el === document.documentElement ||
+        el === document.body ||
+        PAGE_SCROLLERS.some((sel) => el.matches(sel));
+      if (!isPageLevel) return false;
       return el.scrollHeight > el.clientHeight + 2;
     }).length;
 

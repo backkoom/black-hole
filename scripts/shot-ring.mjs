@@ -1,0 +1,20 @@
+import { chromium } from '@playwright/test';
+const b = await chromium.launch();
+const c = await b.newContext({ viewport: { width: 1600, height: 900 }, ignoreHTTPSErrors: true, locale: 'zh-CN', deviceScaleFactor: 2 });
+const p = await c.newPage();
+await p.goto(`${process.env.SHOT_BASE}/login`, { waitUntil: 'networkidle' });
+await p.getByPlaceholder(/用户名|账号/).first().fill('admin');
+await p.getByPlaceholder(/密码/).first().fill(process.env.SEED_ADMIN_PASSWORD);
+await p.getByRole('button', { name: /登\s*录/ }).click();
+await p.waitForTimeout(2200);
+await p.goto(`${process.env.SHOT_BASE}/`, { waitUntil: 'networkidle' });
+await p.waitForTimeout(2400);
+const ring = p.locator('.status-ring');
+await p.mouse.move(5, 5);            // 确保不在环上
+await p.waitForTimeout(350);
+await ring.screenshot({ path: 'D:/tmp/ring-idle.png' });
+await p.evaluate(() => document.querySelector('[data-seg="doing"]').dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+await p.waitForTimeout(400);
+await ring.screenshot({ path: 'D:/tmp/ring-hover.png' });
+console.log('idle + hover 截图 ✓');
+await b.close();

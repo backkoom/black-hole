@@ -1,0 +1,32 @@
+import { chromium } from '@playwright/test';
+const BASE = process.env.SHOT_BASE; const PW = process.env.SEED_ADMIN_PASSWORD;
+const b = await chromium.launch();
+const c = await b.newContext({ viewport: { width: 1880, height: 1080 }, ignoreHTTPSErrors: true, locale: 'zh-CN' });
+const p = await c.newPage();
+await p.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+await p.getByPlaceholder(/用户名|账号/).first().fill('admin');
+await p.getByPlaceholder(/密码/).first().fill(PW);
+await p.getByRole('button', { name: /登\s*录/ }).click();
+await p.waitForTimeout(2000);
+await p.goto(`${BASE}/projects?view=progress`, { waitUntil: 'networkidle' });
+await p.waitForTimeout(2500);
+const g = p.locator('[data-gantt-bar]').first();
+const handle = g.locator('rect').nth(2);
+const hb = await handle.boundingBox();
+console.log('handle box', JSON.stringify(hb));
+const hx = hb.x + hb.width / 2, hy = hb.y + hb.height / 2;
+console.log('elementFromPoint:', await p.evaluate(([x, y]) => {
+  const el = document.elementFromPoint(x, y);
+  return el ? `${el.tagName} x=${el.getAttribute?.('x')} w=${el.getAttribute?.('width')} pe=${getComputedStyle(el).pointerEvents}` : 'null';
+}, [hx, hy]));
+await p.mouse.move(hx, hy);
+await p.mouse.down();
+for (let i = 1; i <= 4; i += 1) { await p.mouse.move(hx + i * 12, hy); await p.waitForTimeout(80); }
+const has = await p.evaluate(() => document.body.innerText.match(/[+-]\d+ 天/)?.[0] ?? 'none');
+console.log('拖动提示:', has);
+await p.mouse.up();
+await p.waitForTimeout(1500);
+const proj = await (await p.request.get(`${BASE}/api/projects?page=1&pageSize=100`)).json();
+const it = proj.data.items.find((x) => x.id === 3);
+console.log('接口读回:', it.startDate, '→', it.dueDate);
+await b.close();
