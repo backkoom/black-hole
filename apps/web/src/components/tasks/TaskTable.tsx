@@ -26,6 +26,8 @@ interface TaskTableProps {
   /** 正在改状态的任务 id */
   statusPendingId?: number | null;
   onEdit: (task: Task) => void;
+  /** 点标题打开详情页（可选；不传则标题不可点） */
+  onOpen?: (task: Task) => void;
   onDelete: (task: Task) => void;
   /** 分页配置；不传则不显示分页 */
   pagination?: TableProps<Task>['pagination'];
@@ -40,6 +42,7 @@ export function TaskTable({
   onStatusChange,
   statusPendingId,
   onEdit,
+  onOpen,
   onDelete,
   pagination,
   emptyText,
@@ -49,7 +52,20 @@ export function TaskTable({
       title: '标题',
       dataIndex: 'title',
       ellipsis: true,
-      render: (value: string) => <span style={{ fontWeight: 600 }}>{value}</span>,
+      render: (value: string, row: Task) =>
+        onOpen ? (
+          <a
+            style={{ fontWeight: 500 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(row);
+            }}
+          >
+            {value}
+          </a>
+        ) : (
+          <span style={{ fontWeight: 500 }}>{value}</span>
+        ),
     },
     ...(showProjectColumn
       ? [

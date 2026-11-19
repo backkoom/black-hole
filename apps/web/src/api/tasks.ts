@@ -56,6 +56,8 @@ export const tasksKeys = {
   all: ['tasks'] as const,
   /** 列表：query 里带筛选与分页参数 */
   list: (query: TaskListQuery) => ['tasks', 'list', query] as const,
+  /** 详情：/tasks/:id */
+  detail: (id: number) => ['tasks', 'detail', id] as const,
 };
 
 /** 任务列表：默认按 created_at 倒序，分页 20（pageSize 最大 100） */
@@ -96,4 +98,57 @@ export async function updateTaskStatus(id: number, status: TaskStatus): Promise<
 /** 删除任务：软删（列表、统计、项目进度都不再计入） */
 export async function deleteTask(id: number): Promise<null> {
   return apiDelete<null>(`/tasks/${id}`);
+}
+
+
+/* ---------------- 任务详情（页面 /tasks/:id，迁移 011 / D-37） ---------------- */
+
+export interface TaskSourceInfo {
+  type: 'meeting' | 'risk' | 'idea';
+  id: number;
+  title: string;
+  subtitle: string | null;
+}
+
+export interface TaskProgressItem {
+  id: number;
+  content: string;
+  userName: string;
+  createdAt: string | null;
+}
+
+export interface TaskFileItem {
+  id: number;
+  name: string;
+  sizeBytes: number;
+  mimeType: string | null;
+  createdAt: string | null;
+}
+
+export interface TaskRiskItem {
+  id: number;
+  code: string | null;
+  title: string;
+  level: Priority;
+  status: string;
+}
+
+export interface TaskDetail extends Task {
+  parent: { id: number; title: string } | null;
+  subtasks: Array<{ id: number; title: string; status: TaskStatus }>;
+  progress: TaskProgressItem[];
+  files: TaskFileItem[];
+  source: TaskSourceInfo | null;
+  relatedRisks: TaskRiskItem[];
+}
+
+/** 任务详情：来源 / 关联风险 / 附件 / 进展 / 子任务 一次返回 */
+export async function getTaskDetail(id: number): Promise<TaskDetail> {
+  return apiGet<TaskDetail>(`/tasks/${id}`);
+}
+
+/** 记一笔进展（只增不改） */
+export async function addTaskProgress(id: number, content: string): Promise<TaskProgressItem> {
+  const data = await apiPost<{ progress: TaskProgressItem }>(`/tasks/${id}/progress`, { content });
+  return data.progress;
 }

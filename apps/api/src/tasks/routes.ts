@@ -2,8 +2,10 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { ok, requireActiveSession } from '../auth/middleware.js';
 import {
+  addTaskProgress,
   createTask,
   deleteTask,
+  getTaskDetail,
   listTasks,
   updateTask,
   updateTaskStatus,
@@ -14,6 +16,10 @@ import { PAGINATION } from '@blackhole/shared/errors';
 /**
  * 任务路由 —— 执行包 §6.4 的 20~24 号接口。
  */
+
+const progressSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
 
 const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(PAGINATION.defaultPage),
@@ -85,6 +91,22 @@ export async function registerTaskRoutes(app: FastifyInstance): Promise<void> {
     const body = createSchema.safeParse(req.body);
     if (!body.success) throw badRequest('参数不合法');
     return ok(reply, { task: await createTask(body.data, actor) });
+  });
+
+  // 21b GET /api/tasks/:id —— 详情（来源 / 关联风险 / 附件 / 进展 / 子任务）
+  app.get('/api/tasks/:id', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    return ok(reply, await getTaskDetail(id, actor));
+  });
+
+  // 21c POST /api/tasks/:id/progress —— 记一笔进展（只增不改）
+  app.post('/api/tasks/:id/progress', async (req, reply) => {
+    const actor = await requireActiveSession(req);
+    const id = parseId((req.params as { id: string }).id);
+    const body = progressSchema.safeParse(req.body);
+    if (!body.success) throw badRequest('参数不合法');
+    return ok(reply, { progress: await addTaskProgress(id, body.data.content, actor) });
   });
 
   // 22 PUT /api/tasks/:id

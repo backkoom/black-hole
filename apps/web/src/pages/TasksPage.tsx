@@ -22,7 +22,7 @@ import {
   ScheduleOutlined,
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Priority, TaskStatus } from '@blackhole/shared/types';
 import {
   deleteTask,
@@ -100,6 +100,7 @@ interface Filters {
 const INITIAL_FILTERS: Filters = { page: 1, pageSize: PAGE_SIZE };
 
 export function TasksPage() {
+  const navigate = useNavigate();
   const { message } = AntdApp.useApp();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -520,7 +521,7 @@ export function TasksPage() {
             loading={listQuery.isPending}
             statusPendingId={statusMutation.isPending ? (statusMutation.variables?.id ?? null) : null}
             onStatusChange={(task, next) => statusMutation.mutate({ id: task.id, status: next })}
-            onEdit={() => void message.info('编辑任务表单正在迭代')}
+            onEdit={(task) => navigate(`/tasks/${task.id}`)}
             onDelete={(task) => deleteMutation.mutate(task.id)}
             rowSelection={{
               selectedRowKeys,

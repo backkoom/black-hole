@@ -14,6 +14,7 @@ import { FilesPage } from './pages/FilesPage';
 import { TeamPage } from './pages/TeamPage';
 import { SystemSettingsPage } from './pages/SystemSettingsPage';
 import { ProjectsShell } from './pages/ProjectsShell';
+import { TaskDetailPage } from './pages/TaskDetailPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { UsersPage } from './pages/UsersPage';
 import { WorkspacePage } from './pages/WorkspacePage';
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
           // D-23：看板 / 任务 / 进度 / 风险收进「项目管理」模块，
           // 旧路径保留重定向，书签与外部链接不会 404
           { path: 'kanban', element: <Navigate to="/projects?view=board" replace /> },
+          { path: 'tasks/:id', element: <TaskDetailPage /> },
           { path: 'tasks', element: <Navigate to="/projects?view=tasks" replace /> },
           {
             path: 'calendar',

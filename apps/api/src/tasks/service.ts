@@ -46,12 +46,15 @@ export interface TaskRow {
   parent_id: number | null;
   subtask_count: string;
   start_at: Date | null;
+  source_type: string | null;
+  source_id: number | null;
 }
 
 export const TASK_SELECT = `
 SELECT t.id, t.user_id, t.project_id, t.title, t.status, t.priority,
        p.name AS project_name, t.due_date, t.done_at, t.created_at, t.updated_at,
        t.assignee_id, u.name AS assignee_name, t.category, t.reminder_at, t.parent_id, t.start_at,
+       t.source_type, t.source_id,
        (SELECT count(*) FROM task st
          WHERE st.parent_id = t.id AND st.deleted_at IS NULL) AS subtask_count
   FROM task t
@@ -380,4 +383,230 @@ export async function deleteTask(taskId: number, actor: SessionContext): Promise
     throw notFound('任务不存在');
   }
   await query('UPDATE task SET deleted_at = now(), updated_at = now() WHERE id = $1', [taskId]);
+}
+
+
+// ==================== 任务详情（迁移 011 / D-37） ====================
+//
+// 把「这条任务的来龙去脉」一次捞全：右侧三块（来源 / 关联风险 / 附件）
+// + 左侧（父任务 / 子任务 / 进展记录）。前端只发一次请求。
+//
+// 关联风险先按「同项目 + 未关闭」取前 5 条 —— 现在没有任务↔风险的直接关联字段，
+// 用项目做近似；以后要精确就在 task 上加 risk_id。
+
+export interface TaskSourceInfo {
+  type: 'meeting' | 'risk' | 'idea';
+  id: number;
+  title: string;
+  subtitle: string | null;
+}
+
+export interface TaskProgressItem {
+  id: number;
+  content: string;
+  userName: string;
+  createdAt: string | null;
+}
+
+export interface TaskFileItem {
+  id: number;
+  name: string;
+  sizeBytes: number;
+  mimeType: string | null;
+  createdAt: string | null;
+}
+
+export interface TaskRiskItem {
+  id: number;
+  code: string | null;
+  title: string;
+  level: Priority;
+  status: string;
+}
+
+export interface TaskDetail extends Task {
+  parent: { id: number; title: string } | null;
+  subtasks: Array<{ id: number; title: string; status: TaskStatus }>;
+  progress: TaskProgressItem[];
+  files: TaskFileItem[];
+  source: TaskSourceInfo | null;
+  relatedRisks: TaskRiskItem[];
+}
+
+export async function getTaskDetail(taskId: number, actor: SessionContext): Promise<TaskDetail> {
+  const row = await queryOne<TaskRow>(
+    `${TASK_SELECT} WHERE t.id = $1 AND t.deleted_at IS NULL`,
+    [taskId],
+  );
+  if (!row) throw notFound('任务不存在');
+  // 归属校验：管理员看全员，普通用户仅自己
+  if (actor.user.role !== 'admin' && Number(row.user_id) !== actor.user.id) {
+    throw notFound('任务不存在');
+  }
+  const task = toTask(row);
+
+  // 父任务
+  let parent: { id: number; title: string } | null = null;
+  if (row.parent_id !== null) {
+    const p = await queryOne<{ id: number; title: string }>(
+      'SELECT id, title FROM task WHERE id = $1 AND deleted_at IS NULL',
+      [Number(row.parent_id)],
+    );
+    if (p) parent = { id: Number(p.id), title: p.title };
+  }
+
+  // 子任务（只取一层）
+  const subRows = await query<{ id: number; title: string; status: TaskStatus }>(
+    `SELECT id, title, status FROM task
+      WHERE parent_id = $1 AND deleted_at IS NULL
+      ORDER BY created_at ASC, id ASC`,
+    [taskId],
+  );
+
+  // 进展记录（倒序，最多 50 条）
+  const progressRows = await query<{
+    id: number;
+    content: string;
+    user_name: string;
+    created_at: Date;
+  }>(
+    `SELECT tp.id, tp.content, u.name AS user_name, tp.created_at
+       FROM task_progress tp
+       JOIN app_user u ON u.id = tp.user_id
+      WHERE tp.task_id = $1
+      ORDER BY tp.created_at DESC, tp.id DESC
+      LIMIT 50`,
+    [taskId],
+  );
+
+  // 附件（挂在任务下的文件）
+  const fileRows = await query<{
+    id: number;
+    name: string;
+    size_bytes: string;
+    mime_type: string | null;
+    created_at: Date;
+  }>(
+    `SELECT id, name, size_bytes, mime_type, created_at
+       FROM file_asset
+      WHERE task_id = $1 AND deleted_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT 50`,
+    [taskId],
+  );
+
+  // 来源（多态引用：meeting / risk / idea）
+  let source: TaskSourceInfo | null = null;
+  const sourceType = row.source_type;
+  const sourceId = row.source_id === null || row.source_id === undefined ? null : Number(row.source_id);
+  if (sourceType && sourceId !== null) {
+    if (sourceType === 'meeting') {
+      const m = await queryOne<{ title: string; start_at: Date }>(
+        'SELECT title, start_at FROM meeting WHERE id = $1',
+        [sourceId],
+      );
+      if (m) {
+        source = { type: 'meeting', id: sourceId, title: m.title, subtitle: formatTimestamp(m.start_at) };
+      }
+    } else if (sourceType === 'risk') {
+      const r = await queryOne<{ code: string | null; title: string }>(
+        'SELECT code, title FROM risk WHERE id = $1',
+        [sourceId],
+      );
+      if (r) source = { type: 'risk', id: sourceId, title: r.title, subtitle: r.code };
+    } else {
+      const i = await queryOne<{ content: string; created_at: Date }>(
+        'SELECT content, created_at FROM idea WHERE id = $1',
+        [sourceId],
+      );
+      if (i) {
+        source = {
+          type: 'idea',
+          id: sourceId,
+          title: i.content.slice(0, 40),
+          subtitle: formatTimestamp(i.created_at),
+        };
+      }
+    }
+  }
+
+  // 关联风险：同项目、未关闭，按等级排
+  let relatedRisks: TaskRiskItem[] = [];
+  if (row.project_id !== null) {
+    const riskRows = await query<{
+      id: number;
+      code: string | null;
+      title: string;
+      level: Priority;
+      status: string;
+    }>(
+      `SELECT id, code, title, level, status FROM risk
+        WHERE project_id = $1 AND deleted_at IS NULL AND status <> 'resolved'
+        ORDER BY CASE level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, due_date ASC
+        LIMIT 5`,
+      [Number(row.project_id)],
+    );
+    relatedRisks = riskRows.map((x) => ({
+      id: Number(x.id),
+      code: x.code,
+      title: x.title,
+      level: x.level,
+      status: x.status,
+    }));
+  }
+
+  return {
+    ...task,
+    parent,
+    subtasks: subRows.map((s) => ({ id: Number(s.id), title: s.title, status: s.status })),
+    progress: progressRows.map((p) => ({
+      id: Number(p.id),
+      content: p.content,
+      userName: p.user_name,
+      createdAt: formatTimestamp(p.created_at),
+    })),
+    files: fileRows.map((f) => ({
+      id: Number(f.id),
+      name: f.name,
+      sizeBytes: Number(f.size_bytes),
+      mimeType: f.mime_type,
+      createdAt: formatTimestamp(f.created_at),
+    })),
+    source,
+    relatedRisks,
+  };
+}
+
+/** 追加一条进展记录（只增不改） */
+export async function addTaskProgress(
+  taskId: number,
+  content: string,
+  actor: SessionContext,
+): Promise<TaskProgressItem> {
+  const row = await queryOne<{ user_id: number }>(
+    'SELECT user_id FROM task WHERE id = $1 AND deleted_at IS NULL',
+    [taskId],
+  );
+  if (!row) throw notFound('任务不存在');
+  if (actor.user.role !== 'admin' && Number(row.user_id) !== actor.user.id) {
+    throw notFound('任务不存在');
+  }
+
+  const text = content.trim();
+  if (!text || text.length > 2000) throw unprocessable('进展内容需 1 至 2000 个字符');
+
+  const ins = await queryOne<{ id: number; created_at: Date }>(
+    `INSERT INTO task_progress (task_id, user_id, content)
+     VALUES ($1, $2, $3)
+     RETURNING id, created_at`,
+    [taskId, actor.user.id, text],
+  );
+  if (!ins) throw unprocessable('进展写入失败');
+
+  return {
+    id: Number(ins.id),
+    content: text,
+    userName: actor.user.name,
+    createdAt: formatTimestamp(ins.created_at),
+  };
 }
